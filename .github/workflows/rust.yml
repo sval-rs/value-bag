@@ -52,22 +52,22 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: features alloc
+          args: --features alloc
       
       - name: With std
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: features std
+          args: --features std
       
       - name: With sval
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: features sval
+          args: --features sval
 
       - name: With serde
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: features serde
+          args: --features serde
