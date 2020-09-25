@@ -67,15 +67,8 @@ jobs:
           args: --features serde
 
   embedded:
-    name: Check (Embedded)
+    name: Build (embedded)
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: true
-      matrix:
-        rust:
-          - stable
-          - beta
-          - nightly
     steps:
       - name: Checkout sources
         uses: actions/checkout@v2
@@ -84,18 +77,18 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
-          toolchain: ${{ matrix.rust }}
+          toolchain: nightly
           target: thumbv6m-none-eabi
           override: true
 
       - name: Default features
         uses: actions-rs/cargo@v1
         with:
-          command: check
-          args: --target thumbv6m-none-eabi
+          command: build
+          args: -Z avoid-dev-deps --target thumbv6m-none-eabi
 
       - name: With sval
         uses: actions-rs/cargo@v1
         with:
-          command: check
-          args: --target thumbv6m-none-eabi --features sval
+          command: build
+          args: -Z avoid-dev-deps --target thumbv6m-none-eabi --features sval
