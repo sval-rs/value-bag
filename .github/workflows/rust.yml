@@ -10,11 +10,53 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
-
+  check:
+    name: Test
     runs-on: ubuntu-latest
-
+    strategy:
+      fail-fast: true
+      matrix:
+        rust:
+          - stable
+          - beta
+          - nightly
     steps:
-    - uses: actions/checkout@v2
-    - name: Run tests
-      run: cargo test --verbose
+      - name: Checkout sources
+        uses: actions/checkout@v2
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.rust }}
+          override: true
+
+      - name: Default features
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          
+      - name: With alloc
+        uses: actions-rs/cargo@v1
+        with:
+          command: test --features alloc
+      
+      - name: With std
+        uses: actions-rs/cargo@v1
+        with:
+          command: test --features std
+      
+      - name: With sval
+        uses: actions-rs/cargo@v1
+        with:
+          command: test --features sval
+
+      - name: With serde
+        uses: actions-rs/cargo@v1
+        with:
+          command: test --features serde
+
+      - name: All features
+        uses: actions-rs/cargo@v1
+        with:
+          command: test --all-features
