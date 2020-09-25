@@ -1,6 +1,7 @@
 # `value-bag`
-
-![Rust](https://github.com/sval-rs/value-bag/workflows/Rust/badge.svg)
+[![Rust](https://github.com/sval-rs/value-bag/workflows/Rust/badge.svg)](https://github.com/sval-rs/value-bag/actions)
+[![Latest version](https://img.shields.io/crates/v/value-bag.svg)](https://crates.io/crates/value-bag)
+[![Documentation Latest](https://docs.rs/value-bag/badge.svg)](https://docs.rs/value-bag)
 
 A `ValueBag` is an anonymous structured bag that supports casting, downcasting, formatting, and serializing. The goal of a `ValueBag` is to decouple the producers of structured data from its consumers. A `ValueBag` can _always_ be interrogated using the consumers serialization API of choice, even if that wasn't the one the producer used to capture the data in the first place.
 
