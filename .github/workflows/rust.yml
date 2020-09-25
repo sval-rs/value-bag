@@ -35,28 +35,39 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
+
+      - name: No features
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --no-default-features
+    
+      - name: All features
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --all-features
           
       - name: With alloc
         uses: actions-rs/cargo@v1
         with:
-          command: test --features alloc
+          command: test
+          args: features alloc
       
       - name: With std
         uses: actions-rs/cargo@v1
         with:
-          command: test --features std
+          command: test
+          args: features std
       
       - name: With sval
         uses: actions-rs/cargo@v1
         with:
-          command: test --features sval
+          command: test
+          args: features sval
 
       - name: With serde
         uses: actions-rs/cargo@v1
         with:
-          command: test --features serde
-
-      - name: All features
-        uses: actions-rs/cargo@v1
-        with:
-          command: test --all-features
+          command: test
+          args: features serde
