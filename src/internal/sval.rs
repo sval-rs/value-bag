@@ -3,7 +3,7 @@
 //! This module allows any `Value` to implement the `Value` trait,
 //! and for any `Value` to be captured as a `Value`.
 
-use crate::{std::fmt, Error, Slot, ValueBag};
+use crate::{fill::Slot, std::fmt, Error, ValueBag};
 
 use super::{
     cast::{self, Cast},

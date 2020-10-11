@@ -19,7 +19,10 @@ build = "build.rs"
 features = ["std", "sval", "serde"]
 
 [features]
+# Use the standard library
 std = []
+
+# Add support for `serde`
 serde = [
     "serde_lib",
     "sval/serde1",
@@ -27,6 +30,9 @@ serde = [
     "erased-serde/alloc",
     "serde_fmt"
 ]
+
+# Add support for converting value bags into test tokens
+test = []
 
 [dependencies.sval]
 version = "1.0.0-alpha.3"

@@ -1,4 +1,4 @@
-//! Lazy value initialization.
+//! Deferred value initialization.
 
 use crate::std::fmt;
 

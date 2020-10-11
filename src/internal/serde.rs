@@ -1,6 +1,7 @@
 use crate::{
+    fill::Slot,
     std::{fmt, marker::PhantomData},
-    Error, Slot, ValueBag,
+    Error, ValueBag,
 };
 
 use super::{

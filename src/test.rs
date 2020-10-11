@@ -1,4 +1,4 @@
-// Test support for inspecting values
+//* Test support for inspecting values.
 
 use crate::std::{fmt, str, string::String};
 
@@ -18,8 +18,12 @@ where
     }
 }
 
+/**
+A tokenized representation of the captured value.
+*/
 #[derive(Debug, PartialEq)]
-pub(crate) enum Token {
+#[non_exhaustive]
+pub enum Token {
     U64(u64),
     I64(i64),
     F64(f64),
@@ -38,9 +42,14 @@ pub(crate) enum Token {
     Serde,
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "test"))]
 impl<'v> ValueBag<'v> {
-    pub(crate) fn to_token(&self) -> Token {
+    /**
+    Convert the value bag into a token for testing.
+
+    This _isn't_ a general-purpose API for working with values outside of testing.
+    */
+    pub fn to_token(&self) -> Token {
         struct TestVisitor(Option<Token>);
 
         impl<'v> internal::Visitor<'v> for TestVisitor {

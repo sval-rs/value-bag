@@ -44,7 +44,7 @@ impl From<fmt::Error> for Error {
 #[cfg(feature = "std")]
 mod std_support {
     use super::*;
-    use crate::std::{error, io, boxed::Box};
+    use crate::std::{boxed::Box, error, io};
 
     pub(super) type BoxedError = Box<dyn error::Error + Send + Sync>;
 
