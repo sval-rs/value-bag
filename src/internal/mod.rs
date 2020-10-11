@@ -3,9 +3,11 @@
 //! This implementation isn't intended to be public. It may need to change
 //! for optimizations or to support new external serialization frameworks.
 
-use crate::std::any::TypeId;
-
-use super::{Error, Fill, Slot};
+use crate::{
+    fill::{Fill, Slot},
+    std::any::TypeId,
+    Error,
+};
 
 pub(super) mod cast;
 #[cfg(feature = "std")]

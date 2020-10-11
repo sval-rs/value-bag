@@ -405,10 +405,7 @@ mod std_support {
 
     #[cfg(test)]
     mod tests {
-        use crate::{
-            test::IntoValueBag,
-            std::borrow::ToOwned,
-        };
+        use crate::{std::borrow::ToOwned, test::IntoValueBag};
 
         #[test]
         fn primitive_cast() {

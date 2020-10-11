@@ -1,7 +1,6 @@
 //! Structured values.
 
 #![cfg_attr(value_bag_const_type_id, feature(const_type_id))]
-
 #![no_std]
 
 #[cfg(any(feature = "std", test))]
@@ -15,17 +14,14 @@ extern crate std;
 extern crate core as std;
 
 mod error;
-mod fill;
+pub mod fill;
 mod impls;
 mod internal;
 
-#[cfg(test)]
-mod test;
+#[cfg(any(test, feature = "test"))]
+pub mod test;
 
-pub use self::{
-    error::Error,
-    fill::{Fill, Slot},
-};
+pub use self::error::Error;
 
 use self::internal::{Inner, Primitive, Visitor};
 
@@ -79,7 +75,7 @@ use self::internal::{Inner, Primitive, Visitor};
 /// compatible with other constructor methods.
 ///
 /// ```
-/// use value_bag::{ValueBag, Slot, Fill, Error};
+/// use value_bag::{ValueBag, Error, fill::{Slot, Fill}};
 ///
 /// struct FillSigned;
 ///
@@ -96,7 +92,7 @@ use self::internal::{Inner, Primitive, Visitor};
 ///
 /// ```
 /// # use std::fmt::Debug;
-/// use value_bag::{ValueBag, Slot, Fill, Error};
+/// use value_bag::{ValueBag, Error, fill::{Slot, Fill}};
 ///
 /// struct FillDebug;
 ///

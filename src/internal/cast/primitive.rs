@@ -31,7 +31,7 @@ pub(super) fn from_any<'v, T: 'static>(value: &'v T) -> Option<Primitive<'v>> {
                             const $const_ident: TypeId = TypeId::of::<$ty>();
                             const $option_ident: TypeId = TypeId::of::<Option<$ty>>();
                         );*
-    
+
                         match TypeId::of::<Self>() {
                             $(
                                 $const_ident => |v| Some(Primitive::from(unsafe { *(v as *const Self as *const $ty) })),
@@ -43,20 +43,20 @@ pub(super) fn from_any<'v, T: 'static>(value: &'v T) -> Option<Primitive<'v>> {
                                     }
                                 }),
                             )*
-    
+
                             _ => |_| None,
                         }
                     };
-    
+
                     fn to_primitive(&self) -> Option<Primitive> {
                         (Self::CALL)(self)
                     }
                 }
-    
+
                 impl<T: ?Sized + 'static> ToPrimitive for T {}
             }
         }
-    
+
         // NOTE: The types here *must* match the ones used below when `const_type_id` is not available
         to_primitive![
             usize: (USIZE, OPTION_USIZE),
@@ -64,21 +64,21 @@ pub(super) fn from_any<'v, T: 'static>(value: &'v T) -> Option<Primitive<'v>> {
             u16: (U16, OPTION_U16),
             u32: (U32, OPTION_U32),
             u64: (U64, OPTION_U64),
-    
+
             isize: (ISIZE, OPTION_ISIZE),
             i8: (I8, OPTION_I8),
             i16: (I16, OPTION_I16),
             i32: (I32, OPTION_I32),
             i64: (I64, OPTION_I64),
-    
+
             f32: (F32, OPTION_F32),
             f64: (F64, OPTION_F64),
-    
+
             char: (CHAR, OPTION_CHAR),
             bool: (BOOL, OPTION_BOOL),
             &'static str: (STR, OPTION_STR),
         ];
-    
+
         value.to_primitive()
     }
 
@@ -95,10 +95,7 @@ pub(super) fn from_any<'v, T: 'static>(value: &'v T) -> Option<Primitive<'v>> {
         use ctor::ctor;
 
         use crate::std::{
-            any::{
-                Any,
-                TypeId,
-            },
+            any::{Any, TypeId},
             cmp::Ordering,
         };
 
@@ -141,9 +138,11 @@ pub(super) fn from_any<'v, T: 'static>(value: &'v T) -> Option<Primitive<'v>> {
         // We use this algorithm instead of the standard library's `sort_by` because it
         // works in no-std environments
         fn quicksort_helper<T, F>(arr: &mut [T], left: isize, right: isize, compare: &F)
-        where F: Fn(&T, &T) -> Ordering {
+        where
+            F: Fn(&T, &T) -> Ordering,
+        {
             if right <= left {
-                return
+                return;
             }
 
             let mut i: isize = left - 1;
@@ -160,12 +159,12 @@ pub(super) fn from_any<'v, T: 'static>(value: &'v T) -> Option<Primitive<'v>> {
                     j -= 1;
                     while compare(&*v, &arr[j as usize]) == Ordering::Less {
                         if j == left {
-                            break
+                            break;
                         }
                         j -= 1;
                     }
                     if i >= j {
-                        break
+                        break;
                     }
                     arr.swap(i as usize, j as usize);
                     if compare(&arr[i as usize], &*v) == Ordering::Equal {
@@ -201,9 +200,12 @@ pub(super) fn from_any<'v, T: 'static>(value: &'v T) -> Option<Primitive<'v>> {
             quicksort_helper(arr, i, right, compare);
         }
 
-        fn quicksort_by<T, F>(arr: &mut [T], compare: F) where F: Fn(&T, &T) -> Ordering {
+        fn quicksort_by<T, F>(arr: &mut [T], compare: F)
+        where
+            F: Fn(&T, &T) -> Ordering,
+        {
             if arr.len() <= 1 {
-                return
+                return;
             }
 
             let len = arr.len();
@@ -211,7 +213,10 @@ pub(super) fn from_any<'v, T: 'static>(value: &'v T) -> Option<Primitive<'v>> {
         }
 
         #[ctor]
-        static TYPE_IDS: [(TypeId, for<'a> fn(&'a (dyn std::any::Any + 'static)) -> Primitive<'a>); 30] = {
+        static TYPE_IDS: [(
+            TypeId,
+            for<'a> fn(&'a (dyn std::any::Any + 'static)) -> Primitive<'a>,
+        ); 30] = {
             // NOTE: The types here *must* match the ones used above when `const_type_id` is available
             let mut type_ids = type_ids![
                 usize,

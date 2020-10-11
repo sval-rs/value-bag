@@ -3,7 +3,7 @@
 //! This module allows any `Value` to implement the `Debug` and `Display` traits,
 //! and for any `Debug` or `Display` to be captured as a `Value`.
 
-use crate::{std::fmt, Error, Slot, ValueBag};
+use crate::{fill::Slot, std::fmt, Error, ValueBag};
 
 use super::{cast, Inner, Visitor};
 

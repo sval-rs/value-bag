@@ -1,8 +1,4 @@
-use std::{
-    str,
-    env,
-    process::Command,
-};
+use std::{env, process::Command, str};
 
 fn main() {
     if rustc_is_nightly().unwrap_or(false) {
