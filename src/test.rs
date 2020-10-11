@@ -1,4 +1,4 @@
-//* Test support for inspecting values.
+//! Test support for inspecting values.
 
 use crate::std::{fmt, str, string::String};
 
