@@ -47,7 +47,8 @@ jobs:
       - name: With test
         uses: actions-rs/cargo@v1
         with:
-          command: check --features test
+          command: check
+          args: --features test
 
       - name: With std
         uses: actions-rs/cargo@v1
