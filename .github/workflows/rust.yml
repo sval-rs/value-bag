@@ -43,6 +43,12 @@ jobs:
         with:
           command: test
           args: --all-features
+      
+      - name: With test
+        uses: actions-rs/cargo@v1
+        with:
+          command: check
+          args: --features test
 
       - name: With std
         uses: actions-rs/cargo@v1

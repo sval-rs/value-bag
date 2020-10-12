@@ -39,7 +39,7 @@ serde1 = [
 ]
 
 # Add support for converting value bags into test tokens
-test = []
+test = ["std"]
 
 [dependencies.sval1_lib]
 version = "1.0.0-alpha.3"
