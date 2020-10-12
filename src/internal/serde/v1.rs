@@ -1,27 +1,26 @@
 use crate::{
     fill::Slot,
+    internal::{
+        cast::{self, Cast},
+        Inner, Primitive, Visitor,
+    },
     std::{fmt, marker::PhantomData},
     Error, ValueBag,
 };
 
-use super::{
-    cast::{self, Cast},
-    Inner, Primitive, Visitor,
-};
-
-use serde_lib::ser::{Error as SerdeError, Impossible};
+use serde1_lib::ser::{Error as SerdeError, Impossible};
 
 impl<'v> ValueBag<'v> {
     /// Get a value from a structured type.
     ///
     /// This method will attempt to capture the given value as a well-known primitive
     /// before resorting to using its `Value` implementation.
-    pub fn capture_serde<T>(value: &'v T) -> Self
+    pub fn capture_serde1<T>(value: &'v T) -> Self
     where
         T: Serialize + 'static,
     {
         cast::try_from_primitive(value).unwrap_or(ValueBag {
-            inner: Inner::Serde {
+            inner: Inner::Serde1 {
                 value,
                 type_id: Some(cast::type_id::<T>()),
             },
@@ -37,30 +36,30 @@ impl<'s, 'f> Slot<'s, 'f> {
     /// # Panics
     ///
     /// Calling more than a single `fill` method on this slot will panic.
-    pub fn fill_serde<T>(&mut self, value: T) -> Result<(), Error>
+    pub fn fill_serde1<T>(&mut self, value: T) -> Result<(), Error>
     where
         T: Serialize,
     {
-        self.fill(|visitor| visitor.serde(&value))
+        self.fill(|visitor| visitor.serde1(&value))
     }
 }
 
-impl<'v> serde_lib::Serialize for ValueBag<'v> {
+impl<'v> serde1_lib::Serialize for ValueBag<'v> {
     fn serialize<S>(&self, s: S) -> Result<S::Ok, S::Error>
     where
-        S: serde_lib::Serializer,
+        S: serde1_lib::Serializer,
     {
-        struct SerdeVisitor<S>
+        struct Serde1Visitor<S>
         where
-            S: serde_lib::Serializer,
+            S: serde1_lib::Serializer,
         {
             inner: Option<S>,
             result: Option<Result<S::Ok, S::Error>>,
         }
 
-        impl<S> SerdeVisitor<S>
+        impl<S> Serde1Visitor<S>
         where
-            S: serde_lib::Serializer,
+            S: serde1_lib::Serializer,
         {
             fn result(&self) -> Result<(), Error> {
                 match self.result {
@@ -79,9 +78,9 @@ impl<'v> serde_lib::Serialize for ValueBag<'v> {
             }
         }
 
-        impl<'v, S> Visitor<'v> for SerdeVisitor<S>
+        impl<'v, S> Visitor<'v> for Serde1Visitor<S>
         where
-            S: serde_lib::Serializer,
+            S: serde1_lib::Serializer,
         {
             fn debug(&mut self, v: &dyn fmt::Debug) -> Result<(), Error> {
                 struct DebugToDisplay<T>(T);
@@ -140,19 +139,19 @@ impl<'v> serde_lib::Serialize for ValueBag<'v> {
                 self.result()
             }
 
-            #[cfg(feature = "sval")]
-            fn sval(&mut self, v: &dyn super::sval::Value) -> Result<(), Error> {
-                self.result = Some(super::sval::serde(self.serializer()?, v));
+            #[cfg(feature = "sval1")]
+            fn sval1(&mut self, v: &dyn crate::internal::sval::v1::Value) -> Result<(), Error> {
+                self.result = Some(crate::internal::sval::v1::serde(self.serializer()?, v));
                 self.result()
             }
 
-            fn serde(&mut self, v: &dyn Serialize) -> Result<(), Error> {
-                self.result = Some(erased_serde::serialize(v, self.serializer()?));
+            fn serde1(&mut self, v: &dyn Serialize) -> Result<(), Error> {
+                self.result = Some(erased_serde1::serialize(v, self.serializer()?));
                 self.result()
             }
         }
 
-        let mut visitor = SerdeVisitor {
+        let mut visitor = Serde1Visitor {
             inner: Some(s),
             result: None,
         };
@@ -166,7 +165,7 @@ impl<'v> serde_lib::Serialize for ValueBag<'v> {
 impl<'v> From<&'v (dyn Serialize)> for ValueBag<'v> {
     fn from(value: &'v (dyn Serialize)) -> ValueBag<'v> {
         ValueBag {
-            inner: Inner::Serde {
+            inner: Inner::Serde1 {
                 value,
                 type_id: None,
             },
@@ -174,23 +173,26 @@ impl<'v> From<&'v (dyn Serialize)> for ValueBag<'v> {
     }
 }
 
-pub use erased_serde::Serialize;
+pub use erased_serde1::Serialize;
 
-pub(super) fn fmt(f: &mut fmt::Formatter, v: &dyn Serialize) -> Result<(), Error> {
-    fmt::Debug::fmt(&serde_fmt::to_debug(v), f)?;
+pub(in crate::internal) fn fmt(f: &mut fmt::Formatter, v: &dyn Serialize) -> Result<(), Error> {
+    fmt::Debug::fmt(&serde1_fmt::to_debug(v), f)?;
     Ok(())
 }
 
-#[cfg(feature = "sval")]
-pub(super) fn sval(s: &mut sval::value::Stream, v: &dyn Serialize) -> Result<(), Error> {
-    sval::serde::v1::stream(s, v).map_err(Error::from_sval)?;
+#[cfg(feature = "sval1")]
+pub(in crate::internal) fn sval1(
+    s: &mut sval1_lib::value::Stream,
+    v: &dyn Serialize,
+) -> Result<(), Error> {
+    sval1_lib::serde::v1::stream(s, v).map_err(Error::from_sval1)?;
     Ok(())
 }
 
-pub(super) fn cast<'v>(v: &dyn Serialize) -> Cast<'v> {
+pub(in crate::internal) fn cast<'v>(v: &dyn Serialize) -> Cast<'v> {
     struct CastSerializer<'v>(PhantomData<Cast<'v>>);
 
-    impl<'v> serde_lib::Serializer for CastSerializer<'v> {
+    impl<'v> serde1_lib::Serializer for CastSerializer<'v> {
         type Ok = Cast<'v>;
         type Error = InvalidCast;
 
@@ -252,7 +254,7 @@ pub(super) fn cast<'v>(v: &dyn Serialize) -> Cast<'v> {
 
         fn serialize_some<T>(self, v: &T) -> Result<Self::Ok, Self::Error>
         where
-            T: serde_lib::Serialize + ?Sized,
+            T: serde1_lib::Serialize + ?Sized,
         {
             v.serialize(self)
         }
@@ -298,7 +300,7 @@ pub(super) fn cast<'v>(v: &dyn Serialize) -> Cast<'v> {
             _: &T,
         ) -> Result<Self::Ok, Self::Error>
         where
-            T: serde_lib::Serialize + ?Sized,
+            T: serde1_lib::Serialize + ?Sized,
         {
             Err(InvalidCast)
         }
@@ -311,7 +313,7 @@ pub(super) fn cast<'v>(v: &dyn Serialize) -> Cast<'v> {
             _: &T,
         ) -> Result<Self::Ok, Self::Error>
         where
-            T: serde_lib::Serialize + ?Sized,
+            T: serde1_lib::Serialize + ?Sized,
         {
             Err(InvalidCast)
         }
@@ -371,7 +373,7 @@ pub(super) fn cast<'v>(v: &dyn Serialize) -> Cast<'v> {
         }
     }
 
-    erased_serde::serialize(v, CastSerializer(Default::default()))
+    erased_serde1::serialize(v, CastSerializer(Default::default()))
         .unwrap_or(Cast::Primitive(Primitive::None))
 }
 
@@ -390,7 +392,7 @@ impl fmt::Display for InvalidCast {
     }
 }
 
-impl serde_lib::ser::Error for InvalidCast {
+impl serde1_lib::ser::Error for InvalidCast {
     fn custom<T>(_: T) -> Self
     where
         T: fmt::Display,
@@ -399,7 +401,7 @@ impl serde_lib::ser::Error for InvalidCast {
     }
 }
 
-impl serde_lib::ser::StdError for InvalidCast {}
+impl serde1_lib::ser::StdError for InvalidCast {}
 
 #[cfg(test)]
 mod tests {
@@ -407,22 +409,22 @@ mod tests {
     use crate::test::Token;
 
     #[test]
-    fn serde_capture() {
-        assert_eq!(ValueBag::capture_serde(&42u64).to_token(), Token::U64(42));
+    fn serde1_capture() {
+        assert_eq!(ValueBag::capture_serde1(&42u64).to_token(), Token::U64(42));
     }
 
     #[test]
-    fn serde_cast() {
+    fn serde1_cast() {
         assert_eq!(
             42u32,
-            ValueBag::capture_serde(&42u64)
+            ValueBag::capture_serde1(&42u64)
                 .to_u32()
                 .expect("invalid value")
         );
 
         assert_eq!(
             "a string",
-            ValueBag::capture_serde(&"a string")
+            ValueBag::capture_serde1(&"a string")
                 .to_borrowed_str()
                 .expect("invalid value")
         );
@@ -430,21 +432,21 @@ mod tests {
         #[cfg(feature = "std")]
         assert_eq!(
             "a string",
-            ValueBag::capture_serde(&"a string")
+            ValueBag::capture_serde1(&"a string")
                 .to_str()
                 .expect("invalid value")
         );
     }
 
     #[test]
-    fn serde_downcast() {
+    fn serde1_downcast() {
         #[derive(Debug, PartialEq, Eq)]
         struct Timestamp(usize);
 
-        impl serde_lib::Serialize for Timestamp {
+        impl serde1_lib::Serialize for Timestamp {
             fn serialize<S>(&self, s: S) -> Result<S::Ok, S::Error>
             where
-                S: serde_lib::Serializer,
+                S: serde1_lib::Serializer,
             {
                 s.serialize_u64(self.0 as u64)
             }
@@ -454,27 +456,27 @@ mod tests {
 
         assert_eq!(
             &ts,
-            ValueBag::capture_serde(&ts)
+            ValueBag::capture_serde1(&ts)
                 .downcast_ref::<Timestamp>()
                 .expect("invalid value")
         );
     }
 
     #[test]
-    fn serde_structured() {
-        use serde_test::{assert_ser_tokens, Token};
+    fn serde1_structured() {
+        use serde1_test::{assert_ser_tokens, Token};
 
         assert_ser_tokens(&ValueBag::from(42u64), &[Token::U64(42)]);
     }
 
     #[test]
-    fn serde_debug() {
+    fn serde1_debug() {
         struct TestSerde;
 
-        impl serde_lib::Serialize for TestSerde {
+        impl serde1_lib::Serialize for TestSerde {
             fn serialize<S>(&self, s: S) -> Result<S::Ok, S::Error>
             where
-                S: serde_lib::Serializer,
+                S: serde1_lib::Serializer,
             {
                 s.serialize_u64(42)
             }
@@ -482,21 +484,21 @@ mod tests {
 
         assert_eq!(
             format!("{:04?}", 42u64),
-            format!("{:04?}", ValueBag::capture_serde(&TestSerde)),
+            format!("{:04?}", ValueBag::capture_serde1(&TestSerde)),
         );
     }
 
     #[test]
-    #[cfg(feature = "sval")]
-    fn serde_sval() {
-        use sval::test::Token;
+    #[cfg(feature = "sval1")]
+    fn serde1_sval() {
+        use sval1_lib::test::Token;
 
         struct TestSerde;
 
-        impl serde_lib::Serialize for TestSerde {
+        impl serde1_lib::Serialize for TestSerde {
             fn serialize<S>(&self, s: S) -> Result<S::Ok, S::Error>
             where
-                S: serde_lib::Serializer,
+                S: serde1_lib::Serializer,
             {
                 s.serialize_u64(42)
             }
@@ -504,7 +506,7 @@ mod tests {
 
         assert_eq!(
             vec![Token::Unsigned(42)],
-            sval::test::tokens(ValueBag::capture_serde(&TestSerde))
+            sval1_lib::test::tokens(ValueBag::capture_serde1(&TestSerde))
         );
     }
 
@@ -515,10 +517,10 @@ mod tests {
         use crate::std::borrow::ToOwned;
 
         #[test]
-        fn serde_cast() {
+        fn serde1_cast() {
             assert_eq!(
                 "a string",
-                ValueBag::capture_serde(&"a string".to_owned())
+                ValueBag::capture_serde1(&"a string".to_owned())
                     .to_str()
                     .expect("invalid value")
             );

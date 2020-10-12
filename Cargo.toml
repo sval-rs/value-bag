@@ -22,46 +22,58 @@ features = ["std", "sval", "serde"]
 # Use the standard library
 std = []
 
+# Add support for sval
+sval = ["sval1"]
+
+sval1 = ["sval1_lib"]
+
 # Add support for `serde`
-serde = [
-    "serde_lib",
-    "sval/serde1",
-    "sval/alloc",
-    "erased-serde/alloc",
-    "serde_fmt"
+serde = ["serde1"]
+
+serde1 = [
+    "serde1_lib",
+    "sval1_lib/serde1",
+    "sval1_lib/alloc",
+    "erased-serde1/alloc",
+    "serde1_fmt"
 ]
 
 # Add support for converting value bags into test tokens
 test = []
 
-[dependencies.sval]
+[dependencies.sval1_lib]
 version = "1.0.0-alpha.3"
 optional = true
 default-features = false
 features = ["fmt"]
+package = "sval"
 
-[dependencies.serde_lib]
+[dependencies.serde1_lib]
 version = "1"
 default-features = false
 optional = true
 package = "serde"
 
-[dependencies.serde_fmt]
+[dependencies.serde1_fmt]
 version = "1"
 optional = true
+package = "serde_fmt"
 
-[dependencies.erased-serde]
+[dependencies.erased-serde1]
 version = "0.3"
 default-features = false
 optional = true
+package = "erased-serde"
 
 # Only needed on non-nightly compilers
 [dependencies.ctor]
 version = "0.1"
 
-[dev-dependencies.sval]
+[dev-dependencies.sval1_lib]
 version = "1.0.0-alpha.3"
 features = ["test"]
+package = "sval"
 
-[dev-dependencies.serde_test]
+[dev-dependencies.serde1_test]
 version = "1"
+package = "serde_test"

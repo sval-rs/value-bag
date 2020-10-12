@@ -137,14 +137,17 @@ impl<'v> Debug for ValueBag<'v> {
                 Ok(())
             }
 
-            #[cfg(feature = "sval")]
-            fn sval(&mut self, v: &dyn super::sval::Value) -> Result<(), Error> {
-                super::sval::fmt(self.0, v)
+            #[cfg(feature = "sval1")]
+            fn sval1(&mut self, v: &dyn crate::internal::sval::v1::Value) -> Result<(), Error> {
+                crate::internal::sval::v1::fmt(self.0, v)
             }
 
-            #[cfg(feature = "serde")]
-            fn serde(&mut self, v: &dyn super::serde::Serialize) -> Result<(), Error> {
-                super::serde::fmt(self.0, v)
+            #[cfg(feature = "serde1")]
+            fn serde1(
+                &mut self,
+                v: &dyn crate::internal::serde::v1::Serialize,
+            ) -> Result<(), Error> {
+                crate::internal::serde::v1::fmt(self.0, v)
             }
         }
 
@@ -218,14 +221,17 @@ impl<'v> Display for ValueBag<'v> {
                 Ok(())
             }
 
-            #[cfg(feature = "sval")]
-            fn sval(&mut self, v: &dyn super::sval::Value) -> Result<(), Error> {
-                super::sval::fmt(self.0, v)
+            #[cfg(feature = "sval1")]
+            fn sval1(&mut self, v: &dyn crate::internal::sval::v1::Value) -> Result<(), Error> {
+                crate::internal::sval::v1::fmt(self.0, v)
             }
 
-            #[cfg(feature = "serde")]
-            fn serde(&mut self, v: &dyn super::serde::Serialize) -> Result<(), Error> {
-                super::serde::fmt(self.0, v)
+            #[cfg(feature = "serde1")]
+            fn serde1(
+                &mut self,
+                v: &dyn crate::internal::serde::v1::Serialize,
+            ) -> Result<(), Error> {
+                crate::internal::serde::v1::fmt(self.0, v)
             }
         }
 

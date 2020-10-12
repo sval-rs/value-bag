@@ -3,11 +3,14 @@
 //! This module allows any `Value` to implement the `Value` trait,
 //! and for any `Value` to be captured as a `Value`.
 
-use crate::{fill::Slot, std::fmt, Error, ValueBag};
-
-use super::{
-    cast::{self, Cast},
-    Inner, Primitive, Visitor,
+use crate::{
+    fill::Slot,
+    internal::{
+        cast::{self, Cast},
+        Inner, Primitive, Visitor,
+    },
+    std::fmt,
+    Error, ValueBag,
 };
 
 impl<'v> ValueBag<'v> {
@@ -15,12 +18,12 @@ impl<'v> ValueBag<'v> {
     ///
     /// This method will attempt to capture the given value as a well-known primitive
     /// before resorting to using its `Value` implementation.
-    pub fn capture_sval<T>(value: &'v T) -> Self
+    pub fn capture_sval1<T>(value: &'v T) -> Self
     where
         T: Value + 'static,
     {
         cast::try_from_primitive(value).unwrap_or(ValueBag {
-            inner: Inner::Sval {
+            inner: Inner::Sval1 {
                 value,
                 type_id: Some(cast::type_id::<T>()),
             },
@@ -36,67 +39,72 @@ impl<'s, 'f> Slot<'s, 'f> {
     /// # Panics
     ///
     /// Calling more than a single `fill` method on this slot will panic.
-    pub fn fill_sval<T>(&mut self, value: T) -> Result<(), Error>
+    pub fn fill_sval1<T>(&mut self, value: T) -> Result<(), Error>
     where
         T: Value,
     {
-        self.fill(|visitor| visitor.sval(&value))
+        self.fill(|visitor| visitor.sval1(&value))
     }
 }
 
 impl<'v> Value for ValueBag<'v> {
-    fn stream(&self, s: &mut sval::value::Stream) -> sval::value::Result {
-        struct SvalVisitor<'a, 'b: 'a>(&'a mut sval::value::Stream<'b>);
+    fn stream(&self, s: &mut sval1_lib::value::Stream) -> sval1_lib::value::Result {
+        struct Sval1Visitor<'a, 'b: 'a>(&'a mut sval1_lib::value::Stream<'b>);
 
-        impl<'a, 'b: 'a, 'v> Visitor<'v> for SvalVisitor<'a, 'b> {
+        impl<'a, 'b: 'a, 'v> Visitor<'v> for Sval1Visitor<'a, 'b> {
             fn debug(&mut self, v: &dyn fmt::Debug) -> Result<(), Error> {
-                self.0.debug(v).map_err(Error::from_sval)
+                self.0.debug(v).map_err(Error::from_sval1)
             }
 
             fn u64(&mut self, v: u64) -> Result<(), Error> {
-                self.0.u64(v).map_err(Error::from_sval)
+                self.0.u64(v).map_err(Error::from_sval1)
             }
 
             fn i64(&mut self, v: i64) -> Result<(), Error> {
-                self.0.i64(v).map_err(Error::from_sval)
+                self.0.i64(v).map_err(Error::from_sval1)
             }
 
             fn f64(&mut self, v: f64) -> Result<(), Error> {
-                self.0.f64(v).map_err(Error::from_sval)
+                self.0.f64(v).map_err(Error::from_sval1)
             }
 
             fn bool(&mut self, v: bool) -> Result<(), Error> {
-                self.0.bool(v).map_err(Error::from_sval)
+                self.0.bool(v).map_err(Error::from_sval1)
             }
 
             fn char(&mut self, v: char) -> Result<(), Error> {
-                self.0.char(v).map_err(Error::from_sval)
+                self.0.char(v).map_err(Error::from_sval1)
             }
 
             fn str(&mut self, v: &str) -> Result<(), Error> {
-                self.0.str(v).map_err(Error::from_sval)
+                self.0.str(v).map_err(Error::from_sval1)
             }
 
             fn none(&mut self) -> Result<(), Error> {
-                self.0.none().map_err(Error::from_sval)
+                self.0.none().map_err(Error::from_sval1)
             }
 
             #[cfg(feature = "std")]
             fn error(&mut self, v: &dyn std::error::Error) -> Result<(), Error> {
-                Value::stream(&sval::stream::Source::from(v), self.0).map_err(Error::from_sval)
+                Value::stream(&sval1_lib::stream::Source::from(v), self.0)
+                    .map_err(Error::from_sval1)
             }
 
-            fn sval(&mut self, v: &dyn Value) -> Result<(), Error> {
-                self.0.any(v).map_err(Error::from_sval)
+            fn sval1(&mut self, v: &dyn Value) -> Result<(), Error> {
+                self.0.any(v).map_err(Error::from_sval1)
             }
 
-            #[cfg(feature = "serde")]
-            fn serde(&mut self, v: &dyn super::serde::Serialize) -> Result<(), Error> {
-                super::serde::sval(self.0, v)
+            #[cfg(feature = "serde1")]
+            fn serde1(
+                &mut self,
+                v: &dyn crate::internal::serde::v1::Serialize,
+            ) -> Result<(), Error> {
+                crate::internal::serde::v1::sval1(self.0, v)
             }
         }
 
-        self.visit(&mut SvalVisitor(s)).map_err(Error::into_sval)?;
+        self.visit(&mut Sval1Visitor(s))
+            .map_err(Error::into_sval1)?;
 
         Ok(())
     }
@@ -105,7 +113,7 @@ impl<'v> Value for ValueBag<'v> {
 impl<'v> From<&'v (dyn Value)> for ValueBag<'v> {
     fn from(value: &'v (dyn Value)) -> ValueBag<'v> {
         ValueBag {
-            inner: Inner::Sval {
+            inner: Inner::Sval1 {
                 value,
                 type_id: None,
             },
@@ -113,70 +121,70 @@ impl<'v> From<&'v (dyn Value)> for ValueBag<'v> {
     }
 }
 
-pub use sval::value::Value;
+pub use sval1_lib::value::Value;
 
-pub(super) fn fmt(f: &mut fmt::Formatter, v: &dyn Value) -> Result<(), Error> {
-    sval::fmt::debug(f, v)?;
+pub(in crate::internal) fn fmt(f: &mut fmt::Formatter, v: &dyn Value) -> Result<(), Error> {
+    sval1_lib::fmt::debug(f, v)?;
     Ok(())
 }
 
-#[cfg(feature = "serde")]
-pub(super) fn serde<S>(s: S, v: &dyn Value) -> Result<S::Ok, S::Error>
+#[cfg(feature = "serde1")]
+pub(in crate::internal) fn serde<S>(s: S, v: &dyn Value) -> Result<S::Ok, S::Error>
 where
-    S: serde_lib::Serializer,
+    S: serde1_lib::Serializer,
 {
-    sval::serde::v1::serialize(s, v)
+    sval1_lib::serde::v1::serialize(s, v)
 }
 
-pub(super) fn cast<'v>(v: &dyn Value) -> Cast<'v> {
+pub(in crate::internal) fn cast<'v>(v: &dyn Value) -> Cast<'v> {
     struct CastStream<'v>(Cast<'v>);
 
-    impl<'v> sval::stream::Stream for CastStream<'v> {
-        fn u64(&mut self, v: u64) -> sval::stream::Result {
+    impl<'v> sval1_lib::stream::Stream for CastStream<'v> {
+        fn u64(&mut self, v: u64) -> sval1_lib::stream::Result {
             self.0 = Cast::Primitive(Primitive::from(v));
             Ok(())
         }
 
-        fn i64(&mut self, v: i64) -> sval::stream::Result {
+        fn i64(&mut self, v: i64) -> sval1_lib::stream::Result {
             self.0 = Cast::Primitive(Primitive::from(v));
             Ok(())
         }
 
-        fn f64(&mut self, v: f64) -> sval::stream::Result {
+        fn f64(&mut self, v: f64) -> sval1_lib::stream::Result {
             self.0 = Cast::Primitive(Primitive::from(v));
             Ok(())
         }
 
-        fn char(&mut self, v: char) -> sval::stream::Result {
+        fn char(&mut self, v: char) -> sval1_lib::stream::Result {
             self.0 = Cast::Primitive(Primitive::from(v));
             Ok(())
         }
 
-        fn bool(&mut self, v: bool) -> sval::stream::Result {
+        fn bool(&mut self, v: bool) -> sval1_lib::stream::Result {
             self.0 = Cast::Primitive(Primitive::from(v));
             Ok(())
         }
 
         #[cfg(feature = "std")]
-        fn str(&mut self, s: &str) -> sval::stream::Result {
+        fn str(&mut self, s: &str) -> sval1_lib::stream::Result {
             self.0 = Cast::String(s.into());
             Ok(())
         }
     }
 
     let mut cast = CastStream(Cast::Primitive(Primitive::None));
-    let _ = sval::stream(&mut cast, v);
+    let _ = sval1_lib::stream(&mut cast, v);
 
     cast.0
 }
 
 impl Error {
-    pub(crate) fn from_sval(_: sval::Error) -> Self {
+    pub(in crate::internal) fn from_sval1(_: sval1_lib::Error) -> Self {
         Error::msg("`sval` serialization failed")
     }
 
-    pub(crate) fn into_sval(self) -> sval::Error {
-        sval::Error::msg("`sval` serialization failed")
+    pub(in crate::internal) fn into_sval1(self) -> sval1_lib::Error {
+        sval1_lib::Error::msg("`sval` serialization failed")
     }
 }
 
@@ -186,22 +194,22 @@ mod tests {
     use crate::test::Token;
 
     #[test]
-    fn sval_capture() {
-        assert_eq!(ValueBag::capture_sval(&42u64).to_token(), Token::U64(42));
+    fn sval1_capture() {
+        assert_eq!(ValueBag::capture_sval1(&42u64).to_token(), Token::U64(42));
     }
 
     #[test]
-    fn sval_cast() {
+    fn sval1_cast() {
         assert_eq!(
             42u32,
-            ValueBag::capture_sval(&42u64)
+            ValueBag::capture_sval1(&42u64)
                 .to_u32()
                 .expect("invalid value")
         );
 
         assert_eq!(
             "a string",
-            ValueBag::capture_sval(&"a string")
+            ValueBag::capture_sval1(&"a string")
                 .to_borrowed_str()
                 .expect("invalid value")
         );
@@ -209,19 +217,19 @@ mod tests {
         #[cfg(feature = "std")]
         assert_eq!(
             "a string",
-            ValueBag::capture_sval(&"a string")
+            ValueBag::capture_sval1(&"a string")
                 .to_str()
                 .expect("invalid value")
         );
     }
 
     #[test]
-    fn sval_downcast() {
+    fn sval1_downcast() {
         #[derive(Debug, PartialEq, Eq)]
         struct Timestamp(usize);
 
         impl Value for Timestamp {
-            fn stream(&self, stream: &mut sval::value::Stream) -> sval::value::Result {
+            fn stream(&self, stream: &mut sval1_lib::value::Stream) -> sval1_lib::value::Result {
                 stream.u64(self.0 as u64)
             }
         }
@@ -230,50 +238,50 @@ mod tests {
 
         assert_eq!(
             &ts,
-            ValueBag::capture_sval(&ts)
+            ValueBag::capture_sval1(&ts)
                 .downcast_ref::<Timestamp>()
                 .expect("invalid value")
         );
     }
 
     #[test]
-    fn sval_structured() {
+    fn sval1_structured() {
         let value = ValueBag::from(42u64);
-        let expected = vec![sval::test::Token::Unsigned(42)];
+        let expected = vec![sval1_lib::test::Token::Unsigned(42)];
 
-        assert_eq!(sval::test::tokens(value), expected);
+        assert_eq!(sval1_lib::test::tokens(value), expected);
     }
 
     #[test]
-    fn sval_debug() {
+    fn sval1_debug() {
         struct TestSval;
 
         impl Value for TestSval {
-            fn stream(&self, stream: &mut sval::value::Stream) -> sval::value::Result {
+            fn stream(&self, stream: &mut sval1_lib::value::Stream) -> sval1_lib::value::Result {
                 stream.u64(42)
             }
         }
 
         assert_eq!(
             format!("{:04?}", 42u64),
-            format!("{:04?}", ValueBag::capture_sval(&TestSval)),
+            format!("{:04?}", ValueBag::capture_sval1(&TestSval)),
         );
     }
 
     #[test]
-    #[cfg(feature = "serde")]
-    fn sval_serde() {
-        use serde_test::{assert_ser_tokens, Token};
+    #[cfg(feature = "serde1")]
+    fn sval1_serde1() {
+        use serde1_test::{assert_ser_tokens, Token};
 
         struct TestSval;
 
         impl Value for TestSval {
-            fn stream(&self, stream: &mut sval::value::Stream) -> sval::value::Result {
+            fn stream(&self, stream: &mut sval1_lib::value::Stream) -> sval1_lib::value::Result {
                 stream.u64(42)
             }
         }
 
-        assert_ser_tokens(&ValueBag::capture_sval(&TestSval), &[Token::U64(42)]);
+        assert_ser_tokens(&ValueBag::capture_sval1(&TestSval), &[Token::U64(42)]);
     }
 
     #[cfg(feature = "std")]
@@ -283,10 +291,10 @@ mod tests {
         use crate::std::borrow::ToOwned;
 
         #[test]
-        fn sval_cast() {
+        fn sval1_cast() {
             assert_eq!(
                 "a string",
-                ValueBag::capture_sval(&"a string".to_owned())
+                ValueBag::capture_sval1(&"a string".to_owned())
                     .to_str()
                     .expect("invalid value")
             );
