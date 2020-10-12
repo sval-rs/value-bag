@@ -13,9 +13,9 @@ pub(super) mod cast;
 #[cfg(feature = "std")]
 pub(super) mod error;
 pub(super) mod fmt;
-#[cfg(feature = "serde")]
+#[cfg(feature = "serde1")]
 pub(super) mod serde;
-#[cfg(feature = "sval")]
+#[cfg(feature = "sval1")]
 pub(super) mod sval;
 
 /// A container for a structured value for a specific kind of visitor.
@@ -43,17 +43,17 @@ pub(super) enum Inner<'v> {
         type_id: Option<TypeId>,
     },
 
-    #[cfg(feature = "sval")]
+    #[cfg(feature = "sval1")]
     /// A structured value from `sval`.
-    Sval {
-        value: &'v dyn sval::Value,
+    Sval1 {
+        value: &'v dyn sval::v1::Value,
         type_id: Option<TypeId>,
     },
 
-    #[cfg(feature = "serde")]
+    #[cfg(feature = "serde1")]
     /// A structured value from `serde`.
-    Serde {
-        value: &'v dyn serde::Serialize,
+    Serde1 {
+        value: &'v dyn serde::v1::Serialize,
         type_id: Option<TypeId>,
     },
 }
@@ -70,11 +70,11 @@ impl<'v> Inner<'v> {
             #[cfg(feature = "std")]
             Inner::Error { value, .. } => visitor.error(value),
 
-            #[cfg(feature = "sval")]
-            Inner::Sval { value, .. } => visitor.sval(value),
+            #[cfg(feature = "sval1")]
+            Inner::Sval1 { value, .. } => visitor.sval1(value),
 
-            #[cfg(feature = "serde")]
-            Inner::Serde { value, .. } => visitor.serde(value),
+            #[cfg(feature = "serde1")]
+            Inner::Serde1 { value, .. } => visitor.serde1(value),
         }
     }
 }
@@ -102,11 +102,11 @@ pub(super) trait Visitor<'v> {
     #[cfg(feature = "std")]
     fn error(&mut self, v: &dyn error::Error) -> Result<(), Error>;
 
-    #[cfg(feature = "sval")]
-    fn sval(&mut self, v: &dyn sval::Value) -> Result<(), Error>;
+    #[cfg(feature = "sval1")]
+    fn sval1(&mut self, v: &dyn sval::v1::Value) -> Result<(), Error>;
 
-    #[cfg(feature = "serde")]
-    fn serde(&mut self, v: &dyn serde::Serialize) -> Result<(), Error>;
+    #[cfg(feature = "serde1")]
+    fn serde1(&mut self, v: &dyn serde::v1::Serialize) -> Result<(), Error>;
 }
 
 /// A captured primitive value.

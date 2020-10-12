@@ -35,11 +35,23 @@ pub enum Token {
     #[cfg(feature = "std")]
     Error,
 
-    #[cfg(feature = "sval")]
-    Sval,
+    #[cfg(feature = "sval1")]
+    Sval(Sval),
 
-    #[cfg(feature = "serde")]
-    Serde,
+    #[cfg(feature = "serde1")]
+    Serde(Serde),
+}
+
+#[derive(Debug, PartialEq)]
+#[non_exhaustive]
+pub struct Sval {
+    pub version: u32,
+}
+
+#[derive(Debug, PartialEq)]
+#[non_exhaustive]
+pub struct Serde {
+    pub version: u32,
 }
 
 #[cfg(any(test, feature = "test"))]
@@ -99,15 +111,15 @@ impl<'v> ValueBag<'v> {
                 Ok(())
             }
 
-            #[cfg(feature = "sval")]
-            fn sval(&mut self, _: &dyn internal::sval::Value) -> Result<(), Error> {
-                self.0 = Some(Token::Sval);
+            #[cfg(feature = "sval1")]
+            fn sval1(&mut self, _: &dyn internal::sval::v1::Value) -> Result<(), Error> {
+                self.0 = Some(Token::Sval(Sval { version: 1 }));
                 Ok(())
             }
 
-            #[cfg(feature = "serde")]
-            fn serde(&mut self, _: &dyn internal::serde::Serialize) -> Result<(), Error> {
-                self.0 = Some(Token::Serde);
+            #[cfg(feature = "serde1")]
+            fn serde1(&mut self, _: &dyn internal::serde::v1::Serialize) -> Result<(), Error> {
+                self.0 = Some(Token::Serde(Serde { version: 1 }));
                 Ok(())
             }
         }

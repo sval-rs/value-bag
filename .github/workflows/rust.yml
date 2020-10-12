@@ -54,13 +54,13 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --features sval
+          args: --features sval1
 
       - name: With serde
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --features serde
+          args: --features serde1
 
   embedded:
     name: Build (embedded)

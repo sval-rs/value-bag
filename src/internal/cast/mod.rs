@@ -207,13 +207,13 @@ impl<'v> ValueBag<'v> {
                 type_id: Some(type_id),
                 value,
             } if type_id == target => Some(unsafe { &*(value as *const _ as *const T) }),
-            #[cfg(feature = "sval")]
-            Inner::Sval {
+            #[cfg(feature = "sval1")]
+            Inner::Sval1 {
                 type_id: Some(type_id),
                 value,
             } if type_id == target => Some(unsafe { &*(value as *const _ as *const T) }),
-            #[cfg(feature = "serde")]
-            Inner::Serde {
+            #[cfg(feature = "serde1")]
+            Inner::Serde1 {
                 type_id: Some(type_id),
                 value,
             } if type_id == target => Some(unsafe { &*(value as *const _ as *const T) }),
@@ -283,15 +283,15 @@ impl<'v> Inner<'v> {
                 Ok(())
             }
 
-            #[cfg(feature = "sval")]
-            fn sval(&mut self, v: &dyn super::sval::Value) -> Result<(), Error> {
-                self.0 = super::sval::cast(v);
+            #[cfg(feature = "sval1")]
+            fn sval1(&mut self, v: &dyn super::sval::v1::Value) -> Result<(), Error> {
+                self.0 = super::sval::v1::cast(v);
                 Ok(())
             }
 
-            #[cfg(feature = "serde")]
-            fn serde(&mut self, v: &dyn super::serde::Serialize) -> Result<(), Error> {
-                self.0 = super::serde::cast(v);
+            #[cfg(feature = "serde1")]
+            fn serde1(&mut self, v: &dyn super::serde::v1::Serialize) -> Result<(), Error> {
+                self.0 = super::serde::v1::cast(v);
                 Ok(())
             }
         }
@@ -307,7 +307,7 @@ impl<'v> Inner<'v> {
     }
 }
 
-pub(super) enum Cast<'v> {
+pub(in crate::internal) enum Cast<'v> {
     Primitive(Primitive<'v>),
     #[cfg(feature = "std")]
     String(String),
