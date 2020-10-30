@@ -39,6 +39,52 @@ impl<'v> ValueBag<'v> {
             },
         })
     }
+
+    /// Get a value from a debuggable type without capturing support.
+    pub fn from_debug<T>(value: &'v T) -> Self
+    where
+        T: Debug,
+    {
+        ValueBag {
+            inner: Inner::Debug {
+                value,
+                type_id: None,
+            }
+        }
+    }
+
+    /// Get a value from a displayable type without capturing support.
+    pub fn from_display<T>(value: &'v T) -> Self
+    where
+        T: Display,
+    {
+        ValueBag {
+            inner: Inner::Display {
+                value,
+                type_id: None,
+            }
+        }
+    }
+
+    /// Get a value from a debuggable type without capturing support.
+    pub fn from_dyn_debug(value: &'v dyn Debug) -> Self {
+        ValueBag {
+            inner: Inner::Debug {
+                value,
+                type_id: None,
+            }
+        }
+    }
+
+    /// Get a value from a displayable type without capturing support.
+    pub fn from_dyn_display(value: &'v dyn Display) -> Self {
+        ValueBag {
+            inner: Inner::Display {
+                value,
+                type_id: None,
+            }
+        }
+    }
 }
 
 impl<'s, 'f> Slot<'s, 'f> {
@@ -241,28 +287,6 @@ impl<'v> Display for ValueBag<'v> {
     }
 }
 
-impl<'v> From<&'v (dyn Debug)> for ValueBag<'v> {
-    fn from(value: &'v (dyn Debug)) -> ValueBag<'v> {
-        ValueBag {
-            inner: Inner::Debug {
-                value,
-                type_id: None,
-            },
-        }
-    }
-}
-
-impl<'v> From<&'v (dyn Display)> for ValueBag<'v> {
-    fn from(value: &'v (dyn Display)) -> ValueBag<'v> {
-        ValueBag {
-            inner: Inner::Display {
-                value,
-                type_id: None,
-            },
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -285,7 +309,7 @@ mod tests {
     #[test]
     fn fmt_capture_args() {
         assert_eq!(
-            ValueBag::from(&format_args!("a {}", "value") as &dyn Debug).to_string(),
+            ValueBag::from_debug(&format_args!("a {}", "value")).to_string(),
             "a value"
         );
     }

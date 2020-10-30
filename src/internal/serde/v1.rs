@@ -26,6 +26,19 @@ impl<'v> ValueBag<'v> {
             },
         })
     }
+
+    /// Get a value from a structured type without capturing support.
+    pub fn from_serde1<T>(value: &'v T) -> Self
+    where
+        T: Serialize,
+    {
+        ValueBag {
+            inner: Inner::Serde1 {
+                value,
+                type_id: None,
+            }
+        }
+    }
 }
 
 impl<'s, 'f> Slot<'s, 'f> {
@@ -159,17 +172,6 @@ impl<'v> serde1_lib::Serialize for ValueBag<'v> {
         self.visit(&mut visitor).map_err(|e| S::Error::custom(e))?;
 
         visitor.into_result()
-    }
-}
-
-impl<'v> From<&'v (dyn Serialize)> for ValueBag<'v> {
-    fn from(value: &'v (dyn Serialize)) -> ValueBag<'v> {
-        ValueBag {
-            inner: Inner::Serde1 {
-                value,
-                type_id: None,
-            },
-        }
     }
 }
 

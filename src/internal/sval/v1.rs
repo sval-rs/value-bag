@@ -29,6 +29,29 @@ impl<'v> ValueBag<'v> {
             },
         })
     }
+
+    /// Get a value from a structured type without capturing support.
+    pub fn from_sval1<T>(value: &'v T) -> Self
+    where
+        T: Value,
+    {
+        ValueBag {
+            inner: Inner::Sval1 {
+                value,
+                type_id: None,
+            }
+        }
+    }
+
+    /// Get a value from an erased structured type.
+    pub fn from_dyn_sval1(value: &'v dyn Value) -> Self {
+        ValueBag {
+            inner: Inner::Sval1 {
+                value,
+                type_id: None,
+            }
+        }
+    }
 }
 
 impl<'s, 'f> Slot<'s, 'f> {
@@ -44,6 +67,11 @@ impl<'s, 'f> Slot<'s, 'f> {
         T: Value,
     {
         self.fill(|visitor| visitor.sval1(&value))
+    }
+
+    /// Fill the slot with a structured value.
+    pub fn fill_dyn_sval1(&mut self, value: &dyn Value) -> Result<(), Error> {
+        self.fill(|visitor| visitor.sval1(value))
     }
 }
 
@@ -107,17 +135,6 @@ impl<'v> Value for ValueBag<'v> {
             .map_err(Error::into_sval1)?;
 
         Ok(())
-    }
-}
-
-impl<'v> From<&'v (dyn Value)> for ValueBag<'v> {
-    fn from(value: &'v (dyn Value)) -> ValueBag<'v> {
-        ValueBag {
-            inner: Inner::Sval1 {
-                value,
-                type_id: None,
-            },
-        }
     }
 }
 

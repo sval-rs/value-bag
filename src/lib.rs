@@ -64,7 +64,7 @@ use self::internal::{Inner, Primitive, Visitor};
 /// # use std::fmt::Debug;
 /// use value_bag::ValueBag;
 ///
-/// let value = ValueBag::from(&42i32 as &dyn Debug);
+/// let value = ValueBag::from_debug(&42i32);
 ///
 /// assert_eq!(None, value.to_i32());
 /// ```
