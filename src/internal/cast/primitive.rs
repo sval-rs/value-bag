@@ -240,7 +240,47 @@ pub(super) fn from_any<'v, T: 'static>(value: &'v T) -> Option<Primitive<'v>> {
     // When we're not on `nightly` and aren't on a supported arch, we can't do capturing
     #[cfg(value_bag_capture_fallback)]
     {
-        let _ = value;
-        None
+        macro_rules! type_ids {
+            ($($ty:ty,)*) => {
+                |value| {
+                    $(
+                        if let Some(value) = (value as &dyn std::any::Any).downcast_ref::<$ty>() {
+                            return Some(Primitive::from(*value));
+                        }
+                    )*
+                    $(
+                        if let Some(value) = (value as &dyn std::any::Any).downcast_ref::<Option<$ty>>() {
+                            if let Some(value) = value {
+                                return Some(Primitive::from(*value));
+                            } else {
+                                return Some(Primitive::None);
+                            }
+                        }
+                    )*
+
+                    None
+                }
+            };
+        }
+
+        let type_ids = type_ids![
+            usize,
+            u8,
+            u16,
+            u32,
+            u64,
+            isize,
+            i8,
+            i16,
+            i32,
+            i64,
+            f32,
+            f64,
+            char,
+            bool,
+            &'static str,
+        ];
+
+        (type_ids)(value)
     }
 }
