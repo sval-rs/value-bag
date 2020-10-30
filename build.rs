@@ -2,7 +2,11 @@ use std::{env, process::Command, str};
 
 fn main() {
     if rustc_is_nightly().unwrap_or(false) {
-        println!("cargo:rustc-cfg=value_bag_const_type_id");
+        println!("cargo:rustc-cfg=value_bag_capture_const_type_id");
+    } else if target_arch_is_any(&["x86_64", "aarch64"]) {
+        println!("cargo:rustc-cfg=value_bag_capture_ctor");
+    } else {
+        println!("cargo:rustc-cfg=value_bag_capture_fallback");
     }
 }
 
@@ -23,4 +27,11 @@ fn rustc_is_nightly() -> Option<bool> {
     };
 
     Some(version.contains("-nightly"))
+}
+
+fn target_arch_is_any(targets: &[&str]) -> bool {
+    match env::var("CARGO_CFG_TARGET_ARCH") {
+        Ok(arch) if targets.contains(&&*arch) => true,
+        _ => false,
+    }
 }

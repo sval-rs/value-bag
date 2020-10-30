@@ -1,6 +1,6 @@
 //! Structured values.
 
-#![cfg_attr(value_bag_const_type_id, feature(const_type_id))]
+#![cfg_attr(value_bag_capture_const_type_id, feature(const_type_id))]
 #![no_std]
 
 #[cfg(any(feature = "std", test))]
