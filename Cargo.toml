@@ -77,3 +77,9 @@ package = "sval"
 [dev-dependencies.serde1_test]
 version = "1"
 package = "serde_test"
+
+[dev-dependencies.wasm-bindgen]
+version = "0.2"
+
+[dev-dependencies.wasm-bindgen-test]
+version = "0.3"

@@ -64,11 +64,18 @@ pub use self::error::Error;
 
 #[cfg(test)]
 mod tests {
+    #[cfg(target_arch = "wasm32")]
+    use wasm_bindgen_test::*;
+
+    #[cfg(target_arch = "wasm32")]
+    wasm_bindgen_test_configure!(run_in_browser);
+
     use super::*;
 
     use crate::std::{io, string::ToString};
 
     #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn error_capture() {
         let err = io::Error::from(io::ErrorKind::Other);
 
@@ -82,6 +89,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn error_downcast() {
         let err = io::Error::from(io::ErrorKind::Other);
 

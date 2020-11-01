@@ -40,12 +40,19 @@ impl_from_primitive![
 
 #[cfg(test)]
 mod tests {
+    #[cfg(target_arch = "wasm32")]
+    use wasm_bindgen_test::*;
+
+    #[cfg(target_arch = "wasm32")]
+    wasm_bindgen_test_configure!(run_in_browser);
+
     use crate::{
         std::{borrow::ToOwned, string::ToString},
         test::{IntoValueBag, Token},
     };
 
     #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn test_into_display() {
         assert_eq!(42u64.into_value_bag().to_string(), "42");
         assert_eq!(42i64.into_value_bag().to_string(), "42");
@@ -60,6 +67,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn test_into_structured() {
         assert_eq!(42u64.into_value_bag().to_token(), Token::U64(42));
         assert_eq!(42i64.into_value_bag().to_token(), Token::I64(42));

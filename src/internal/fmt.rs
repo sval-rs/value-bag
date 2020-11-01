@@ -289,6 +289,12 @@ impl<'v> Display for ValueBag<'v> {
 
 #[cfg(test)]
 mod tests {
+    #[cfg(target_arch = "wasm32")]
+    use wasm_bindgen_test::*;
+
+    #[cfg(target_arch = "wasm32")]
+    wasm_bindgen_test_configure!(run_in_browser);
+
     use super::*;
     use crate::{
         std::string::ToString,
@@ -296,6 +302,7 @@ mod tests {
     };
 
     #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn fmt_capture() {
         assert_eq!(ValueBag::capture_debug(&1u16).to_token(), Token::U64(1));
         assert_eq!(ValueBag::capture_display(&1u16).to_token(), Token::U64(1));
@@ -307,6 +314,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn fmt_capture_args() {
         assert_eq!(
             ValueBag::from_debug(&format_args!("a {}", "value")).to_string(),
@@ -315,6 +323,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn fmt_cast() {
         assert_eq!(
             42u32,
@@ -332,6 +341,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn fmt_downcast() {
         #[derive(Debug, PartialEq, Eq)]
         struct Timestamp(usize);
@@ -360,6 +370,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn fmt_debug() {
         assert_eq!(
             format!("{:?}", "a string"),
@@ -373,6 +384,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn fmt_display() {
         assert_eq!(
             format!("{}", "a string"),
