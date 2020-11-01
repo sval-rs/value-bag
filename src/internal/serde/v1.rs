@@ -147,7 +147,7 @@ impl<'v> serde1_lib::Serialize for ValueBag<'v> {
             }
 
             #[cfg(feature = "std")]
-            fn error(&mut self, v: &dyn std::error::Error) -> Result<(), Error> {
+            fn error(&mut self, v: &(dyn std::error::Error + 'static)) -> Result<(), Error> {
                 self.result = Some(self.serializer()?.collect_str(v));
                 self.result()
             }
@@ -407,15 +407,23 @@ impl serde1_lib::ser::StdError for InvalidCast {}
 
 #[cfg(test)]
 mod tests {
+    #[cfg(target_arch = "wasm32")]
+    use wasm_bindgen_test::*;
+
+    #[cfg(target_arch = "wasm32")]
+    wasm_bindgen_test_configure!(run_in_browser);
+
     use super::*;
     use crate::test::Token;
 
     #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn serde1_capture() {
         assert_eq!(ValueBag::capture_serde1(&42u64).to_token(), Token::U64(42));
     }
 
     #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn serde1_cast() {
         assert_eq!(
             42u32,
@@ -441,6 +449,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn serde1_downcast() {
         #[derive(Debug, PartialEq, Eq)]
         struct Timestamp(usize);
@@ -465,6 +474,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn serde1_structured() {
         use serde1_test::{assert_ser_tokens, Token};
 
@@ -472,6 +482,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn serde1_debug() {
         struct TestSerde;
 
@@ -491,6 +502,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     #[cfg(feature = "sval1")]
     fn serde1_sval() {
         use sval1_lib::test::Token;
@@ -519,6 +531,7 @@ mod tests {
         use crate::std::borrow::ToOwned;
 
         #[test]
+        #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
         fn serde1_cast() {
             assert_eq!(
                 "a string",

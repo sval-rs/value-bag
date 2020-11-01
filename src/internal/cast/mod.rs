@@ -405,9 +405,16 @@ mod std_support {
 
     #[cfg(test)]
     mod tests {
+        #[cfg(target_arch = "wasm32")]
+        use wasm_bindgen_test::*;
+
+        #[cfg(target_arch = "wasm32")]
+        wasm_bindgen_test_configure!(run_in_browser);
+
         use crate::{std::borrow::ToOwned, test::IntoValueBag};
 
         #[test]
+        #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
         fn primitive_cast() {
             let short_lived = "a string".to_owned();
             assert_eq!(
@@ -434,9 +441,16 @@ mod std_support {
 
 #[cfg(test)]
 mod tests {
+    #[cfg(target_arch = "wasm32")]
+    use wasm_bindgen_test::*;
+
+    #[cfg(target_arch = "wasm32")]
+    wasm_bindgen_test_configure!(run_in_browser);
+
     use crate::test::IntoValueBag;
 
     #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn primitive_cast() {
         assert_eq!(
             "a string",

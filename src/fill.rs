@@ -83,10 +83,17 @@ impl<'s, 'f> Slot<'s, 'f> {
 
 #[cfg(test)]
 mod tests {
+    #[cfg(target_arch = "wasm32")]
+    use wasm_bindgen_test::*;
+
+    #[cfg(target_arch = "wasm32")]
+    wasm_bindgen_test_configure!(run_in_browser);
+
     use super::*;
     use crate::std::string::ToString;
 
     #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn fill_value_borrowed() {
         struct TestFill;
 
@@ -102,6 +109,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn fill_value_owned() {
         struct TestFill;
 
@@ -130,6 +138,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn fill_cast() {
         struct TestFill;
 
@@ -148,6 +157,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn fill_debug() {
         struct TestFill;
 

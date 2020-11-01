@@ -113,8 +113,8 @@ impl<'v> Value for ValueBag<'v> {
             }
 
             #[cfg(feature = "std")]
-            fn error(&mut self, v: &dyn std::error::Error) -> Result<(), Error> {
-                Value::stream(&sval1_lib::stream::Source::from(v), self.0)
+            fn error(&mut self, v: &(dyn std::error::Error + 'static)) -> Result<(), Error> {
+                Value::stream(v, self.0)
                     .map_err(Error::from_sval1)
             }
 
@@ -207,15 +207,23 @@ impl Error {
 
 #[cfg(test)]
 mod tests {
+    #[cfg(target_arch = "wasm32")]
+    use wasm_bindgen_test::*;
+
+    #[cfg(target_arch = "wasm32")]
+    wasm_bindgen_test_configure!(run_in_browser);
+
     use super::*;
     use crate::test::Token;
 
     #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn sval1_capture() {
         assert_eq!(ValueBag::capture_sval1(&42u64).to_token(), Token::U64(42));
     }
 
     #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn sval1_cast() {
         assert_eq!(
             42u32,
@@ -241,6 +249,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn sval1_downcast() {
         #[derive(Debug, PartialEq, Eq)]
         struct Timestamp(usize);
@@ -262,6 +271,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn sval1_structured() {
         let value = ValueBag::from(42u64);
         let expected = vec![sval1_lib::test::Token::Unsigned(42)];
@@ -270,6 +280,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn sval1_debug() {
         struct TestSval;
 
@@ -286,6 +297,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     #[cfg(feature = "serde1")]
     fn sval1_serde1() {
         use serde1_test::{assert_ser_tokens, Token};
@@ -308,6 +320,7 @@ mod tests {
         use crate::std::borrow::ToOwned;
 
         #[test]
+        #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
         fn sval1_cast() {
             assert_eq!(
                 "a string",
