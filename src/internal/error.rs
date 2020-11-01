@@ -49,7 +49,7 @@ impl<'s, 'f> Slot<'s, 'f> {
     /// Calling more than a single `fill` method on this slot will panic.
     pub fn fill_error<T>(&mut self, value: T) -> Result<(), crate::Error>
     where
-        T: error::Error,
+        T: error::Error + 'static,
     {
         self.fill(|visitor| visitor.error(&value))
     }

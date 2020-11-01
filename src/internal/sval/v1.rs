@@ -113,8 +113,8 @@ impl<'v> Value for ValueBag<'v> {
             }
 
             #[cfg(feature = "std")]
-            fn error(&mut self, v: &dyn std::error::Error) -> Result<(), Error> {
-                Value::stream(&sval1_lib::stream::Source::from(v), self.0)
+            fn error(&mut self, v: &(dyn std::error::Error + 'static)) -> Result<(), Error> {
+                Value::stream(v, self.0)
                     .map_err(Error::from_sval1)
             }
 

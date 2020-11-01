@@ -1,6 +1,6 @@
 [package]
 name = "value-bag"
-version = "1.0.0-alpha.3"
+version = "1.0.0-alpha.4"
 authors = ["Ashley Mannix <ashleymannix@live.com.au>"]
 edition = "2018"
 license = "Apache-2.0 OR MIT"
@@ -42,7 +42,7 @@ serde1 = [
 test = ["std"]
 
 [dependencies.sval1_lib]
-version = "1.0.0-alpha.3"
+version = "1.0.0-alpha.4"
 optional = true
 default-features = false
 features = ["fmt"]
@@ -70,7 +70,7 @@ package = "erased-serde"
 version = "0.1"
 
 [dev-dependencies.sval1_lib]
-version = "1.0.0-alpha.3"
+version = "1.0.0-alpha.4"
 features = ["test"]
 package = "sval"
 

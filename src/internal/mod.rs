@@ -100,7 +100,7 @@ pub(super) trait Visitor<'v> {
     fn none(&mut self) -> Result<(), Error>;
 
     #[cfg(feature = "std")]
-    fn error(&mut self, v: &dyn error::Error) -> Result<(), Error>;
+    fn error(&mut self, v: &(dyn error::Error + 'static)) -> Result<(), Error>;
 
     #[cfg(feature = "sval1")]
     fn sval1(&mut self, v: &dyn sval::v1::Value) -> Result<(), Error>;
