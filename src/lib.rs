@@ -1,6 +1,6 @@
 //! Structured values.
 
-#![cfg_attr(value_bag_const_type_id, feature(const_type_id))]
+#![cfg_attr(value_bag_capture_const_type_id, feature(const_type_id))]
 #![no_std]
 
 #[cfg(any(feature = "std", test))]
@@ -64,7 +64,7 @@ use self::internal::{Inner, Primitive, Visitor};
 /// # use std::fmt::Debug;
 /// use value_bag::ValueBag;
 ///
-/// let value = ValueBag::from(&42i32 as &dyn Debug);
+/// let value = ValueBag::from_debug(&42i32);
 ///
 /// assert_eq!(None, value.to_i32());
 /// ```

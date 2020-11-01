@@ -39,7 +39,7 @@ pub(super) enum Inner<'v> {
     #[cfg(feature = "std")]
     /// An error.
     Error {
-        value: &'v dyn error::Error,
+        value: &'v (dyn error::Error + 'static),
         type_id: Option<TypeId>,
     },
 

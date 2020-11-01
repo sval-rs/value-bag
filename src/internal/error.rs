@@ -1,6 +1,6 @@
 use crate::{
     fill::Slot,
-    std::{error, fmt},
+    std::error,
     ValueBag,
 };
 
@@ -20,32 +20,20 @@ impl<'v> ValueBag<'v> {
         }
     }
 
+    /// Get a value from an erased value.
+    pub fn from_dyn_error(value: &'v (dyn error::Error + 'static)) -> Self {
+        ValueBag {
+            inner: Inner::Error {
+                value,
+                type_id: None,
+            }
+        }
+    }
+
     /// Try get an error from this value.
-    pub fn to_error<'a>(&'a self) -> Option<impl Error + 'a> {
-        struct RefError<'a>(&'a dyn Error);
-
-        impl<'a> Error for RefError<'a> {
-            fn source(&self) -> Option<&(dyn Error + 'static)> {
-                self.0.source()
-            }
-
-            // NOTE: Once backtraces are stable, add them here too
-        }
-
-        impl<'a> fmt::Debug for RefError<'a> {
-            fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-                fmt::Debug::fmt(self.0, f)
-            }
-        }
-
-        impl<'a> fmt::Display for RefError<'a> {
-            fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-                fmt::Display::fmt(self.0, f)
-            }
-        }
-
+    pub fn to_error<'a>(&'a self) -> Option<&(dyn Error + 'static)> {
         match self.inner {
-            Inner::Error { value, .. } => Some(RefError(value)),
+            Inner::Error { value, .. } => Some(value),
             _ => None,
         }
     }
@@ -65,20 +53,14 @@ impl<'s, 'f> Slot<'s, 'f> {
     {
         self.fill(|visitor| visitor.error(&value))
     }
+
+    /// Fill the slot with an error.
+    pub fn fill_dyn_error(&mut self, value: &(dyn error::Error + 'static)) -> Result<(), crate::Error> {
+        self.fill(|visitor| visitor.error(value))
+    }
 }
 
 pub use self::error::Error;
-
-impl<'v> From<&'v (dyn error::Error)> for ValueBag<'v> {
-    fn from(value: &'v (dyn error::Error)) -> ValueBag<'v> {
-        ValueBag {
-            inner: Inner::Error {
-                value,
-                type_id: None,
-            },
-        }
-    }
-}
 
 #[cfg(test)]
 mod tests {

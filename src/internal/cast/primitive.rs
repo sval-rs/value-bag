@@ -8,15 +8,9 @@ the `'static` bound altogether.
 
 use crate::internal::Primitive;
 
-// Use consts to match a type with a conversion fn
 pub(super) fn from_any<'v, T: 'static>(value: &'v T) -> Option<Primitive<'v>> {
-    /*
-    When the `const_type_id` feature is available, we can use it to determine
-    a function to run at compile-time. It's like an emulated form of specialization.
-
-    This approach is zero-cost at runtime.
-    */
-    #[cfg(value_bag_const_type_id)]
+    // When we're on `nightly`, we can use const type ids
+    #[cfg(value_bag_capture_const_type_id)]
     {
         use crate::std::any::TypeId;
 
@@ -82,13 +76,8 @@ pub(super) fn from_any<'v, T: 'static>(value: &'v T) -> Option<Primitive<'v>> {
         value.to_primitive()
     }
 
-    /*
-    When the `const_type_id` feature is not available, we create a static
-    list of sorted type ids to check through a binary search.
-
-    This approach has a small cost at runtime.
-    */
-    #[cfg(not(value_bag_const_type_id))]
+    // When we're not on `nightly`, use the ctor crate
+    #[cfg(value_bag_capture_ctor)]
     {
         #![allow(unused_unsafe)]
 
@@ -246,5 +235,52 @@ pub(super) fn from_any<'v, T: 'static>(value: &'v T) -> Option<Primitive<'v>> {
         } else {
             None
         }
+    }
+
+    // When we're not on `nightly` and aren't on a supported arch, we can't do capturing
+    #[cfg(value_bag_capture_fallback)]
+    {
+        macro_rules! type_ids {
+            ($($ty:ty,)*) => {
+                |value| {
+                    $(
+                        if let Some(value) = (value as &dyn std::any::Any).downcast_ref::<$ty>() {
+                            return Some(Primitive::from(*value));
+                        }
+                    )*
+                    $(
+                        if let Some(value) = (value as &dyn std::any::Any).downcast_ref::<Option<$ty>>() {
+                            if let Some(value) = value {
+                                return Some(Primitive::from(*value));
+                            } else {
+                                return Some(Primitive::None);
+                            }
+                        }
+                    )*
+
+                    None
+                }
+            };
+        }
+
+        let type_ids = type_ids![
+            usize,
+            u8,
+            u16,
+            u32,
+            u64,
+            isize,
+            i8,
+            i16,
+            i32,
+            i64,
+            f32,
+            f64,
+            char,
+            bool,
+            &'static str,
+        ];
+
+        (type_ids)(value)
     }
 }
