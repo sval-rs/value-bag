@@ -49,6 +49,7 @@ println!("{:?}", bag);
 The `value-bag` crate is no-std by default, and offers the following Cargo features:
 
 - `std`: Enable support for the standard library. This allows more types to be captured in a `ValueBag`.
+- `error`: Enable support for capturing `std::error::Error`s. Implies `std`.
 - `sval`: Enable support for using the [`sval`](https://github.com/sval-rs/sval) serialization framework for inspecting `ValueBag`s by implementing `sval::value::Value`. Implies `sval1`.
     - `sval1`: Enable support for the stable `1.x.x` version of `sval`.
 - `serde`: Enable support for using the [`serde`](https://github.com/serde-rs/serde) serialization framework for inspecting `ValueBag`s by implementing `serde::Serialize`. Implies `std` and `serde1`.
