@@ -146,7 +146,7 @@ impl<'v> serde1_lib::Serialize for ValueBag<'v> {
                 self.result()
             }
 
-            #[cfg(feature = "std")]
+            #[cfg(feature = "error")]
             fn error(&mut self, v: &(dyn std::error::Error + 'static)) -> Result<(), Error> {
                 self.result = Some(self.serializer()?.collect_str(v));
                 self.result()

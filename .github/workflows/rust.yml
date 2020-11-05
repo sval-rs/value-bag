@@ -95,6 +95,38 @@ jobs:
           command: build
           args: -Z avoid-dev-deps --target thumbv6m-none-eabi --features sval
 
+  sample:
+    name: Build (no dev deps)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: nightly
+          override: true
+
+      - name: Default features
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: -Z avoid-dev-deps
+
+      - name: No features
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: -Z avoid-dev-deps --no-default-features
+
+      - name: All features
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: -Z avoid-dev-deps --all-features
+
   wasm:
     name: Test (wasm)
     runs-on: ubuntu-latest
