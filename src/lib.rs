@@ -1,6 +1,7 @@
 //! Structured values.
 
 #![cfg_attr(value_bag_capture_const_type_id, feature(const_type_id))]
+#![doc(html_root_url = "https://docs.rs/value-bag/1.0.0-alpha.5")]
 #![no_std]
 
 #[cfg(any(feature = "std", test))]
