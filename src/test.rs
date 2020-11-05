@@ -32,7 +32,7 @@ pub enum Token {
     Str(String),
     None,
 
-    #[cfg(feature = "std")]
+    #[cfg(feature = "error")]
     Error,
 
     #[cfg(feature = "sval1")]
@@ -105,7 +105,7 @@ impl<'v> ValueBag<'v> {
                 Ok(())
             }
 
-            #[cfg(feature = "std")]
+            #[cfg(feature = "error")]
             fn error(&mut self, _: &dyn internal::error::Error) -> Result<(), Error> {
                 self.0 = Some(Token::Error);
                 Ok(())

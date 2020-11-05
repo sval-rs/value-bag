@@ -202,7 +202,7 @@ impl<'v> ValueBag<'v> {
                 type_id: Some(type_id),
                 value,
             } if type_id == target => Some(unsafe { &*(value as *const _ as *const T) }),
-            #[cfg(feature = "std")]
+            #[cfg(feature = "error")]
             Inner::Error {
                 type_id: Some(type_id),
                 value,
@@ -278,7 +278,7 @@ impl<'v> Inner<'v> {
                 Ok(())
             }
 
-            #[cfg(feature = "std")]
+            #[cfg(feature = "error")]
             fn error(&mut self, _: &dyn super::error::Error) -> Result<(), Error> {
                 Ok(())
             }

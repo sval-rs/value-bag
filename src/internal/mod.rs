@@ -10,7 +10,7 @@ use crate::{
 };
 
 pub(super) mod cast;
-#[cfg(feature = "std")]
+#[cfg(feature = "error")]
 pub(super) mod error;
 pub(super) mod fmt;
 #[cfg(feature = "serde1")]
@@ -36,7 +36,7 @@ pub(super) enum Inner<'v> {
         type_id: Option<TypeId>,
     },
 
-    #[cfg(feature = "std")]
+    #[cfg(feature = "error")]
     /// An error.
     Error {
         value: &'v (dyn error::Error + 'static),
@@ -67,7 +67,7 @@ impl<'v> Inner<'v> {
             Inner::Debug { value, .. } => visitor.debug(value),
             Inner::Display { value, .. } => visitor.display(value),
 
-            #[cfg(feature = "std")]
+            #[cfg(feature = "error")]
             Inner::Error { value, .. } => visitor.error(value),
 
             #[cfg(feature = "sval1")]
@@ -99,7 +99,7 @@ pub(super) trait Visitor<'v> {
 
     fn none(&mut self) -> Result<(), Error>;
 
-    #[cfg(feature = "std")]
+    #[cfg(feature = "error")]
     fn error(&mut self, v: &(dyn error::Error + 'static)) -> Result<(), Error>;
 
     #[cfg(feature = "sval1")]

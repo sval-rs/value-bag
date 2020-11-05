@@ -43,19 +43,19 @@ jobs:
         with:
           command: test
           args: --all-features
-      
-      - name: With test
-        uses: actions-rs/cargo@v1
-        with:
-          command: check
-          args: --features test
 
       - name: With std
         uses: actions-rs/cargo@v1
         with:
           command: test
           args: --features std
-      
+
+      - name: With error
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --features error
+
       - name: With sval
         uses: actions-rs/cargo@v1
         with:
@@ -94,6 +94,44 @@ jobs:
         with:
           command: build
           args: -Z avoid-dev-deps --target thumbv6m-none-eabi --features sval
+
+  sample:
+    name: Build (no dev deps)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: nightly
+          override: true
+
+      - name: Default features
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: -Z avoid-dev-deps
+
+      - name: No features
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: -Z avoid-dev-deps --no-default-features
+
+      - name: All features
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: -Z avoid-dev-deps --all-features
+
+      - name: With test
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: -Z avoid-dev-deps --features test
 
   wasm:
     name: Test (wasm)
