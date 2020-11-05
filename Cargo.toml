@@ -41,7 +41,7 @@ serde1 = [
 # Add support for `std::error`
 error = [
     "std",
-    # "sval1_lib/std"
+    "sval1_lib/std"
 ]
 
 # Add support for converting value bags into test tokens
