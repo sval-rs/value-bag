@@ -96,6 +96,7 @@ impl<'v> Internal<'v> {
     pub(super) fn internal_visit(self, visitor: &mut dyn InternalVisitor<'v>) -> Result<(), Error> {
         match self {
             Internal::Primitive { value } => value.internal_visit(visitor),
+
             Internal::Fill { value } => value.fill(&mut Slot::new(visitor)),
 
             Internal::Debug { value, .. } => visitor.debug(value),

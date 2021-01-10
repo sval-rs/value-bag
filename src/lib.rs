@@ -82,21 +82,23 @@ pub use self::error::Error;
 /// The `Fill` trait is a way to bridge APIs that may not be directly
 /// compatible with other constructor methods.
 ///
+/// The `Fill` trait is automatically implemented for `Fn`, so can usually
+/// be used in libraries that can't implement the trait themselves:
+///
 /// ```
-/// use value_bag::{ValueBag, Error, fill::{Slot, Fill}};
+/// use value_bag::{ValueBag, fill::Slot};
 ///
-/// struct FillSigned;
+/// let value = ValueBag::from_fill(&|slot: &mut Slot| {
+///     #[derive(Debug)]
+///     struct MyShortLivedValue;
 ///
-/// impl Fill for FillSigned {
-///     fn fill(&self, slot: &mut Slot) -> Result<(), Error> {
-///         slot.fill_any(42i32)
-///     }
-/// }
+///     slot.fill_debug(&MyShortLivedValue)
+/// });
 ///
-/// let value = ValueBag::from_fill(&FillSigned);
-///
-/// assert_eq!(Some(42), value.to_i32());
+/// assert_eq!("MyShortLivedValue", format!("{:?}", value));
 /// ```
+///
+/// The trait can also be implemented manually:
 ///
 /// ```
 /// # use std::fmt::Debug;
@@ -120,8 +122,17 @@ pub use self::error::Error;
 /// Once you have a `ValueBag` there are also a few ways to inspect it:
 ///
 /// - Using the `Debug`, `Display`, `Serialize`, and `Stream` trait implementations.
+/// - Using the `ValueBag::visit` method.
 /// - Using the `ValueBag::to_*` methods.
 /// - Using the `ValueBag::downcast_ref` method.
+///
+/// ## Using the trait implementations
+///
+/// ## Using the `ValueBag::visit` method
+///
+/// ## Using the `ValueBag::to_*` methods
+///
+/// ## Using the `ValueBag::downcast_ref` method
 #[derive(Clone)]
 pub struct ValueBag<'v> {
     inner: internal::Internal<'v>,

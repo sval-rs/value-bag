@@ -27,12 +27,12 @@ pub trait Fill {
     fn fill(&self, slot: &mut Slot) -> Result<(), Error>;
 }
 
-impl<'a, T> Fill for &'a T
+impl<F> Fill for F
 where
-    T: Fill + ?Sized,
+    F: Fn(&mut Slot) -> Result<(), Error>,
 {
     fn fill(&self, slot: &mut Slot) -> Result<(), Error> {
-        (**self).fill(slot)
+        (self)(slot)
     }
 }
 
@@ -171,5 +171,27 @@ mod tests {
             format!("{:04?}", 42u64),
             format!("{:04?}", ValueBag::from_fill(&TestFill)),
         )
+    }
+
+    #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn fill_fn_cast() {
+        assert_eq!(
+            42u64,
+            ValueBag::from_fill(&|slot: &mut Slot| slot.fill_any(42u64)).to_u64().unwrap()
+        );
+    }
+
+    #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn fill_fn_borrowed() {
+        #[derive(Debug)]
+        struct MyValue;
+
+        let value = MyValue;
+        assert_eq!(
+            format!("{:?}", value),
+            format!("{:?}", ValueBag::from_fill(&|slot: &mut Slot| slot.fill_debug(&value)))
+        );
     }
 }
