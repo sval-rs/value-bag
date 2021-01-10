@@ -72,7 +72,10 @@ mod tests {
 
     use super::*;
 
-    use crate::std::{io, string::ToString};
+    use crate::{
+        std::{io, string::ToString},
+        test::*,
+    };
 
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
@@ -96,5 +99,13 @@ mod tests {
         assert!(ValueBag::capture_error(&err)
             .downcast_ref::<io::Error>()
             .is_some());
+    }
+
+    #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn error_visit() {
+        let err = io::Error::from(io::ErrorKind::Other);
+
+        ValueBag::from_dyn_error(&err).visit(TestVisit).expect("failed to visit value");
     }
 }

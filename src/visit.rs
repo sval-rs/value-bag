@@ -93,6 +93,53 @@ pub trait Visit<'v> {
     fn visit_borrowed_error(&mut self, err: &'v (dyn crate::std::error::Error + 'static)) -> Result<(), Error>;
 }
 
+impl<'a, 'v, T: ?Sized> Visit<'v> for &'a mut T
+where
+    T: Visit<'v>,
+{
+    fn visit_any(&mut self, value: ValueBag) -> Result<(), Error> {
+        (**self).visit_any(value)
+    }
+
+    fn visit_u64(&mut self, value: u64) -> Result<(), Error> {
+        (**self).visit_u64(value)
+    }
+
+    fn visit_i64(&mut self, value: i64) -> Result<(), Error> {
+        (**self).visit_i64(value)
+    }
+
+    fn visit_f64(&mut self, value: f64) -> Result<(), Error> {
+        (**self).visit_f64(value)
+    }
+
+    fn visit_bool(&mut self, value: bool) -> Result<(), Error> {
+        (**self).visit_bool(value)
+    }
+
+    fn visit_str(&mut self, value: &str) -> Result<(), Error> {
+        (**self).visit_str(value)
+    }
+
+    fn visit_borrowed_str(&mut self, value: &'v str) -> Result<(), Error> {
+        (**self).visit_borrowed_str(value)
+    }
+
+    fn visit_char(&mut self, value: char) -> Result<(), Error> {
+        (**self).visit_char(value)
+    }
+
+    #[cfg(feature = "error")]
+    fn visit_error(&mut self, err: &(dyn crate::std::error::Error + 'static)) -> Result<(), Error> {
+        (**self).visit_error(err)
+    }
+
+    #[cfg(feature = "error")]
+    fn visit_borrowed_error(&mut self, err: &'v (dyn crate::std::error::Error + 'static)) -> Result<(), Error> {
+        (**self).visit_borrowed_error(err)
+    }
+}
+
 impl<'v> ValueBag<'v> {
     pub fn visit(&self, visitor: impl Visit<'v>) -> Result<(), Error> {
         struct Visitor<V>(V);
@@ -166,125 +213,15 @@ impl<'v> ValueBag<'v> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::test::*;
 
     #[test]
     fn visit_structured() {
-        struct VisitStructured;
-
-        impl<'v> Visit<'v> for VisitStructured {
-            fn visit_any(&mut self, v: ValueBag) -> Result<(), Error> {
-                panic!("unexpected value: {}", v)
-            }
-
-            fn visit_i64(&mut self, v: i64) -> Result<(), Error> {
-                assert_eq!(-42i64, v);
-                Ok(())
-            }
-
-            fn visit_u64(&mut self, v: u64) -> Result<(), Error> {
-                assert_eq!(42u64, v);
-                Ok(())
-            }
-
-            fn visit_f64(&mut self, v: f64) -> Result<(), Error> {
-                assert_eq!(11f64, v);
-                Ok(())
-            }
-
-            fn visit_bool(&mut self, v: bool) -> Result<(), Error> {
-                assert_eq!(true, v);
-                Ok(())
-            }
-
-            fn visit_str(&mut self, v: &str) -> Result<(), Error> {
-                assert_eq!("some string", v);
-                Ok(())
-            }
-
-            fn visit_borrowed_str(&mut self, v: &'v str) -> Result<(), Error> {
-                assert_eq!("some string", v);
-                Ok(())
-            }
-
-            fn visit_char(&mut self, v: char) -> Result<(), Error> {
-                assert_eq!('n', v);
-                Ok(())
-            }
-
-            fn visit_error(&mut self, err: &(dyn crate::std::error::Error + 'static)) -> Result<(), Error> {
-                panic!("unexpected value: {}", err)
-            }
-
-            fn visit_borrowed_error(&mut self, err: &'v (dyn crate::std::error::Error + 'static)) -> Result<(), Error> {
-                panic!("unexpected value: {}", err)
-            }
-        }
-
-        unimplemented!()
-    }
-
-    #[cfg(all(feature = "sval", feature = "std"))]
-    mod sval_error {
-        use super::*;
-
-        use crate::{
-            std::{error, io, string::ToString},
-            internal::sval::v1 as sval,
-        };
-
-        #[test]
-        #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-        fn sval1_error() {
-            let err: &(dyn error::Error + 'static) = &io::Error::from(io::ErrorKind::Other);
-            let value: &dyn sval::Value = &err;
-
-            struct VisitError<'a>(&'a (dyn error::Error + 'static));
-
-            impl<'v> Visit<'v> for VisitError<'v> {
-                fn visit_any(&mut self, v: ValueBag) -> Result<(), Error> {
-                    panic!("unexpected value: {}", v)
-                }
-
-                fn visit_i64(&mut self, v: i64) -> Result<(), Error> {
-                    panic!("unexpected value: {}", v)
-                }
-
-                fn visit_u64(&mut self, v: u64) -> Result<(), Error> {
-                    panic!("unexpected value: {}", v)
-                }
-
-                fn visit_f64(&mut self, v: f64) -> Result<(), Error> {
-                    panic!("unexpected value: {}", v)
-                }
-
-                fn visit_bool(&mut self, v: bool) -> Result<(), Error> {
-                    panic!("unexpected value: {}", v)
-                }
-
-                fn visit_str(&mut self, v: &str) -> Result<(), Error> {
-                    panic!("unexpected value: {}", v)
-                }
-
-                fn visit_borrowed_str(&mut self, v: &'v str) -> Result<(), Error> {
-                    panic!("unexpected value: {}", v)
-                }
-
-                fn visit_char(&mut self, v: char) -> Result<(), Error> {
-                    panic!("unexpected value: {}", v)
-                }
-
-                fn visit_error(&mut self, err: &(dyn crate::std::error::Error + 'static)) -> Result<(), Error> {
-                    assert_eq!(self.0.to_string(), err.to_string());
-                    Ok(())
-                }
-
-                fn visit_borrowed_error(&mut self, err: &'v (dyn crate::std::error::Error + 'static)) -> Result<(), Error> {
-                    self.visit_error(err)
-                }
-            }
-
-            // Ensure that an error captured through `sval` can be visited as an error
-            ValueBag::from_dyn_sval1(value).visit(VisitError(err)).expect("failed to visit value");
-        }
+        ValueBag::from(42u64).visit(TestVisit).expect("failed to visit value");
+        ValueBag::from(-42i64).visit(TestVisit).expect("failed to visit value");
+        ValueBag::from(11f64).visit(TestVisit).expect("failed to visit value");
+        ValueBag::from(true).visit(TestVisit).expect("failed to visit value");
+        ValueBag::from("some string").visit(TestVisit).expect("failed to visit value");
+        ValueBag::from('n').visit(TestVisit).expect("failed to visit value");
     }
 }

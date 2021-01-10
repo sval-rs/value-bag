@@ -84,6 +84,15 @@ package = "sval"
 version = "1"
 package = "serde_test"
 
+[dev-dependencies.sval1_json]
+version = "1.0.0-alpha.4"
+features = ["std"]
+package = "sval_json"
+
+[dev-dependencies.serde1_json]
+version = "1"
+package = "serde_json"
+
 [dev-dependencies.wasm-bindgen]
 version = "0.2"
 

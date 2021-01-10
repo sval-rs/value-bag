@@ -218,7 +218,7 @@ mod tests {
     wasm_bindgen_test_configure!(run_in_browser);
 
     use super::*;
-    use crate::test::Token;
+    use crate::test::*;
 
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
@@ -322,6 +322,17 @@ mod tests {
 
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn sval1_visit() {
+        ValueBag::from_dyn_sval1(&42u64).visit(TestVisit).expect("failed to visit value");
+        ValueBag::from_dyn_sval1(&-42i64).visit(TestVisit).expect("failed to visit value");
+        ValueBag::from_dyn_sval1(&11f64).visit(TestVisit).expect("failed to visit value");
+        ValueBag::from_dyn_sval1(&true).visit(TestVisit).expect("failed to visit value");
+        ValueBag::from_dyn_sval1(&"some string").visit(TestVisit).expect("failed to visit value");
+        ValueBag::from_dyn_sval1(&'n').visit(TestVisit).expect("failed to visit value");
+    }
+
+    #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     #[cfg(feature = "serde1")]
     fn sval1_serde1() {
         use serde1_test::{assert_ser_tokens, Token};
@@ -335,6 +346,22 @@ mod tests {
         }
 
         assert_ser_tokens(&ValueBag::capture_sval1(&TestSval), &[Token::U64(42)]);
+    }
+
+    #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    #[cfg(feature = "std")]
+    fn sval1_visit_error() {
+        use crate::{
+            std::{error, io},
+            internal::sval::v1 as sval,
+        };
+
+        let err: &(dyn error::Error + 'static) = &io::Error::from(io::ErrorKind::Other);
+        let value: &dyn sval::Value = &err;
+
+        // Ensure that an error captured through `sval` can be visited as an error
+        ValueBag::from_dyn_sval1(value).visit(TestVisit).expect("failed to visit value");
     }
 
     #[cfg(feature = "std")]

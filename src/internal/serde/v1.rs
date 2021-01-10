@@ -413,7 +413,7 @@ mod tests {
     wasm_bindgen_test_configure!(run_in_browser);
 
     use super::*;
-    use crate::test::Token;
+    use crate::test::*;
 
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
@@ -517,6 +517,17 @@ mod tests {
             format!("{:04?}", 42u64),
             format!("{:04?}", ValueBag::capture_serde1(&TestSerde)),
         );
+    }
+
+    #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn serde1_visit() {
+        ValueBag::from_serde1(&42u64).visit(TestVisit).expect("failed to visit value");
+        ValueBag::from_serde1(&-42i64).visit(TestVisit).expect("failed to visit value");
+        ValueBag::from_serde1(&11f64).visit(TestVisit).expect("failed to visit value");
+        ValueBag::from_serde1(&true).visit(TestVisit).expect("failed to visit value");
+        ValueBag::from_serde1(&"some string").visit(TestVisit).expect("failed to visit value");
+        ValueBag::from_serde1(&'n').visit(TestVisit).expect("failed to visit value");
     }
 
     #[test]

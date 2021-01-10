@@ -1,9 +1,9 @@
 //! Test support for inspecting values.
 
-use crate::std::{fmt, str, string::String};
-
-use super::internal;
-use super::{Error, ValueBag};
+use crate::{
+    std::{fmt, str, string::String},
+    internal, visit::Visit, Error, ValueBag
+};
 
 pub(crate) trait IntoValueBag<'v> {
     fn into_value_bag(self) -> ValueBag<'v>;
@@ -54,7 +54,6 @@ pub struct Serde {
     pub version: u32,
 }
 
-#[cfg(any(test, feature = "test"))]
 impl<'v> ValueBag<'v> {
     /**
     Convert the value bag into a token for testing.
@@ -128,5 +127,60 @@ impl<'v> ValueBag<'v> {
         self.internal_visit(&mut visitor).unwrap();
 
         visitor.0.unwrap()
+    }
+}
+
+pub(crate) struct TestVisit;
+
+impl<'v> Visit<'v> for TestVisit {
+    fn visit_any(&mut self, v: ValueBag) -> Result<(), Error> {
+        panic!("unexpected value: {}", v)
+    }
+
+    fn visit_i64(&mut self, v: i64) -> Result<(), Error> {
+        assert_eq!(-42i64, v);
+        Ok(())
+    }
+
+    fn visit_u64(&mut self, v: u64) -> Result<(), Error> {
+        assert_eq!(42u64, v);
+        Ok(())
+    }
+
+    fn visit_f64(&mut self, v: f64) -> Result<(), Error> {
+        assert_eq!(11f64, v);
+        Ok(())
+    }
+
+    fn visit_bool(&mut self, v: bool) -> Result<(), Error> {
+        assert_eq!(true, v);
+        Ok(())
+    }
+
+    fn visit_str(&mut self, v: &str) -> Result<(), Error> {
+        assert_eq!("some string", v);
+        Ok(())
+    }
+
+    fn visit_borrowed_str(&mut self, v: &'v str) -> Result<(), Error> {
+        assert_eq!("some string", v);
+        Ok(())
+    }
+
+    fn visit_char(&mut self, v: char) -> Result<(), Error> {
+        assert_eq!('n', v);
+        Ok(())
+    }
+
+    #[cfg(feature = "error")]
+    fn visit_error(&mut self, err: &(dyn crate::std::error::Error + 'static)) -> Result<(), Error> {
+        assert!(err.downcast_ref::<crate::std::io::Error>().is_some());
+        Ok(())
+    }
+
+    #[cfg(feature = "error")]
+    fn visit_borrowed_error(&mut self, err: &'v (dyn crate::std::error::Error + 'static)) -> Result<(), Error> {
+        assert!(err.downcast_ref::<crate::std::io::Error>().is_some());
+        Ok(())
     }
 }
