@@ -5,10 +5,7 @@
 
 use crate::{
     fill::Slot,
-    internal::{
-        cast,
-        Internal, InternalVisitor,
-    },
+    internal::{cast, Internal, InternalVisitor},
     std::fmt,
     Error, ValueBag,
 };
@@ -38,9 +35,7 @@ impl<'v> ValueBag<'v> {
         T: Serialize,
     {
         ValueBag {
-            inner: Internal::AnonSerde1 {
-                value,
-            }
+            inner: Internal::AnonSerde1 { value },
         }
     }
 }
@@ -173,7 +168,8 @@ impl<'v> serde1_lib::Serialize for ValueBag<'v> {
             result: None,
         };
 
-        self.internal_visit(&mut visitor).map_err(|e| S::Error::custom(e))?;
+        self.internal_visit(&mut visitor)
+            .map_err(|e| S::Error::custom(e))?;
 
         visitor.into_result()
     }
@@ -195,7 +191,10 @@ pub(in crate::internal) fn sval1(
     Ok(())
 }
 
-pub(crate) fn internal_visit<'v>(v: &dyn Serialize, visitor: &mut dyn InternalVisitor<'v>) -> Result<(), Error> {
+pub(crate) fn internal_visit<'v>(
+    v: &dyn Serialize,
+    visitor: &mut dyn InternalVisitor<'v>,
+) -> Result<(), Error> {
     struct VisitorSerializer<'a, 'v>(&'a mut dyn InternalVisitor<'v>);
 
     impl<'a, 'v> serde1_lib::Serializer for VisitorSerializer<'a, 'v> {
@@ -382,7 +381,6 @@ impl Error {
     }
 }
 
-
 #[derive(Debug)]
 struct Unsupported;
 
@@ -394,8 +392,8 @@ impl fmt::Display for Unsupported {
 
 impl serde1_lib::ser::Error for Unsupported {
     fn custom<T>(_: T) -> Self
-        where
-            T: fmt::Display,
+    where
+        T: fmt::Display,
     {
         Unsupported
     }
@@ -521,12 +519,24 @@ mod tests {
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn serde1_visit() {
-        ValueBag::from_serde1(&42u64).visit(TestVisit).expect("failed to visit value");
-        ValueBag::from_serde1(&-42i64).visit(TestVisit).expect("failed to visit value");
-        ValueBag::from_serde1(&11f64).visit(TestVisit).expect("failed to visit value");
-        ValueBag::from_serde1(&true).visit(TestVisit).expect("failed to visit value");
-        ValueBag::from_serde1(&"some string").visit(TestVisit).expect("failed to visit value");
-        ValueBag::from_serde1(&'n').visit(TestVisit).expect("failed to visit value");
+        ValueBag::from_serde1(&42u64)
+            .visit(TestVisit)
+            .expect("failed to visit value");
+        ValueBag::from_serde1(&-42i64)
+            .visit(TestVisit)
+            .expect("failed to visit value");
+        ValueBag::from_serde1(&11f64)
+            .visit(TestVisit)
+            .expect("failed to visit value");
+        ValueBag::from_serde1(&true)
+            .visit(TestVisit)
+            .expect("failed to visit value");
+        ValueBag::from_serde1(&"some string")
+            .visit(TestVisit)
+            .expect("failed to visit value");
+        ValueBag::from_serde1(&'n')
+            .visit(TestVisit)
+            .expect("failed to visit value");
     }
 
     #[test]

@@ -9,7 +9,7 @@ use crate::std::{any::TypeId, fmt};
 #[cfg(feature = "std")]
 use crate::std::{borrow::ToOwned, string::String};
 
-use super::{Internal, Primitive, InternalVisitor};
+use super::{Internal, InternalVisitor, Primitive};
 use crate::{Error, ValueBag};
 
 mod primitive;
@@ -194,29 +194,24 @@ impl<'v> ValueBag<'v> {
     pub fn downcast_ref<T: 'static>(&self) -> Option<&T> {
         let target = TypeId::of::<T>();
         match self.inner {
-            Internal::Debug {
-                type_id,
-                value,
-            } if type_id == target => Some(unsafe { &*(value as *const _ as *const T) }),
-            Internal::Display {
-                type_id,
-                value,
-            } if type_id == target => Some(unsafe { &*(value as *const _ as *const T) }),
+            Internal::Debug { type_id, value } if type_id == target => {
+                Some(unsafe { &*(value as *const _ as *const T) })
+            }
+            Internal::Display { type_id, value } if type_id == target => {
+                Some(unsafe { &*(value as *const _ as *const T) })
+            }
             #[cfg(feature = "error")]
-            Internal::Error {
-                type_id,
-                value,
-            } if type_id == target => Some(unsafe { &*(value as *const _ as *const T) }),
+            Internal::Error { type_id, value } if type_id == target => {
+                Some(unsafe { &*(value as *const _ as *const T) })
+            }
             #[cfg(feature = "sval1")]
-            Internal::Sval1 {
-                type_id,
-                value,
-            } if type_id == target => Some(unsafe { &*(value as *const _ as *const T) }),
+            Internal::Sval1 { type_id, value } if type_id == target => {
+                Some(unsafe { &*(value as *const _ as *const T) })
+            }
             #[cfg(feature = "serde1")]
-            Internal::Serde1 {
-                type_id,
-                value,
-            } if type_id == target => Some(unsafe { &*(value as *const _ as *const T) }),
+            Internal::Serde1 { type_id, value } if type_id == target => {
+                Some(unsafe { &*(value as *const _ as *const T) })
+            }
             _ => None,
         }
     }

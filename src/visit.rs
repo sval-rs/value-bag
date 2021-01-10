@@ -1,8 +1,66 @@
-//! Primitive value visitor.
+//! Value inspection.
+//!
+//! The [`Visit`] trait provides a simple visitor API that can be used to inspect
+//! the structure of primitives stored in a [`ValueBag`](../struct.ValueBag.html).
+//! More complex datatypes can then be handled using `std::fmt`, `sval`, or `serde`.
+//!
+//! ```
+//! #[cfg(not(feature = "std"))] fn main() {}
+//! #[cfg(feature = "std")]
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # fn escape(buf: &[u8]) -> &[u8] { buf }
+//! # fn itoa_fmt<T>(num: T) -> Vec<u8> { vec![] }
+//! # fn ryu_fmt<T>(num: T) -> Vec<u8> { vec![] }
+//! # use std::io::Write;
+//! use value_bag::{ValueBag, Error, visit::Visit};
+//!
+//! // Implement some simple custom serialization
+//! struct MyVisit(Vec<u8>);
+//! impl<'v> Visit<'v> for MyVisit {
+//!     fn visit_any(&mut self, v: ValueBag) -> Result<(), Error> {
+//!         // Fallback to `Debug` if we didn't visit the value specially
+//!         write!(&mut self.0, "{:?}", v).map_err(|_| Error::msg("failed to write value"))
+//!     }
+//!
+//!     fn visit_u64(&mut self, v: u64) -> Result<(), Error> {
+//!         self.0.extend_from_slice(itoa_fmt(v).as_slice());
+//!         Ok(())
+//!     }
+//!
+//!     fn visit_i64(&mut self, v: i64) -> Result<(), Error> {
+//!         self.0.extend_from_slice(itoa_fmt(v).as_slice());
+//!         Ok(())
+//!     }
+//!
+//!     fn visit_f64(&mut self, v: f64) -> Result<(), Error> {
+//!         self.0.extend_from_slice(ryu_fmt(v).as_slice());
+//!         Ok(())
+//!     }
+//!
+//!     fn visit_str(&mut self, v: &str) -> Result<(), Error> {
+//!         self.0.push(b'\"');
+//!         self.0.extend_from_slice(escape(v.as_bytes()));
+//!         self.0.push(b'\"');
+//!         Ok(())
+//!     }
+//!
+//!     fn visit_bool(&mut self, v: bool) -> Result<(), Error> {
+//!         self.0.extend_from_slice(if v { b"true" } else { b"false" });
+//!         Ok(())
+//!     }
+//! }
+//!
+//! let value = ValueBag::from(42i64);
+//!
+//! let mut visitor = MyVisit(vec![]);
+//! value.visit(&mut visitor)?;
+//! # Ok(())
+//! # }
+//! ```
 
 use crate::{
-    ValueBag, Error,
     internal::{self, InternalVisitor},
+    Error, ValueBag,
 };
 
 /// A visitor for a `ValueBag`.
@@ -85,12 +143,18 @@ pub trait Visit<'v> {
     /// Visit an error.
     #[cfg(not(test))]
     #[cfg(feature = "error")]
-    fn visit_borrowed_error(&mut self, err: &'v (dyn crate::std::error::Error + 'static)) -> Result<(), Error> {
+    fn visit_borrowed_error(
+        &mut self,
+        err: &'v (dyn crate::std::error::Error + 'static),
+    ) -> Result<(), Error> {
         self.visit_any(ValueBag::from_dyn_error(err))
     }
     #[cfg(test)]
     #[cfg(feature = "error")]
-    fn visit_borrowed_error(&mut self, err: &'v (dyn crate::std::error::Error + 'static)) -> Result<(), Error>;
+    fn visit_borrowed_error(
+        &mut self,
+        err: &'v (dyn crate::std::error::Error + 'static),
+    ) -> Result<(), Error>;
 }
 
 impl<'a, 'v, T: ?Sized> Visit<'v> for &'a mut T
@@ -135,7 +199,10 @@ where
     }
 
     #[cfg(feature = "error")]
-    fn visit_borrowed_error(&mut self, err: &'v (dyn crate::std::error::Error + 'static)) -> Result<(), Error> {
+    fn visit_borrowed_error(
+        &mut self,
+        err: &'v (dyn crate::std::error::Error + 'static),
+    ) -> Result<(), Error> {
         (**self).visit_borrowed_error(err)
     }
 }
@@ -144,7 +211,10 @@ impl<'v> ValueBag<'v> {
     pub fn visit(&self, visitor: impl Visit<'v>) -> Result<(), Error> {
         struct Visitor<V>(V);
 
-        impl<'v, V> InternalVisitor<'v> for Visitor<V> where V: Visit<'v> {
+        impl<'v, V> InternalVisitor<'v> for Visitor<V>
+        where
+            V: Visit<'v>,
+        {
             fn debug(&mut self, v: &dyn internal::fmt::Debug) -> Result<(), Error> {
                 self.0.visit_any(ValueBag::from_dyn_debug(v))
             }
@@ -191,7 +261,10 @@ impl<'v> ValueBag<'v> {
             }
 
             #[cfg(feature = "error")]
-            fn borrowed_error(&mut self, v: &'v (dyn internal::error::Error + 'static)) -> Result<(), Error> {
+            fn borrowed_error(
+                &mut self,
+                v: &'v (dyn internal::error::Error + 'static),
+            ) -> Result<(), Error> {
                 self.0.visit_borrowed_error(v)
             }
 
@@ -217,11 +290,23 @@ mod tests {
 
     #[test]
     fn visit_structured() {
-        ValueBag::from(42u64).visit(TestVisit).expect("failed to visit value");
-        ValueBag::from(-42i64).visit(TestVisit).expect("failed to visit value");
-        ValueBag::from(11f64).visit(TestVisit).expect("failed to visit value");
-        ValueBag::from(true).visit(TestVisit).expect("failed to visit value");
-        ValueBag::from("some string").visit(TestVisit).expect("failed to visit value");
-        ValueBag::from('n').visit(TestVisit).expect("failed to visit value");
+        ValueBag::from(42u64)
+            .visit(TestVisit)
+            .expect("failed to visit value");
+        ValueBag::from(-42i64)
+            .visit(TestVisit)
+            .expect("failed to visit value");
+        ValueBag::from(11f64)
+            .visit(TestVisit)
+            .expect("failed to visit value");
+        ValueBag::from(true)
+            .visit(TestVisit)
+            .expect("failed to visit value");
+        ValueBag::from("some string")
+            .visit(TestVisit)
+            .expect("failed to visit value");
+        ValueBag::from('n')
+            .visit(TestVisit)
+            .expect("failed to visit value");
     }
 }

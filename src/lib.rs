@@ -20,9 +20,9 @@ extern crate core as std;
 
 mod error;
 pub mod fill;
-pub mod visit;
 mod impls;
 mod internal;
+pub mod visit;
 
 #[cfg(any(test, feature = "test"))]
 pub mod test;
@@ -83,11 +83,11 @@ pub use self::error::Error;
 ///
 /// ## Using the `Fill` API
 ///
-/// The `Fill` trait is a way to bridge APIs that may not be directly
+/// The [`fill`] module provides a way to bridge APIs that may not be directly
 /// compatible with other constructor methods.
 ///
-/// The `Fill` trait is automatically implemented for `Fn`, so can usually
-/// be used in libraries that can't implement the trait themselves:
+/// The `Fill` trait is automatically implemented for closures, so can usually
+/// be used in libraries that can't implement the trait themselves.
 ///
 /// ```
 /// use value_bag::{ValueBag, fill::Slot};
@@ -134,7 +134,7 @@ pub use self::error::Error;
 ///
 /// ## Using the `ValueBag::visit` method
 ///
-/// The `visit` module provides a simple visitor API that can be used to inspect
+/// The [`visit`] module provides a simple visitor API that can be used to inspect
 /// the structure of primitives stored in a `ValueBag`.
 /// More complex datatypes can then be handled using `std::fmt`, `sval`, or `serde`.
 ///

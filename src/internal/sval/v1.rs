@@ -5,10 +5,7 @@
 
 use crate::{
     fill::Slot,
-    internal::{
-        cast,
-        Internal, InternalVisitor,
-    },
+    internal::{cast, Internal, InternalVisitor},
     std::fmt,
     Error, ValueBag,
 };
@@ -36,18 +33,14 @@ impl<'v> ValueBag<'v> {
         T: Value,
     {
         ValueBag {
-            inner: Internal::AnonSval1 {
-                value,
-            }
+            inner: Internal::AnonSval1 { value },
         }
     }
 
     /// Get a value from an erased structured type.
     pub fn from_dyn_sval1(value: &'v dyn Value) -> Self {
         ValueBag {
-            inner: Internal::AnonSval1 {
-                value,
-            }
+            inner: Internal::AnonSval1 { value },
         }
     }
 }
@@ -150,7 +143,10 @@ where
     sval1_lib::serde::v1::serialize(s, v)
 }
 
-pub(crate) fn internal_visit<'v>(v: &dyn Value, visitor: &mut dyn InternalVisitor<'v>) -> Result<(), Error> {
+pub(crate) fn internal_visit<'v>(
+    v: &dyn Value,
+    visitor: &mut dyn InternalVisitor<'v>,
+) -> Result<(), Error> {
     struct VisitorStream<'a, 'v>(&'a mut dyn InternalVisitor<'v>);
 
     impl<'a, 'v> sval1_lib::stream::Stream for VisitorStream<'a, 'v> {
@@ -260,7 +256,6 @@ mod tests {
                 .expect("invalid value")
         );
 
-
         #[cfg(feature = "std")]
         assert_eq!(
             "a string",
@@ -321,12 +316,24 @@ mod tests {
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn sval1_visit() {
-        ValueBag::from_dyn_sval1(&42u64).visit(TestVisit).expect("failed to visit value");
-        ValueBag::from_dyn_sval1(&-42i64).visit(TestVisit).expect("failed to visit value");
-        ValueBag::from_dyn_sval1(&11f64).visit(TestVisit).expect("failed to visit value");
-        ValueBag::from_dyn_sval1(&true).visit(TestVisit).expect("failed to visit value");
-        ValueBag::from_dyn_sval1(&"some string").visit(TestVisit).expect("failed to visit value");
-        ValueBag::from_dyn_sval1(&'n').visit(TestVisit).expect("failed to visit value");
+        ValueBag::from_dyn_sval1(&42u64)
+            .visit(TestVisit)
+            .expect("failed to visit value");
+        ValueBag::from_dyn_sval1(&-42i64)
+            .visit(TestVisit)
+            .expect("failed to visit value");
+        ValueBag::from_dyn_sval1(&11f64)
+            .visit(TestVisit)
+            .expect("failed to visit value");
+        ValueBag::from_dyn_sval1(&true)
+            .visit(TestVisit)
+            .expect("failed to visit value");
+        ValueBag::from_dyn_sval1(&"some string")
+            .visit(TestVisit)
+            .expect("failed to visit value");
+        ValueBag::from_dyn_sval1(&'n')
+            .visit(TestVisit)
+            .expect("failed to visit value");
     }
 
     #[test]
@@ -351,15 +358,17 @@ mod tests {
     #[cfg(feature = "std")]
     fn sval1_visit_error() {
         use crate::{
-            std::{error, io},
             internal::sval::v1 as sval,
+            std::{error, io},
         };
 
         let err: &(dyn error::Error + 'static) = &io::Error::from(io::ErrorKind::Other);
         let value: &dyn sval::Value = &err;
 
         // Ensure that an error captured through `sval` can be visited as an error
-        ValueBag::from_dyn_sval1(value).visit(TestVisit).expect("failed to visit value");
+        ValueBag::from_dyn_sval1(value)
+            .visit(TestVisit)
+            .expect("failed to visit value");
     }
 
     #[cfg(feature = "std")]

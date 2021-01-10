@@ -1,8 +1,4 @@
-use crate::{
-    fill::Slot,
-    std::error,
-    ValueBag,
-};
+use crate::{fill::Slot, std::error, ValueBag};
 
 use super::{cast, Internal};
 
@@ -23,9 +19,7 @@ impl<'v> ValueBag<'v> {
     /// Get a value from an erased value.
     pub fn from_dyn_error(value: &'v (dyn error::Error + 'static)) -> Self {
         ValueBag {
-            inner: Internal::AnonError {
-                value,
-            }
+            inner: Internal::AnonError { value },
         }
     }
 
@@ -54,7 +48,10 @@ impl<'s, 'f> Slot<'s, 'f> {
     }
 
     /// Fill the slot with an error.
-    pub fn fill_dyn_error(&mut self, value: &(dyn error::Error + 'static)) -> Result<(), crate::Error> {
+    pub fn fill_dyn_error(
+        &mut self,
+        value: &(dyn error::Error + 'static),
+    ) -> Result<(), crate::Error> {
         self.fill(|visitor| visitor.error(value))
     }
 }
@@ -105,6 +102,8 @@ mod tests {
     fn error_visit() {
         let err = io::Error::from(io::ErrorKind::Other);
 
-        ValueBag::from_dyn_error(&err).visit(TestVisit).expect("failed to visit value");
+        ValueBag::from_dyn_error(&err)
+            .visit(TestVisit)
+            .expect("failed to visit value");
     }
 }

@@ -1,8 +1,10 @@
 //! Test support for inspecting values.
 
 use crate::{
+    internal,
     std::{fmt, str, string::String},
-    internal, visit::Visit, Error, ValueBag
+    visit::Visit,
+    Error, ValueBag,
 };
 
 pub(crate) trait IntoValueBag<'v> {
@@ -42,12 +44,18 @@ pub enum Token {
     Serde(Serde),
 }
 
+/**
+A value that was captured using `sval`.
+*/
 #[derive(Debug, PartialEq)]
 #[non_exhaustive]
 pub struct Sval {
     pub version: u32,
 }
 
+/**
+A value that was captured using `serde`.
+*/
 #[derive(Debug, PartialEq)]
 #[non_exhaustive]
 pub struct Serde {
@@ -179,7 +187,10 @@ impl<'v> Visit<'v> for TestVisit {
     }
 
     #[cfg(feature = "error")]
-    fn visit_borrowed_error(&mut self, err: &'v (dyn crate::std::error::Error + 'static)) -> Result<(), Error> {
+    fn visit_borrowed_error(
+        &mut self,
+        err: &'v (dyn crate::std::error::Error + 'static),
+    ) -> Result<(), Error> {
         assert!(err.downcast_ref::<crate::std::io::Error>().is_some());
         Ok(())
     }

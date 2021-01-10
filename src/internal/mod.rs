@@ -4,10 +4,9 @@
 //! for optimizations or to support new external serialization frameworks.
 
 use crate::{
-    ValueBag,
     fill::{Fill, Slot},
     std::any::TypeId,
-    Error,
+    Error, ValueBag,
 };
 
 pub(super) mod cast;
@@ -31,9 +30,7 @@ pub(super) enum Internal<'v> {
     Fill { value: &'v dyn Fill },
 
     /// A debuggable value.
-    AnonDebug {
-        value: &'v dyn fmt::Debug,
-    },
+    AnonDebug { value: &'v dyn fmt::Debug },
     /// A debuggable value.
     Debug {
         value: &'v dyn fmt::Debug,
@@ -41,9 +38,7 @@ pub(super) enum Internal<'v> {
     },
 
     /// A displayable value.
-    AnonDisplay {
-        value: &'v dyn fmt::Display,
-    },
+    AnonDisplay { value: &'v dyn fmt::Display },
     /// A displayable value.
     Display {
         value: &'v dyn fmt::Display,
@@ -64,9 +59,7 @@ pub(super) enum Internal<'v> {
 
     #[cfg(feature = "sval1")]
     /// A structured value from `sval`.
-    AnonSval1 {
-        value: &'v dyn sval::v1::Value,
-    },
+    AnonSval1 { value: &'v dyn sval::v1::Value },
     #[cfg(feature = "sval1")]
     /// A structured value from `sval`.
     Sval1 {
@@ -76,9 +69,7 @@ pub(super) enum Internal<'v> {
 
     #[cfg(feature = "serde1")]
     /// A structured value from `serde`.
-    AnonSerde1 {
-        value: &'v dyn serde::v1::Serialize,
-    },
+    AnonSerde1 { value: &'v dyn serde::v1::Serialize },
     #[cfg(feature = "serde1")]
     /// A structured value from `serde`.
     Serde1 {
@@ -104,8 +95,8 @@ pub(super) enum Primitive<'v> {
 impl<'v> ValueBag<'v> {
     /// Get a value from an internal primitive.
     pub(super) fn from_primitive<T>(value: T) -> Self
-        where
-            T: Into<Primitive<'v>>,
+    where
+        T: Into<Primitive<'v>>,
     {
         ValueBag {
             inner: Internal::Primitive {
@@ -115,7 +106,10 @@ impl<'v> ValueBag<'v> {
     }
 
     /// Visit the value using an internal visitor.
-    pub(super) fn internal_visit(&self, visitor: &mut dyn InternalVisitor<'v>) -> Result<(), Error> {
+    pub(super) fn internal_visit(
+        &self,
+        visitor: &mut dyn InternalVisitor<'v>,
+    ) -> Result<(), Error> {
         self.inner.internal_visit(visitor)
     }
 }

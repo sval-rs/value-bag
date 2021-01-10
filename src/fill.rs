@@ -1,4 +1,42 @@
 //! Deferred value initialization.
+//!
+//! The [`Fill`] trait is a way to bridge APIs that may not be directly
+//! compatible with other constructor methods.
+//!
+//! The `Fill` trait is automatically implemented for closures, so can usually
+//! be used in libraries that can't implement the trait themselves.
+//!
+//! ```
+//! use value_bag::{ValueBag, fill::Slot};
+//!
+//! let value = ValueBag::from_fill(&|slot: &mut Slot| {
+//!     #[derive(Debug)]
+//!     struct MyShortLivedValue;
+//!
+//!     slot.fill_debug(&MyShortLivedValue)
+//! });
+//!
+//! assert_eq!("MyShortLivedValue", format!("{:?}", value));
+//! ```
+//!
+//! The trait can also be implemented manually:
+//!
+//! ```
+//! # use std::fmt::Debug;
+//! use value_bag::{ValueBag, Error, fill::{Slot, Fill}};
+//!
+//! struct FillDebug;
+//!
+//! impl Fill for FillDebug {
+//!     fn fill(&self, slot: &mut Slot) -> Result<(), Error> {
+//!         slot.fill_debug(&42i32 as &dyn Debug)
+//!     }
+//! }
+//!
+//! let value = ValueBag::from_fill(&FillDebug);
+//!
+//! assert_eq!(None, value.to_i32());
+//! ```
 
 use crate::std::fmt;
 
@@ -17,7 +55,7 @@ impl<'v> ValueBag<'v> {
     }
 }
 
-/// A type that requires extra work to convert into a [`ValueBag`](struct.ValueBag.html).
+/// A type that requires extra work to convert into a [`ValueBag`](../struct.ValueBag.html).
 ///
 /// This trait is an advanced initialization API.
 /// It's intended for erased values coming from other logging frameworks that may need
@@ -178,7 +216,9 @@ mod tests {
     fn fill_fn_cast() {
         assert_eq!(
             42u64,
-            ValueBag::from_fill(&|slot: &mut Slot| slot.fill_any(42u64)).to_u64().unwrap()
+            ValueBag::from_fill(&|slot: &mut Slot| slot.fill_any(42u64))
+                .to_u64()
+                .unwrap()
         );
     }
 
@@ -191,7 +231,10 @@ mod tests {
         let value = MyValue;
         assert_eq!(
             format!("{:?}", value),
-            format!("{:?}", ValueBag::from_fill(&|slot: &mut Slot| slot.fill_debug(&value)))
+            format!(
+                "{:?}",
+                ValueBag::from_fill(&|slot: &mut Slot| slot.fill_debug(&value))
+            )
         );
     }
 }
