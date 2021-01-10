@@ -1,9 +1,11 @@
 //! Test support for inspecting values.
 
-use crate::std::{fmt, str, string::String};
-
-use super::internal;
-use super::{Error, ValueBag};
+use crate::{
+    internal,
+    std::{fmt, str, string::String},
+    visit::Visit,
+    Error, ValueBag,
+};
 
 pub(crate) trait IntoValueBag<'v> {
     fn into_value_bag(self) -> ValueBag<'v>;
@@ -42,19 +44,24 @@ pub enum Token {
     Serde(Serde),
 }
 
+/**
+A value that was captured using `sval`.
+*/
 #[derive(Debug, PartialEq)]
 #[non_exhaustive]
 pub struct Sval {
     pub version: u32,
 }
 
+/**
+A value that was captured using `serde`.
+*/
 #[derive(Debug, PartialEq)]
 #[non_exhaustive]
 pub struct Serde {
     pub version: u32,
 }
 
-#[cfg(any(test, feature = "test"))]
 impl<'v> ValueBag<'v> {
     /**
     Convert the value bag into a token for testing.
@@ -64,7 +71,7 @@ impl<'v> ValueBag<'v> {
     pub fn to_token(&self) -> Token {
         struct TestVisitor(Option<Token>);
 
-        impl<'v> internal::Visitor<'v> for TestVisitor {
+        impl<'v> internal::InternalVisitor<'v> for TestVisitor {
             fn debug(&mut self, v: &dyn fmt::Debug) -> Result<(), Error> {
                 self.0 = Some(Token::Str(format!("{:?}", v)));
                 Ok(())
@@ -125,8 +132,66 @@ impl<'v> ValueBag<'v> {
         }
 
         let mut visitor = TestVisitor(None);
-        self.visit(&mut visitor).unwrap();
+        self.internal_visit(&mut visitor).unwrap();
 
         visitor.0.unwrap()
+    }
+}
+
+pub(crate) struct TestVisit;
+
+impl<'v> Visit<'v> for TestVisit {
+    fn visit_any(&mut self, v: ValueBag) -> Result<(), Error> {
+        panic!("unexpected value: {}", v)
+    }
+
+    fn visit_i64(&mut self, v: i64) -> Result<(), Error> {
+        assert_eq!(-42i64, v);
+        Ok(())
+    }
+
+    fn visit_u64(&mut self, v: u64) -> Result<(), Error> {
+        assert_eq!(42u64, v);
+        Ok(())
+    }
+
+    fn visit_f64(&mut self, v: f64) -> Result<(), Error> {
+        assert_eq!(11f64, v);
+        Ok(())
+    }
+
+    fn visit_bool(&mut self, v: bool) -> Result<(), Error> {
+        assert_eq!(true, v);
+        Ok(())
+    }
+
+    fn visit_str(&mut self, v: &str) -> Result<(), Error> {
+        assert_eq!("some string", v);
+        Ok(())
+    }
+
+    fn visit_borrowed_str(&mut self, v: &'v str) -> Result<(), Error> {
+        assert_eq!("some string", v);
+        Ok(())
+    }
+
+    fn visit_char(&mut self, v: char) -> Result<(), Error> {
+        assert_eq!('n', v);
+        Ok(())
+    }
+
+    #[cfg(feature = "error")]
+    fn visit_error(&mut self, err: &(dyn crate::std::error::Error + 'static)) -> Result<(), Error> {
+        assert!(err.downcast_ref::<crate::std::io::Error>().is_some());
+        Ok(())
+    }
+
+    #[cfg(feature = "error")]
+    fn visit_borrowed_error(
+        &mut self,
+        err: &'v (dyn crate::std::error::Error + 'static),
+    ) -> Result<(), Error> {
+        assert!(err.downcast_ref::<crate::std::io::Error>().is_some());
+        Ok(())
     }
 }

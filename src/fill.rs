@@ -1,8 +1,46 @@
 //! Deferred value initialization.
+//!
+//! The [`Fill`] trait is a way to bridge APIs that may not be directly
+//! compatible with other constructor methods.
+//!
+//! The `Fill` trait is automatically implemented for closures, so can usually
+//! be used in libraries that can't implement the trait themselves.
+//!
+//! ```
+//! use value_bag::{ValueBag, fill::Slot};
+//!
+//! let value = ValueBag::from_fill(&|slot: &mut Slot| {
+//!     #[derive(Debug)]
+//!     struct MyShortLivedValue;
+//!
+//!     slot.fill_debug(&MyShortLivedValue)
+//! });
+//!
+//! assert_eq!("MyShortLivedValue", format!("{:?}", value));
+//! ```
+//!
+//! The trait can also be implemented manually:
+//!
+//! ```
+//! # use std::fmt::Debug;
+//! use value_bag::{ValueBag, Error, fill::{Slot, Fill}};
+//!
+//! struct FillDebug;
+//!
+//! impl Fill for FillDebug {
+//!     fn fill(&self, slot: &mut Slot) -> Result<(), Error> {
+//!         slot.fill_debug(&42i32 as &dyn Debug)
+//!     }
+//! }
+//!
+//! let value = ValueBag::from_fill(&FillDebug);
+//!
+//! assert_eq!(None, value.to_i32());
+//! ```
 
 use crate::std::fmt;
 
-use super::internal::{Inner, Visitor};
+use super::internal::{Internal, InternalVisitor};
 use super::{Error, ValueBag};
 
 impl<'v> ValueBag<'v> {
@@ -12,12 +50,12 @@ impl<'v> ValueBag<'v> {
         T: Fill,
     {
         ValueBag {
-            inner: Inner::Fill { value },
+            inner: Internal::Fill { value },
         }
     }
 }
 
-/// A type that requires extra work to convert into a [`ValueBag`](struct.ValueBag.html).
+/// A type that requires extra work to convert into a [`ValueBag`](../struct.ValueBag.html).
 ///
 /// This trait is an advanced initialization API.
 /// It's intended for erased values coming from other logging frameworks that may need
@@ -27,19 +65,19 @@ pub trait Fill {
     fn fill(&self, slot: &mut Slot) -> Result<(), Error>;
 }
 
-impl<'a, T> Fill for &'a T
+impl<F> Fill for F
 where
-    T: Fill + ?Sized,
+    F: Fn(&mut Slot) -> Result<(), Error>,
 {
     fn fill(&self, slot: &mut Slot) -> Result<(), Error> {
-        (**self).fill(slot)
+        (self)(slot)
     }
 }
 
 /// A value slot to fill using the [`Fill`](trait.Fill.html) trait.
 pub struct Slot<'s, 'f> {
     filled: bool,
-    visitor: &'s mut dyn Visitor<'f>,
+    visitor: &'s mut dyn InternalVisitor<'f>,
 }
 
 impl<'s, 'f> fmt::Debug for Slot<'s, 'f> {
@@ -49,7 +87,7 @@ impl<'s, 'f> fmt::Debug for Slot<'s, 'f> {
 }
 
 impl<'s, 'f> Slot<'s, 'f> {
-    pub(super) fn new(visitor: &'s mut dyn Visitor<'f>) -> Self {
+    pub(super) fn new(visitor: &'s mut dyn InternalVisitor<'f>) -> Self {
         Slot {
             visitor,
             filled: false,
@@ -58,7 +96,7 @@ impl<'s, 'f> Slot<'s, 'f> {
 
     pub(super) fn fill<F>(&mut self, f: F) -> Result<(), Error>
     where
-        F: FnOnce(&mut dyn Visitor<'f>) -> Result<(), Error>,
+        F: FnOnce(&mut dyn InternalVisitor<'f>) -> Result<(), Error>,
     {
         assert!(!self.filled, "the slot has already been filled");
         self.filled = true;
@@ -77,7 +115,7 @@ impl<'s, 'f> Slot<'s, 'f> {
     where
         T: Into<ValueBag<'f>>,
     {
-        self.fill(|visitor| value.into().inner.visit(visitor))
+        self.fill(|visitor| value.into().inner.internal_visit(visitor))
     }
 }
 
@@ -171,5 +209,32 @@ mod tests {
             format!("{:04?}", 42u64),
             format!("{:04?}", ValueBag::from_fill(&TestFill)),
         )
+    }
+
+    #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn fill_fn_cast() {
+        assert_eq!(
+            42u64,
+            ValueBag::from_fill(&|slot: &mut Slot| slot.fill_any(42u64))
+                .to_u64()
+                .unwrap()
+        );
+    }
+
+    #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn fill_fn_borrowed() {
+        #[derive(Debug)]
+        struct MyValue;
+
+        let value = MyValue;
+        assert_eq!(
+            format!("{:?}", value),
+            format!(
+                "{:?}",
+                ValueBag::from_fill(&|slot: &mut Slot| slot.fill_debug(&value))
+            )
+        );
     }
 }

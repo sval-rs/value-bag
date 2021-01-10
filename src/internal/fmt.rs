@@ -5,7 +5,7 @@
 
 use crate::{fill::Slot, std::fmt, Error, ValueBag};
 
-use super::{cast, Inner, Visitor};
+use super::{cast, Internal, InternalVisitor};
 
 impl<'v> ValueBag<'v> {
     /// Get a value from a debuggable type.
@@ -17,9 +17,9 @@ impl<'v> ValueBag<'v> {
         T: Debug + 'static,
     {
         cast::try_from_primitive(value).unwrap_or(ValueBag {
-            inner: Inner::Debug {
+            inner: Internal::Debug {
                 value,
-                type_id: Some(cast::type_id::<T>()),
+                type_id: cast::type_id::<T>(),
             },
         })
     }
@@ -33,9 +33,9 @@ impl<'v> ValueBag<'v> {
         T: Display + 'static,
     {
         cast::try_from_primitive(value).unwrap_or(ValueBag {
-            inner: Inner::Display {
+            inner: Internal::Display {
                 value,
-                type_id: Some(cast::type_id::<T>()),
+                type_id: cast::type_id::<T>(),
             },
         })
     }
@@ -46,10 +46,7 @@ impl<'v> ValueBag<'v> {
         T: Debug,
     {
         ValueBag {
-            inner: Inner::Debug {
-                value,
-                type_id: None,
-            }
+            inner: Internal::AnonDebug { value },
         }
     }
 
@@ -59,30 +56,21 @@ impl<'v> ValueBag<'v> {
         T: Display,
     {
         ValueBag {
-            inner: Inner::Display {
-                value,
-                type_id: None,
-            }
+            inner: Internal::AnonDisplay { value },
         }
     }
 
     /// Get a value from a debuggable type without capturing support.
     pub fn from_dyn_debug(value: &'v dyn Debug) -> Self {
         ValueBag {
-            inner: Inner::Debug {
-                value,
-                type_id: None,
-            }
+            inner: Internal::AnonDebug { value },
         }
     }
 
     /// Get a value from a displayable type without capturing support.
     pub fn from_dyn_display(value: &'v dyn Display) -> Self {
         ValueBag {
-            inner: Inner::Display {
-                value,
-                type_id: None,
-            }
+            inner: Internal::AnonDisplay { value },
         }
     }
 }
@@ -123,7 +111,7 @@ impl<'v> Debug for ValueBag<'v> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         struct DebugVisitor<'a, 'b: 'a>(&'a mut fmt::Formatter<'b>);
 
-        impl<'a, 'b: 'a, 'v> Visitor<'v> for DebugVisitor<'a, 'b> {
+        impl<'a, 'b: 'a, 'v> InternalVisitor<'v> for DebugVisitor<'a, 'b> {
             fn debug(&mut self, v: &dyn Debug) -> Result<(), Error> {
                 Debug::fmt(v, self.0)?;
 
@@ -197,7 +185,8 @@ impl<'v> Debug for ValueBag<'v> {
             }
         }
 
-        self.visit(&mut DebugVisitor(f)).map_err(|_| fmt::Error)?;
+        self.internal_visit(&mut DebugVisitor(f))
+            .map_err(|_| fmt::Error)?;
 
         Ok(())
     }
@@ -207,7 +196,7 @@ impl<'v> Display for ValueBag<'v> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         struct DisplayVisitor<'a, 'b: 'a>(&'a mut fmt::Formatter<'b>);
 
-        impl<'a, 'b: 'a, 'v> Visitor<'v> for DisplayVisitor<'a, 'b> {
+        impl<'a, 'b: 'a, 'v> InternalVisitor<'v> for DisplayVisitor<'a, 'b> {
             fn debug(&mut self, v: &dyn Debug) -> Result<(), Error> {
                 Debug::fmt(v, self.0)?;
 
@@ -281,7 +270,8 @@ impl<'v> Display for ValueBag<'v> {
             }
         }
 
-        self.visit(&mut DisplayVisitor(f)).map_err(|_| fmt::Error)?;
+        self.internal_visit(&mut DisplayVisitor(f))
+            .map_err(|_| fmt::Error)?;
 
         Ok(())
     }

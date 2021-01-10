@@ -9,7 +9,7 @@ use crate::std::{any::TypeId, fmt};
 #[cfg(feature = "std")]
 use crate::std::{borrow::ToOwned, string::String};
 
-use super::{Inner, Primitive, Visitor};
+use super::{Internal, InternalVisitor, Primitive};
 use crate::{Error, ValueBag};
 
 mod primitive;
@@ -24,7 +24,7 @@ pub(super) fn type_id<T: 'static>() -> TypeId {
 /// This makes `ValueBag`s produced by `ValueBag::from_*` more useful
 pub(super) fn try_from_primitive<'v, T: 'static>(value: &'v T) -> Option<ValueBag<'v>> {
     primitive::from_any(value).map(|primitive| ValueBag {
-        inner: Inner::Primitive { value: primitive },
+        inner: Internal::Primitive { value: primitive },
     })
 }
 
@@ -194,40 +194,35 @@ impl<'v> ValueBag<'v> {
     pub fn downcast_ref<T: 'static>(&self) -> Option<&T> {
         let target = TypeId::of::<T>();
         match self.inner {
-            Inner::Debug {
-                type_id: Some(type_id),
-                value,
-            } if type_id == target => Some(unsafe { &*(value as *const _ as *const T) }),
-            Inner::Display {
-                type_id: Some(type_id),
-                value,
-            } if type_id == target => Some(unsafe { &*(value as *const _ as *const T) }),
+            Internal::Debug { type_id, value } if type_id == target => {
+                Some(unsafe { &*(value as *const _ as *const T) })
+            }
+            Internal::Display { type_id, value } if type_id == target => {
+                Some(unsafe { &*(value as *const _ as *const T) })
+            }
             #[cfg(feature = "error")]
-            Inner::Error {
-                type_id: Some(type_id),
-                value,
-            } if type_id == target => Some(unsafe { &*(value as *const _ as *const T) }),
+            Internal::Error { type_id, value } if type_id == target => {
+                Some(unsafe { &*(value as *const _ as *const T) })
+            }
             #[cfg(feature = "sval1")]
-            Inner::Sval1 {
-                type_id: Some(type_id),
-                value,
-            } if type_id == target => Some(unsafe { &*(value as *const _ as *const T) }),
+            Internal::Sval1 { type_id, value } if type_id == target => {
+                Some(unsafe { &*(value as *const _ as *const T) })
+            }
             #[cfg(feature = "serde1")]
-            Inner::Serde1 {
-                type_id: Some(type_id),
-                value,
-            } if type_id == target => Some(unsafe { &*(value as *const _ as *const T) }),
+            Internal::Serde1 { type_id, value } if type_id == target => {
+                Some(unsafe { &*(value as *const _ as *const T) })
+            }
             _ => None,
         }
     }
 }
 
-impl<'v> Inner<'v> {
+impl<'v> Internal<'v> {
     /// Cast the inner value to another type.
     fn cast(self) -> Cast<'v> {
         struct CastVisitor<'v>(Cast<'v>);
 
-        impl<'v> Visitor<'v> for CastVisitor<'v> {
+        impl<'v> InternalVisitor<'v> for CastVisitor<'v> {
             fn debug(&mut self, _: &dyn fmt::Debug) -> Result<(), Error> {
                 Ok(())
             }
@@ -285,23 +280,21 @@ impl<'v> Inner<'v> {
 
             #[cfg(feature = "sval1")]
             fn sval1(&mut self, v: &dyn super::sval::v1::Value) -> Result<(), Error> {
-                self.0 = super::sval::v1::cast(v);
-                Ok(())
+                super::sval::v1::internal_visit(v, self)
             }
 
             #[cfg(feature = "serde1")]
             fn serde1(&mut self, v: &dyn super::serde::v1::Serialize) -> Result<(), Error> {
-                self.0 = super::serde::v1::cast(v);
-                Ok(())
+                super::serde::v1::internal_visit(v, self)
             }
         }
 
-        if let Inner::Primitive { value } = self {
+        if let Internal::Primitive { value } = self {
             Cast::Primitive(value)
         } else {
             // If the erased value isn't a primitive then we visit it
             let mut cast = CastVisitor(Cast::Primitive(Primitive::None));
-            let _ = self.visit(&mut cast);
+            let _ = self.internal_visit(&mut cast);
             cast.0
         }
     }

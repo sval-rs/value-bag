@@ -5,10 +5,7 @@
 
 use crate::{
     fill::Slot,
-    internal::{
-        cast::{self, Cast},
-        Inner, Primitive, Visitor,
-    },
+    internal::{cast, Internal, InternalVisitor},
     std::fmt,
     Error, ValueBag,
 };
@@ -23,9 +20,9 @@ impl<'v> ValueBag<'v> {
         T: Value + 'static,
     {
         cast::try_from_primitive(value).unwrap_or(ValueBag {
-            inner: Inner::Sval1 {
+            inner: Internal::Sval1 {
                 value,
-                type_id: Some(cast::type_id::<T>()),
+                type_id: cast::type_id::<T>(),
             },
         })
     }
@@ -36,20 +33,14 @@ impl<'v> ValueBag<'v> {
         T: Value,
     {
         ValueBag {
-            inner: Inner::Sval1 {
-                value,
-                type_id: None,
-            }
+            inner: Internal::AnonSval1 { value },
         }
     }
 
     /// Get a value from an erased structured type.
     pub fn from_dyn_sval1(value: &'v dyn Value) -> Self {
         ValueBag {
-            inner: Inner::Sval1 {
-                value,
-                type_id: None,
-            }
+            inner: Internal::AnonSval1 { value },
         }
     }
 }
@@ -79,7 +70,7 @@ impl<'v> Value for ValueBag<'v> {
     fn stream(&self, s: &mut sval1_lib::value::Stream) -> sval1_lib::value::Result {
         struct Sval1Visitor<'a, 'b: 'a>(&'a mut sval1_lib::value::Stream<'b>);
 
-        impl<'a, 'b: 'a, 'v> Visitor<'v> for Sval1Visitor<'a, 'b> {
+        impl<'a, 'b: 'a, 'v> InternalVisitor<'v> for Sval1Visitor<'a, 'b> {
             fn debug(&mut self, v: &dyn fmt::Debug) -> Result<(), Error> {
                 self.0.debug(v).map_err(Error::from_sval1)
             }
@@ -130,7 +121,7 @@ impl<'v> Value for ValueBag<'v> {
             }
         }
 
-        self.visit(&mut Sval1Visitor(s))
+        self.internal_visit(&mut Sval1Visitor(s))
             .map_err(Error::into_sval1)?;
 
         Ok(())
@@ -152,46 +143,54 @@ where
     sval1_lib::serde::v1::serialize(s, v)
 }
 
-pub(in crate::internal) fn cast<'v>(v: &dyn Value) -> Cast<'v> {
-    struct CastStream<'v>(Cast<'v>);
+pub(crate) fn internal_visit<'v>(
+    v: &dyn Value,
+    visitor: &mut dyn InternalVisitor<'v>,
+) -> Result<(), Error> {
+    struct VisitorStream<'a, 'v>(&'a mut dyn InternalVisitor<'v>);
 
-    impl<'v> sval1_lib::stream::Stream for CastStream<'v> {
+    impl<'a, 'v> sval1_lib::stream::Stream for VisitorStream<'a, 'v> {
         fn u64(&mut self, v: u64) -> sval1_lib::stream::Result {
-            self.0 = Cast::Primitive(Primitive::from(v));
+            self.0.u64(v).map_err(Error::into_sval1)?;
             Ok(())
         }
 
         fn i64(&mut self, v: i64) -> sval1_lib::stream::Result {
-            self.0 = Cast::Primitive(Primitive::from(v));
+            self.0.i64(v).map_err(Error::into_sval1)?;
             Ok(())
         }
 
         fn f64(&mut self, v: f64) -> sval1_lib::stream::Result {
-            self.0 = Cast::Primitive(Primitive::from(v));
+            self.0.f64(v).map_err(Error::into_sval1)?;
             Ok(())
         }
 
         fn char(&mut self, v: char) -> sval1_lib::stream::Result {
-            self.0 = Cast::Primitive(Primitive::from(v));
+            self.0.char(v).map_err(Error::into_sval1)?;
             Ok(())
         }
 
         fn bool(&mut self, v: bool) -> sval1_lib::stream::Result {
-            self.0 = Cast::Primitive(Primitive::from(v));
+            self.0.bool(v).map_err(Error::into_sval1)?;
             Ok(())
         }
 
-        #[cfg(feature = "std")]
         fn str(&mut self, s: &str) -> sval1_lib::stream::Result {
-            self.0 = Cast::String(s.into());
+            self.0.str(s).map_err(Error::into_sval1)?;
+            Ok(())
+        }
+
+        #[cfg(feature = "error")]
+        fn error(&mut self, v: sval1_lib::stream::Source) -> sval1_lib::stream::Result {
+            self.0.error(v.get()).map_err(Error::into_sval1)?;
             Ok(())
         }
     }
 
-    let mut cast = CastStream(Cast::Primitive(Primitive::None));
-    let _ = sval1_lib::stream(&mut cast, v);
+    let mut visitor = VisitorStream(visitor);
+    sval1_lib::stream(&mut visitor, v).map_err(Error::from_sval1)?;
 
-    cast.0
+    Ok(())
 }
 
 impl Error {
@@ -213,7 +212,7 @@ mod tests {
     wasm_bindgen_test_configure!(run_in_browser);
 
     use super::*;
-    use crate::test::Token;
+    use crate::test::*;
 
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
@@ -223,7 +222,7 @@ mod tests {
 
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-    fn sval1_cast() {
+    fn sval1_capture_cast() {
         assert_eq!(
             42u32,
             ValueBag::capture_sval1(&42u64)
@@ -242,6 +241,25 @@ mod tests {
         assert_eq!(
             "a string",
             ValueBag::capture_sval1(&"a string")
+                .to_str()
+                .expect("invalid value")
+        );
+    }
+
+    #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn sval1_from_cast() {
+        assert_eq!(
+            42u32,
+            ValueBag::from_sval1(&42u64)
+                .to_u32()
+                .expect("invalid value")
+        );
+
+        #[cfg(feature = "std")]
+        assert_eq!(
+            "a string",
+            ValueBag::from_sval1(&"a string")
                 .to_str()
                 .expect("invalid value")
         );
@@ -297,6 +315,29 @@ mod tests {
 
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn sval1_visit() {
+        ValueBag::from_dyn_sval1(&42u64)
+            .visit(TestVisit)
+            .expect("failed to visit value");
+        ValueBag::from_dyn_sval1(&-42i64)
+            .visit(TestVisit)
+            .expect("failed to visit value");
+        ValueBag::from_dyn_sval1(&11f64)
+            .visit(TestVisit)
+            .expect("failed to visit value");
+        ValueBag::from_dyn_sval1(&true)
+            .visit(TestVisit)
+            .expect("failed to visit value");
+        ValueBag::from_dyn_sval1(&"some string")
+            .visit(TestVisit)
+            .expect("failed to visit value");
+        ValueBag::from_dyn_sval1(&'n')
+            .visit(TestVisit)
+            .expect("failed to visit value");
+    }
+
+    #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     #[cfg(feature = "serde1")]
     fn sval1_serde1() {
         use serde1_test::{assert_ser_tokens, Token};
@@ -310,6 +351,24 @@ mod tests {
         }
 
         assert_ser_tokens(&ValueBag::capture_sval1(&TestSval), &[Token::U64(42)]);
+    }
+
+    #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    #[cfg(feature = "std")]
+    fn sval1_visit_error() {
+        use crate::{
+            internal::sval::v1 as sval,
+            std::{error, io},
+        };
+
+        let err: &(dyn error::Error + 'static) = &io::Error::from(io::ErrorKind::Other);
+        let value: &dyn sval::Value = &err;
+
+        // Ensure that an error captured through `sval` can be visited as an error
+        ValueBag::from_dyn_sval1(value)
+            .visit(TestVisit)
+            .expect("failed to visit value");
     }
 
     #[cfg(feature = "std")]

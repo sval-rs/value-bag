@@ -24,7 +24,7 @@ pub(super) fn from_any<'v, T: 'static>(value: &'v T) -> Option<Primitive<'v>> {
                         $(
                             const $const_ident: TypeId = TypeId::of::<$ty>();
                             const $option_ident: TypeId = TypeId::of::<Option<$ty>>();
-                        );*
+                        )*
 
                         match TypeId::of::<Self>() {
                             $(

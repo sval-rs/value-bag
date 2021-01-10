@@ -1,10 +1,6 @@
-use crate::{
-    fill::Slot,
-    std::error,
-    ValueBag,
-};
+use crate::{fill::Slot, std::error, ValueBag};
 
-use super::{cast, Inner};
+use super::{cast, Internal};
 
 impl<'v> ValueBag<'v> {
     /// Get a value from an error.
@@ -13,9 +9,9 @@ impl<'v> ValueBag<'v> {
         T: error::Error + 'static,
     {
         ValueBag {
-            inner: Inner::Error {
+            inner: Internal::Error {
                 value,
-                type_id: Some(cast::type_id::<T>()),
+                type_id: cast::type_id::<T>(),
             },
         }
     }
@@ -23,17 +19,14 @@ impl<'v> ValueBag<'v> {
     /// Get a value from an erased value.
     pub fn from_dyn_error(value: &'v (dyn error::Error + 'static)) -> Self {
         ValueBag {
-            inner: Inner::Error {
-                value,
-                type_id: None,
-            }
+            inner: Internal::AnonError { value },
         }
     }
 
     /// Try get an error from this value.
-    pub fn to_error<'a>(&'a self) -> Option<&(dyn Error + 'static)> {
+    pub fn to_borrowed_error(&self) -> Option<&(dyn Error + 'static)> {
         match self.inner {
-            Inner::Error { value, .. } => Some(value),
+            Internal::Error { value, .. } => Some(value),
             _ => None,
         }
     }
@@ -55,7 +48,10 @@ impl<'s, 'f> Slot<'s, 'f> {
     }
 
     /// Fill the slot with an error.
-    pub fn fill_dyn_error(&mut self, value: &(dyn error::Error + 'static)) -> Result<(), crate::Error> {
+    pub fn fill_dyn_error(
+        &mut self,
+        value: &(dyn error::Error + 'static),
+    ) -> Result<(), crate::Error> {
         self.fill(|visitor| visitor.error(value))
     }
 }
@@ -72,7 +68,10 @@ mod tests {
 
     use super::*;
 
-    use crate::std::{io, string::ToString};
+    use crate::{
+        std::{io, string::ToString},
+        test::*,
+    };
 
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
@@ -82,7 +81,7 @@ mod tests {
         assert_eq!(
             err.to_string(),
             ValueBag::capture_error(&err)
-                .to_error()
+                .to_borrowed_error()
                 .expect("invalid value")
                 .to_string()
         );
@@ -96,5 +95,15 @@ mod tests {
         assert!(ValueBag::capture_error(&err)
             .downcast_ref::<io::Error>()
             .is_some());
+    }
+
+    #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn error_visit() {
+        let err = io::Error::from(io::ErrorKind::Other);
+
+        ValueBag::from_dyn_error(&err)
+            .visit(TestVisit)
+            .expect("failed to visit value");
     }
 }

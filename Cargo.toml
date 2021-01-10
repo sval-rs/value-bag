@@ -24,12 +24,10 @@ std = []
 
 # Add support for sval
 sval = ["sval1"]
-
 sval1 = ["sval1_lib"]
 
 # Add support for `serde`
 serde = ["serde1"]
-
 serde1 = [
     "serde1_lib",
     "sval1_lib/serde1",
@@ -83,6 +81,15 @@ package = "sval"
 [dev-dependencies.serde1_test]
 version = "1"
 package = "serde_test"
+
+[dev-dependencies.sval1_json]
+version = "1.0.0-alpha.4"
+features = ["std"]
+package = "sval_json"
+
+[dev-dependencies.serde1_json]
+version = "1"
+package = "serde_json"
 
 [dev-dependencies.wasm-bindgen]
 version = "0.2"
