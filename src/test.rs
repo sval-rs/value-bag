@@ -64,7 +64,7 @@ impl<'v> ValueBag<'v> {
     pub fn to_token(&self) -> Token {
         struct TestVisitor(Option<Token>);
 
-        impl<'v> internal::Visitor<'v> for TestVisitor {
+        impl<'v> internal::InternalVisitor<'v> for TestVisitor {
             fn debug(&mut self, v: &dyn fmt::Debug) -> Result<(), Error> {
                 self.0 = Some(Token::Str(format!("{:?}", v)));
                 Ok(())
@@ -125,7 +125,7 @@ impl<'v> ValueBag<'v> {
         }
 
         let mut visitor = TestVisitor(None);
-        self.visit(&mut visitor).unwrap();
+        self.internal_visit(&mut visitor).unwrap();
 
         visitor.0.unwrap()
     }

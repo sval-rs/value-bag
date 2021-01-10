@@ -4,7 +4,7 @@ use crate::{
     ValueBag,
 };
 
-use super::{cast, Inner};
+use super::{cast, Internal};
 
 impl<'v> ValueBag<'v> {
     /// Get a value from an error.
@@ -13,7 +13,7 @@ impl<'v> ValueBag<'v> {
         T: error::Error + 'static,
     {
         ValueBag {
-            inner: Inner::Error {
+            inner: Internal::Error {
                 value,
                 type_id: Some(cast::type_id::<T>()),
             },
@@ -23,7 +23,7 @@ impl<'v> ValueBag<'v> {
     /// Get a value from an erased value.
     pub fn from_dyn_error(value: &'v (dyn error::Error + 'static)) -> Self {
         ValueBag {
-            inner: Inner::Error {
+            inner: Internal::Error {
                 value,
                 type_id: None,
             }
@@ -31,9 +31,9 @@ impl<'v> ValueBag<'v> {
     }
 
     /// Try get an error from this value.
-    pub fn to_error<'a>(&'a self) -> Option<&(dyn Error + 'static)> {
+    pub fn to_borrowed_error(&self) -> Option<&(dyn Error + 'static)> {
         match self.inner {
-            Inner::Error { value, .. } => Some(value),
+            Internal::Error { value, .. } => Some(value),
             _ => None,
         }
     }
@@ -82,7 +82,7 @@ mod tests {
         assert_eq!(
             err.to_string(),
             ValueBag::capture_error(&err)
-                .to_error()
+                .to_borrowed_error()
                 .expect("invalid value")
                 .to_string()
         );

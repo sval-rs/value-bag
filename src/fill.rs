@@ -2,7 +2,7 @@
 
 use crate::std::fmt;
 
-use super::internal::{Inner, Visitor};
+use super::internal::{Internal, InternalVisitor};
 use super::{Error, ValueBag};
 
 impl<'v> ValueBag<'v> {
@@ -12,7 +12,7 @@ impl<'v> ValueBag<'v> {
         T: Fill,
     {
         ValueBag {
-            inner: Inner::Fill { value },
+            inner: Internal::Fill { value },
         }
     }
 }
@@ -39,7 +39,7 @@ where
 /// A value slot to fill using the [`Fill`](trait.Fill.html) trait.
 pub struct Slot<'s, 'f> {
     filled: bool,
-    visitor: &'s mut dyn Visitor<'f>,
+    visitor: &'s mut dyn InternalVisitor<'f>,
 }
 
 impl<'s, 'f> fmt::Debug for Slot<'s, 'f> {
@@ -49,7 +49,7 @@ impl<'s, 'f> fmt::Debug for Slot<'s, 'f> {
 }
 
 impl<'s, 'f> Slot<'s, 'f> {
-    pub(super) fn new(visitor: &'s mut dyn Visitor<'f>) -> Self {
+    pub(super) fn new(visitor: &'s mut dyn InternalVisitor<'f>) -> Self {
         Slot {
             visitor,
             filled: false,
@@ -58,7 +58,7 @@ impl<'s, 'f> Slot<'s, 'f> {
 
     pub(super) fn fill<F>(&mut self, f: F) -> Result<(), Error>
     where
-        F: FnOnce(&mut dyn Visitor<'f>) -> Result<(), Error>,
+        F: FnOnce(&mut dyn InternalVisitor<'f>) -> Result<(), Error>,
     {
         assert!(!self.filled, "the slot has already been filled");
         self.filled = true;
@@ -77,7 +77,7 @@ impl<'s, 'f> Slot<'s, 'f> {
     where
         T: Into<ValueBag<'f>>,
     {
-        self.fill(|visitor| value.into().inner.visit(visitor))
+        self.fill(|visitor| value.into().inner.internal_visit(visitor))
     }
 }
 

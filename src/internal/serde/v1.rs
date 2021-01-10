@@ -1,10 +1,15 @@
+//! Integration between `Value` and `serde`.
+//!
+//! This module allows any `Value` to implement the `Serialize` trait,
+//! and for any `Serialize` to be captured as a `Value`.
+
 use crate::{
     fill::Slot,
     internal::{
-        cast::{self, Cast},
-        Inner, Primitive, Visitor,
+        cast,
+        Internal, InternalVisitor,
     },
-    std::{fmt, marker::PhantomData},
+    std::fmt,
     Error, ValueBag,
 };
 
@@ -20,7 +25,7 @@ impl<'v> ValueBag<'v> {
         T: Serialize + 'static,
     {
         cast::try_from_primitive(value).unwrap_or(ValueBag {
-            inner: Inner::Serde1 {
+            inner: Internal::Serde1 {
                 value,
                 type_id: Some(cast::type_id::<T>()),
             },
@@ -33,7 +38,7 @@ impl<'v> ValueBag<'v> {
         T: Serialize,
     {
         ValueBag {
-            inner: Inner::Serde1 {
+            inner: Internal::Serde1 {
                 value,
                 type_id: None,
             }
@@ -91,7 +96,7 @@ impl<'v> serde1_lib::Serialize for ValueBag<'v> {
             }
         }
 
-        impl<'v, S> Visitor<'v> for Serde1Visitor<S>
+        impl<'v, S> InternalVisitor<'v> for Serde1Visitor<S>
         where
             S: serde1_lib::Serializer,
         {
@@ -169,7 +174,7 @@ impl<'v> serde1_lib::Serialize for ValueBag<'v> {
             result: None,
         };
 
-        self.visit(&mut visitor).map_err(|e| S::Error::custom(e))?;
+        self.internal_visit(&mut visitor).map_err(|e| S::Error::custom(e))?;
 
         visitor.into_result()
     }
@@ -191,12 +196,12 @@ pub(in crate::internal) fn sval1(
     Ok(())
 }
 
-pub(in crate::internal) fn cast<'v>(v: &dyn Serialize) -> Cast<'v> {
-    struct CastSerializer<'v>(PhantomData<Cast<'v>>);
+pub(crate) fn internal_visit<'v>(v: &dyn Serialize, visitor: &mut dyn InternalVisitor<'v>) -> Result<(), Error> {
+    struct VisitorSerializer<'a, 'v>(&'a mut dyn InternalVisitor<'v>);
 
-    impl<'v> serde1_lib::Serializer for CastSerializer<'v> {
-        type Ok = Cast<'v>;
-        type Error = InvalidCast;
+    impl<'a, 'v> serde1_lib::Serializer for VisitorSerializer<'a, 'v> {
+        type Ok = ();
+        type Error = Unsupported;
 
         type SerializeSeq = Impossible<Self::Ok, Self::Error>;
         type SerializeTuple = Impossible<Self::Ok, Self::Error>;
@@ -207,51 +212,51 @@ pub(in crate::internal) fn cast<'v>(v: &dyn Serialize) -> Cast<'v> {
         type SerializeStructVariant = Impossible<Self::Ok, Self::Error>;
 
         fn serialize_u8(self, v: u8) -> Result<Self::Ok, Self::Error> {
-            Ok(Cast::Primitive(Primitive::from(v)))
+            self.0.u64(v as u64).map_err(|_| Unsupported)
         }
 
         fn serialize_u16(self, v: u16) -> Result<Self::Ok, Self::Error> {
-            Ok(Cast::Primitive(Primitive::from(v)))
+            self.0.u64(v as u64).map_err(|_| Unsupported)
         }
 
         fn serialize_u32(self, v: u32) -> Result<Self::Ok, Self::Error> {
-            Ok(Cast::Primitive(Primitive::from(v)))
+            self.0.u64(v as u64).map_err(|_| Unsupported)
         }
 
         fn serialize_u64(self, v: u64) -> Result<Self::Ok, Self::Error> {
-            Ok(Cast::Primitive(Primitive::from(v)))
+            self.0.u64(v).map_err(|_| Unsupported)
         }
 
         fn serialize_i8(self, v: i8) -> Result<Self::Ok, Self::Error> {
-            Ok(Cast::Primitive(Primitive::from(v)))
+            self.0.i64(v as i64).map_err(|_| Unsupported)
         }
 
         fn serialize_i16(self, v: i16) -> Result<Self::Ok, Self::Error> {
-            Ok(Cast::Primitive(Primitive::from(v)))
+            self.0.i64(v as i64).map_err(|_| Unsupported)
         }
 
         fn serialize_i32(self, v: i32) -> Result<Self::Ok, Self::Error> {
-            Ok(Cast::Primitive(Primitive::from(v)))
+            self.0.i64(v as i64).map_err(|_| Unsupported)
         }
 
         fn serialize_i64(self, v: i64) -> Result<Self::Ok, Self::Error> {
-            Ok(Cast::Primitive(Primitive::from(v)))
+            self.0.i64(v).map_err(|_| Unsupported)
         }
 
         fn serialize_f32(self, v: f32) -> Result<Self::Ok, Self::Error> {
-            Ok(Cast::Primitive(Primitive::from(v)))
+            self.0.f64(v as f64).map_err(|_| Unsupported)
         }
 
         fn serialize_f64(self, v: f64) -> Result<Self::Ok, Self::Error> {
-            Ok(Cast::Primitive(Primitive::from(v)))
+            self.0.f64(v).map_err(|_| Unsupported)
         }
 
         fn serialize_char(self, v: char) -> Result<Self::Ok, Self::Error> {
-            Ok(Cast::Primitive(Primitive::from(v)))
+            self.0.char(v).map_err(|_| Unsupported)
         }
 
         fn serialize_bool(self, v: bool) -> Result<Self::Ok, Self::Error> {
-            Ok(Cast::Primitive(Primitive::from(v)))
+            self.0.bool(v).map_err(|_| Unsupported)
         }
 
         fn serialize_some<T>(self, v: &T) -> Result<Self::Ok, Self::Error>
@@ -262,29 +267,23 @@ pub(in crate::internal) fn cast<'v>(v: &dyn Serialize) -> Cast<'v> {
         }
 
         fn serialize_unit(self) -> Result<Self::Ok, Self::Error> {
-            Ok(Cast::Primitive(Primitive::None))
+            self.0.none().map_err(|_| Unsupported)
         }
 
         fn serialize_none(self) -> Result<Self::Ok, Self::Error> {
-            Ok(Cast::Primitive(Primitive::None))
+            self.0.none().map_err(|_| Unsupported)
         }
 
         fn serialize_bytes(self, _: &[u8]) -> Result<Self::Ok, Self::Error> {
-            Err(InvalidCast)
+            Err(Unsupported)
         }
 
-        #[cfg(not(feature = "std"))]
-        fn serialize_str(self, _: &str) -> Result<Self::Ok, Self::Error> {
-            Err(InvalidCast)
-        }
-
-        #[cfg(feature = "std")]
         fn serialize_str(self, s: &str) -> Result<Self::Ok, Self::Error> {
-            Ok(Cast::String(s.into()))
+            self.0.str(s).map_err(|_| Unsupported)
         }
 
         fn serialize_unit_struct(self, _: &'static str) -> Result<Self::Ok, Self::Error> {
-            Err(InvalidCast)
+            Err(Unsupported)
         }
 
         fn serialize_unit_variant(
@@ -293,7 +292,7 @@ pub(in crate::internal) fn cast<'v>(v: &dyn Serialize) -> Cast<'v> {
             _: u32,
             _: &'static str,
         ) -> Result<Self::Ok, Self::Error> {
-            Err(InvalidCast)
+            Err(Unsupported)
         }
 
         fn serialize_newtype_struct<T>(
@@ -304,7 +303,7 @@ pub(in crate::internal) fn cast<'v>(v: &dyn Serialize) -> Cast<'v> {
         where
             T: serde1_lib::Serialize + ?Sized,
         {
-            Err(InvalidCast)
+            Err(Unsupported)
         }
 
         fn serialize_newtype_variant<T>(
@@ -317,18 +316,18 @@ pub(in crate::internal) fn cast<'v>(v: &dyn Serialize) -> Cast<'v> {
         where
             T: serde1_lib::Serialize + ?Sized,
         {
-            Err(InvalidCast)
+            Err(Unsupported)
         }
 
         fn serialize_seq(
             self,
             _: core::option::Option<usize>,
         ) -> Result<Self::SerializeSeq, Self::Error> {
-            Err(InvalidCast)
+            Err(Unsupported)
         }
 
         fn serialize_tuple(self, _: usize) -> Result<Self::SerializeTuple, Self::Error> {
-            Err(InvalidCast)
+            Err(Unsupported)
         }
 
         fn serialize_tuple_struct(
@@ -336,7 +335,7 @@ pub(in crate::internal) fn cast<'v>(v: &dyn Serialize) -> Cast<'v> {
             _: &'static str,
             _: usize,
         ) -> Result<Self::SerializeTupleStruct, Self::Error> {
-            Err(InvalidCast)
+            Err(Unsupported)
         }
 
         fn serialize_tuple_variant(
@@ -346,14 +345,14 @@ pub(in crate::internal) fn cast<'v>(v: &dyn Serialize) -> Cast<'v> {
             _: &'static str,
             _: usize,
         ) -> Result<Self::SerializeTupleVariant, Self::Error> {
-            Err(InvalidCast)
+            Err(Unsupported)
         }
 
         fn serialize_map(
             self,
             _: core::option::Option<usize>,
         ) -> Result<Self::SerializeMap, Self::Error> {
-            Err(InvalidCast)
+            Err(Unsupported)
         }
 
         fn serialize_struct(
@@ -361,7 +360,7 @@ pub(in crate::internal) fn cast<'v>(v: &dyn Serialize) -> Cast<'v> {
             _: &'static str,
             _: usize,
         ) -> Result<Self::SerializeStruct, Self::Error> {
-            Err(InvalidCast)
+            Err(Unsupported)
         }
 
         fn serialize_struct_variant(
@@ -371,12 +370,11 @@ pub(in crate::internal) fn cast<'v>(v: &dyn Serialize) -> Cast<'v> {
             _: &'static str,
             _: usize,
         ) -> Result<Self::SerializeStructVariant, Self::Error> {
-            Err(InvalidCast)
+            Err(Unsupported)
         }
     }
 
-    erased_serde1::serialize(v, CastSerializer(Default::default()))
-        .unwrap_or(Cast::Primitive(Primitive::None))
+    erased_serde1::serialize(v, VisitorSerializer(visitor)).map_err(|_| Error::serde())
 }
 
 impl Error {
@@ -385,25 +383,26 @@ impl Error {
     }
 }
 
-#[derive(Debug)]
-struct InvalidCast;
 
-impl fmt::Display for InvalidCast {
+#[derive(Debug)]
+struct Unsupported;
+
+impl fmt::Display for Unsupported {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "invalid cast")
     }
 }
 
-impl serde1_lib::ser::Error for InvalidCast {
+impl serde1_lib::ser::Error for Unsupported {
     fn custom<T>(_: T) -> Self
-    where
-        T: fmt::Display,
+        where
+            T: fmt::Display,
     {
-        InvalidCast
+        Unsupported
     }
 }
 
-impl serde1_lib::ser::StdError for InvalidCast {}
+impl serde1_lib::ser::StdError for Unsupported {}
 
 #[cfg(test)]
 mod tests {
@@ -424,7 +423,7 @@ mod tests {
 
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-    fn serde1_cast() {
+    fn serde1_capture_cast() {
         assert_eq!(
             42u32,
             ValueBag::capture_serde1(&42u64)
@@ -443,6 +442,25 @@ mod tests {
         assert_eq!(
             "a string",
             ValueBag::capture_serde1(&"a string")
+                .to_str()
+                .expect("invalid value")
+        );
+    }
+
+    #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn serde1_from_cast() {
+        assert_eq!(
+            42u32,
+            ValueBag::from_serde1(&42u64)
+                .to_u32()
+                .expect("invalid value")
+        );
+
+        #[cfg(feature = "std")]
+        assert_eq!(
+            "a string",
+            ValueBag::from_serde1(&"a string")
                 .to_str()
                 .expect("invalid value")
         );

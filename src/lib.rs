@@ -16,6 +16,7 @@ extern crate core as std;
 
 mod error;
 pub mod fill;
+pub mod visit;
 mod impls;
 mod internal;
 
@@ -23,8 +24,6 @@ mod internal;
 pub mod test;
 
 pub use self::error::Error;
-
-use self::internal::{Inner, Primitive, Visitor};
 
 /// A dynamic structured value.
 ///
@@ -49,17 +48,11 @@ use self::internal::{Inner, Primitive, Visitor};
 /// assert_eq!(Some(42), value.to_i32());
 /// ```
 ///
-/// ## Using the standard `From` trait
+/// Capturing a value using these methods will retain type information so that
+/// the contents of the bag can be serialized using an appropriate type.
 ///
-/// Standard types that implement `ToValue` also implement `From`.
-///
-/// ```
-/// use value_bag::ValueBag;
-///
-/// let value = ValueBag::from(42i32);
-///
-/// assert_eq!(Some(42), value.to_i32());
-/// ```
+/// For cases where the `'static` bound can't be satisfied, there's also a few
+/// constructors that exclude it.
 ///
 /// ```
 /// # use std::fmt::Debug;
@@ -68,6 +61,20 @@ use self::internal::{Inner, Primitive, Visitor};
 /// let value = ValueBag::from_debug(&42i32);
 ///
 /// assert_eq!(None, value.to_i32());
+/// ```
+///
+/// These `ValueBag::from_*` methods are lossy though and `ValueBag::capture_*` should be preferred.
+///
+/// ## Using the standard `From` trait
+///
+/// Primitive types can be converted into a `ValueBag` using the standard `From` trait.
+///
+/// ```
+/// use value_bag::ValueBag;
+///
+/// let value = ValueBag::from(42i32);
+///
+/// assert_eq!(Some(42), value.to_i32());
 /// ```
 ///
 /// ## Using the `Fill` API
@@ -117,24 +124,5 @@ use self::internal::{Inner, Primitive, Visitor};
 /// - Using the `ValueBag::downcast_ref` method.
 #[derive(Clone)]
 pub struct ValueBag<'v> {
-    inner: Inner<'v>,
-}
-
-impl<'v> ValueBag<'v> {
-    /// Get a value from an internal primitive.
-    fn from_primitive<T>(value: T) -> Self
-    where
-        T: Into<Primitive<'v>>,
-    {
-        ValueBag {
-            inner: Inner::Primitive {
-                value: value.into(),
-            },
-        }
-    }
-
-    /// Visit the value using an internal visitor.
-    fn visit<'a>(&'a self, visitor: &mut dyn Visitor<'a>) -> Result<(), Error> {
-        self.inner.visit(visitor)
-    }
+    inner: internal::Internal<'v>,
 }
