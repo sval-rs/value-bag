@@ -19,6 +19,9 @@ pub(super) mod serde;
 #[cfg(feature = "sval1")]
 pub(super) mod sval;
 
+// NOTE: It takes less space to have separate variants for the presence
+// of a `TypeId` instead of using `Option<T>`, because `TypeId` doesn't
+// have a niche value
 /// A container for a structured value for a specific kind of visitor.
 #[derive(Clone, Copy)]
 pub(super) enum Internal<'v> {
@@ -26,36 +29,61 @@ pub(super) enum Internal<'v> {
     Primitive { value: Primitive<'v> },
     /// A value that can be filled.
     Fill { value: &'v dyn Fill },
+
+    /// A debuggable value.
+    AnonDebug {
+        value: &'v dyn fmt::Debug,
+    },
     /// A debuggable value.
     Debug {
         value: &'v dyn fmt::Debug,
-        type_id: Option<TypeId>,
+        type_id: TypeId,
+    },
+
+    /// A displayable value.
+    AnonDisplay {
+        value: &'v dyn fmt::Display,
     },
     /// A displayable value.
     Display {
         value: &'v dyn fmt::Display,
-        type_id: Option<TypeId>,
+        type_id: TypeId,
     },
 
     #[cfg(feature = "error")]
     /// An error.
+    AnonError {
+        value: &'v (dyn error::Error + 'static),
+    },
+    #[cfg(feature = "error")]
+    /// An error.
     Error {
         value: &'v (dyn error::Error + 'static),
-        type_id: Option<TypeId>,
+        type_id: TypeId,
     },
 
     #[cfg(feature = "sval1")]
     /// A structured value from `sval`.
+    AnonSval1 {
+        value: &'v dyn sval::v1::Value,
+    },
+    #[cfg(feature = "sval1")]
+    /// A structured value from `sval`.
     Sval1 {
         value: &'v dyn sval::v1::Value,
-        type_id: Option<TypeId>,
+        type_id: TypeId,
     },
 
     #[cfg(feature = "serde1")]
     /// A structured value from `serde`.
+    AnonSerde1 {
+        value: &'v dyn serde::v1::Serialize,
+    },
+    #[cfg(feature = "serde1")]
+    /// A structured value from `serde`.
     Serde1 {
         value: &'v dyn serde::v1::Serialize,
-        type_id: Option<TypeId>,
+        type_id: TypeId,
     },
 }
 
@@ -99,15 +127,24 @@ impl<'v> Internal<'v> {
 
             Internal::Fill { value } => value.fill(&mut Slot::new(visitor)),
 
+            Internal::AnonDebug { value } => visitor.debug(value),
             Internal::Debug { value, .. } => visitor.debug(value),
+
+            Internal::AnonDisplay { value } => visitor.display(value),
             Internal::Display { value, .. } => visitor.display(value),
 
+            #[cfg(feature = "error")]
+            Internal::AnonError { value } => visitor.borrowed_error(value),
             #[cfg(feature = "error")]
             Internal::Error { value, .. } => visitor.borrowed_error(value),
 
             #[cfg(feature = "sval1")]
+            Internal::AnonSval1 { value } => visitor.sval1(value),
+            #[cfg(feature = "sval1")]
             Internal::Sval1 { value, .. } => visitor.sval1(value),
 
+            #[cfg(feature = "serde1")]
+            Internal::AnonSerde1 { value } => visitor.serde1(value),
             #[cfg(feature = "serde1")]
             Internal::Serde1 { value, .. } => visitor.serde1(value),
         }

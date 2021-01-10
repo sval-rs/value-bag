@@ -1,4 +1,8 @@
 //! Structured values.
+//!
+//! This crate contains the [`ValueBag`] type, a container for an anonymous structured value.
+//! `ValueBag`s can be captured in various ways and then formatted, inspected, and serialized
+//! without losing their original structure.
 
 #![cfg_attr(value_bag_capture_const_type_id, feature(const_type_id))]
 #![doc(html_root_url = "https://docs.rs/value-bag/1.0.0-alpha.5")]
@@ -31,7 +35,7 @@ pub use self::error::Error;
 ///
 /// There are a few ways to capture a value:
 ///
-/// - Using the `ValueBag::capture_*` methods.
+/// - Using the `ValueBag::capture_*` and `ValueBag::from_*` methods.
 /// - Using the standard `From` trait.
 /// - Using the `Fill` API.
 ///
@@ -135,6 +139,8 @@ pub use self::error::Error;
 /// More complex datatypes can then be handled using `std::fmt`, `sval`, or `serde`.
 ///
 /// ```
+/// #[cfg(not(feature = "std"))] fn main() {}
+/// #[cfg(feature = "std")]
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// # fn escape(buf: &[u8]) -> &[u8] { buf }
 /// # fn itoa_fmt<T>(num: T) -> Vec<u8> { vec![] }
@@ -217,9 +223,10 @@ pub use self::error::Error;
 /// Then stream the contents of the `ValueBag` using `sval`.
 ///
 /// ```
-/// #![cfg(feature = "sval1")]
-/// # extern crate sval1_json as sval_json;
+/// #[cfg(not(all(feature = "std", feature = "sval1")))] fn main() {}
+/// #[cfg(all(feature = "std", feature = "sval1"))]
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// # extern crate sval1_json as sval_json;
 /// use value_bag::ValueBag;
 ///
 /// let value = ValueBag::from(42i64);
@@ -229,9 +236,10 @@ pub use self::error::Error;
 /// ```
 ///
 /// ```
-/// #![cfg(feature = "sval1")]
-/// # extern crate sval1_lib as sval;
+/// #[cfg(not(all(feature = "std", feature = "sval1")))] fn main() {}
+/// #[cfg(all(feature = "std", feature = "sval1"))]
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// # extern crate sval1_lib as sval;
 /// # fn escape(buf: &[u8]) -> &[u8] { buf }
 /// # fn itoa_fmt<T>(num: T) -> Vec<u8> { vec![] }
 /// # fn ryu_fmt<T>(num: T) -> Vec<u8> { vec![] }
@@ -283,7 +291,7 @@ pub use self::error::Error;
 /// This makes it possible to visit any typed structure captured in the `ValueBag`,
 /// including complex datatypes like maps and sequences.
 ///
-/// `serde` doesn't need to allocate so can be used in no-std environments.
+/// `serde` needs a few temporary allocations, so also brings in the `std` feature.
 ///
 /// First, enable the `serde1` feature in your `Cargo.toml`:
 ///
@@ -295,9 +303,10 @@ pub use self::error::Error;
 /// Then stream the contents of the `ValueBag` using `serde`.
 ///
 /// ```
-/// #![cfg(feature = "serde1")]
-/// # extern crate serde1_json as serde_json;
+/// #[cfg(not(all(feature = "std", feature = "serde1")))] fn main() {}
+/// #[cfg(all(feature = "std", feature = "serde1"))]
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// # extern crate serde1_json as serde_json;
 /// use value_bag::ValueBag;
 ///
 /// let value = ValueBag::from(42i64);
@@ -342,4 +351,26 @@ pub use self::error::Error;
 #[derive(Clone)]
 pub struct ValueBag<'v> {
     inner: internal::Internal<'v>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::std::mem;
+
+    #[test]
+    fn value_bag_size() {
+        let size = mem::size_of::<ValueBag<'_>>();
+        let limit = mem::size_of::<usize>() * 4;
+
+        if size > limit {
+            panic!(
+                "`ValueBag` size ({} bytes) is too large (expected up to {} bytes)\n`Primitive`: {} bytes\n`(`&dyn` + `TypeId`): {} bytes",
+                size,
+                limit,
+                mem::size_of::<internal::Primitive<'_>>(),
+                mem::size_of::<(&dyn internal::fmt::Debug, crate::std::any::TypeId)>(),
+            );
+        }
+    }
 }

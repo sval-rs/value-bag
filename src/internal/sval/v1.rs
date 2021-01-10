@@ -25,7 +25,7 @@ impl<'v> ValueBag<'v> {
         cast::try_from_primitive(value).unwrap_or(ValueBag {
             inner: Internal::Sval1 {
                 value,
-                type_id: Some(cast::type_id::<T>()),
+                type_id: cast::type_id::<T>(),
             },
         })
     }
@@ -36,9 +36,8 @@ impl<'v> ValueBag<'v> {
         T: Value,
     {
         ValueBag {
-            inner: Internal::Sval1 {
+            inner: Internal::AnonSval1 {
                 value,
-                type_id: None,
             }
         }
     }
@@ -46,9 +45,8 @@ impl<'v> ValueBag<'v> {
     /// Get a value from an erased structured type.
     pub fn from_dyn_sval1(value: &'v dyn Value) -> Self {
         ValueBag {
-            inner: Internal::Sval1 {
+            inner: Internal::AnonSval1 {
                 value,
-                type_id: None,
             }
         }
     }

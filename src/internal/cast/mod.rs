@@ -195,26 +195,26 @@ impl<'v> ValueBag<'v> {
         let target = TypeId::of::<T>();
         match self.inner {
             Internal::Debug {
-                type_id: Some(type_id),
+                type_id,
                 value,
             } if type_id == target => Some(unsafe { &*(value as *const _ as *const T) }),
             Internal::Display {
-                type_id: Some(type_id),
+                type_id,
                 value,
             } if type_id == target => Some(unsafe { &*(value as *const _ as *const T) }),
             #[cfg(feature = "error")]
             Internal::Error {
-                type_id: Some(type_id),
+                type_id,
                 value,
             } if type_id == target => Some(unsafe { &*(value as *const _ as *const T) }),
             #[cfg(feature = "sval1")]
             Internal::Sval1 {
-                type_id: Some(type_id),
+                type_id,
                 value,
             } if type_id == target => Some(unsafe { &*(value as *const _ as *const T) }),
             #[cfg(feature = "serde1")]
             Internal::Serde1 {
-                type_id: Some(type_id),
+                type_id,
                 value,
             } if type_id == target => Some(unsafe { &*(value as *const _ as *const T) }),
             _ => None,

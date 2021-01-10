@@ -19,7 +19,7 @@ impl<'v> ValueBag<'v> {
         cast::try_from_primitive(value).unwrap_or(ValueBag {
             inner: Internal::Debug {
                 value,
-                type_id: Some(cast::type_id::<T>()),
+                type_id: cast::type_id::<T>(),
             },
         })
     }
@@ -35,7 +35,7 @@ impl<'v> ValueBag<'v> {
         cast::try_from_primitive(value).unwrap_or(ValueBag {
             inner: Internal::Display {
                 value,
-                type_id: Some(cast::type_id::<T>()),
+                type_id: cast::type_id::<T>(),
             },
         })
     }
@@ -46,9 +46,8 @@ impl<'v> ValueBag<'v> {
         T: Debug,
     {
         ValueBag {
-            inner: Internal::Debug {
+            inner: Internal::AnonDebug {
                 value,
-                type_id: None,
             }
         }
     }
@@ -59,9 +58,8 @@ impl<'v> ValueBag<'v> {
         T: Display,
     {
         ValueBag {
-            inner: Internal::Display {
+            inner: Internal::AnonDisplay {
                 value,
-                type_id: None,
             }
         }
     }
@@ -69,9 +67,8 @@ impl<'v> ValueBag<'v> {
     /// Get a value from a debuggable type without capturing support.
     pub fn from_dyn_debug(value: &'v dyn Debug) -> Self {
         ValueBag {
-            inner: Internal::Debug {
+            inner: Internal::AnonDebug {
                 value,
-                type_id: None,
             }
         }
     }
@@ -79,9 +76,8 @@ impl<'v> ValueBag<'v> {
     /// Get a value from a displayable type without capturing support.
     pub fn from_dyn_display(value: &'v dyn Display) -> Self {
         ValueBag {
-            inner: Internal::Display {
+            inner: Internal::AnonDisplay {
                 value,
-                type_id: None,
             }
         }
     }

@@ -24,12 +24,10 @@ std = []
 
 # Add support for sval
 sval = ["sval1"]
-
 sval1 = ["sval1_lib"]
 
 # Add support for `serde`
 serde = ["serde1"]
-
 serde1 = [
     "serde1_lib",
     "sval1_lib/serde1",

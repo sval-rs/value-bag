@@ -27,7 +27,7 @@ impl<'v> ValueBag<'v> {
         cast::try_from_primitive(value).unwrap_or(ValueBag {
             inner: Internal::Serde1 {
                 value,
-                type_id: Some(cast::type_id::<T>()),
+                type_id: cast::type_id::<T>(),
             },
         })
     }
@@ -38,9 +38,8 @@ impl<'v> ValueBag<'v> {
         T: Serialize,
     {
         ValueBag {
-            inner: Internal::Serde1 {
+            inner: Internal::AnonSerde1 {
                 value,
-                type_id: None,
             }
         }
     }

@@ -15,7 +15,7 @@ impl<'v> ValueBag<'v> {
         ValueBag {
             inner: Internal::Error {
                 value,
-                type_id: Some(cast::type_id::<T>()),
+                type_id: cast::type_id::<T>(),
             },
         }
     }
@@ -23,9 +23,8 @@ impl<'v> ValueBag<'v> {
     /// Get a value from an erased value.
     pub fn from_dyn_error(value: &'v (dyn error::Error + 'static)) -> Self {
         ValueBag {
-            inner: Internal::Error {
+            inner: Internal::AnonError {
                 value,
-                type_id: None,
             }
         }
     }
