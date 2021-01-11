@@ -29,13 +29,13 @@
 //!
 //! impl Fill for FillDebug {
 //!     fn fill(&self, slot: &mut Slot) -> Result<(), Error> {
-//!         slot.fill_debug(&42i32 as &dyn Debug)
+//!         slot.fill_debug(&42i64 as &dyn Debug)
 //!     }
 //! }
 //!
 //! let value = ValueBag::from_fill(&FillDebug);
 //!
-//! assert_eq!(None, value.to_i32());
+//! assert_eq!(None, value.to_i64());
 //! ```
 
 use crate::std::fmt;

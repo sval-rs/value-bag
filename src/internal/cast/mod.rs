@@ -4,7 +4,11 @@
 //! but may end up executing arbitrary caller code if the value is complex.
 //! They will also attempt to downcast erased types into a primitive where possible.
 
-use crate::std::{any::TypeId, fmt};
+use crate::std::{
+    any::TypeId,
+    convert::{TryFrom, TryInto},
+    fmt,
+};
 
 #[cfg(feature = "std")]
 use crate::std::{borrow::ToOwned, string::String};
@@ -29,108 +33,12 @@ pub(super) fn try_from_primitive<'v, T: 'static>(value: &'v T) -> Option<ValueBa
 }
 
 impl<'v> ValueBag<'v> {
-    /// Try get a `usize` from this value.
-    ///
-    /// This method is cheap for primitive types, but may call arbitrary
-    /// serialization implementations for complex ones.
-    pub fn to_usize(&self) -> Option<usize> {
-        self.inner
-            .cast()
-            .into_primitive()
-            .into_u64()
-            .map(|v| v as usize)
-    }
-
-    /// Try get a `u8` from this value.
-    ///
-    /// This method is cheap for primitive types, but may call arbitrary
-    /// serialization implementations for complex ones.
-    pub fn to_u8(&self) -> Option<u8> {
-        self.inner
-            .cast()
-            .into_primitive()
-            .into_u64()
-            .map(|v| v as u8)
-    }
-
-    /// Try get a `u16` from this value.
-    ///
-    /// This method is cheap for primitive types, but may call arbitrary
-    /// serialization implementations for complex ones.
-    pub fn to_u16(&self) -> Option<u16> {
-        self.inner
-            .cast()
-            .into_primitive()
-            .into_u64()
-            .map(|v| v as u16)
-    }
-
-    /// Try get a `u32` from this value.
-    ///
-    /// This method is cheap for primitive types, but may call arbitrary
-    /// serialization implementations for complex ones.
-    pub fn to_u32(&self) -> Option<u32> {
-        self.inner
-            .cast()
-            .into_primitive()
-            .into_u64()
-            .map(|v| v as u32)
-    }
-
     /// Try get a `u64` from this value.
     ///
     /// This method is cheap for primitive types, but may call arbitrary
     /// serialization implementations for complex ones.
     pub fn to_u64(&self) -> Option<u64> {
         self.inner.cast().into_primitive().into_u64()
-    }
-
-    /// Try get a `isize` from this value.
-    ///
-    /// This method is cheap for primitive types, but may call arbitrary
-    /// serialization implementations for complex ones.
-    pub fn to_isize(&self) -> Option<isize> {
-        self.inner
-            .cast()
-            .into_primitive()
-            .into_i64()
-            .map(|v| v as isize)
-    }
-
-    /// Try get a `i8` from this value.
-    ///
-    /// This method is cheap for primitive types, but may call arbitrary
-    /// serialization implementations for complex ones.
-    pub fn to_i8(&self) -> Option<i8> {
-        self.inner
-            .cast()
-            .into_primitive()
-            .into_i64()
-            .map(|v| v as i8)
-    }
-
-    /// Try get a `i16` from this value.
-    ///
-    /// This method is cheap for primitive types, but may call arbitrary
-    /// serialization implementations for complex ones.
-    pub fn to_i16(&self) -> Option<i16> {
-        self.inner
-            .cast()
-            .into_primitive()
-            .into_i64()
-            .map(|v| v as i16)
-    }
-
-    /// Try get a `i32` from this value.
-    ///
-    /// This method is cheap for primitive types, but may call arbitrary
-    /// serialization implementations for complex ones.
-    pub fn to_i32(&self) -> Option<i32> {
-        self.inner
-            .cast()
-            .into_primitive()
-            .into_i64()
-            .map(|v| v as i32)
     }
 
     /// Try get a `i64` from this value.
@@ -141,16 +49,20 @@ impl<'v> ValueBag<'v> {
         self.inner.cast().into_primitive().into_i64()
     }
 
-    /// Try get a `f32` from this value.
+    /// Try get a `u128` from this value.
     ///
     /// This method is cheap for primitive types, but may call arbitrary
     /// serialization implementations for complex ones.
-    pub fn to_f32(&self) -> Option<f32> {
-        self.inner
-            .cast()
-            .into_primitive()
-            .into_f64()
-            .map(|v| v as f32)
+    pub fn to_u128(&self) -> Option<u128> {
+        self.inner.cast().into_primitive().into_u128()
+    }
+
+    /// Try get a `i128` from this value.
+    ///
+    /// This method is cheap for primitive types, but may call arbitrary
+    /// serialization implementations for complex ones.
+    pub fn to_i128(&self) -> Option<i128> {
+        self.inner.cast().into_primitive().into_i128()
     }
 
     /// Try get a `f64` from this value.
@@ -227,6 +139,10 @@ impl<'v> Internal<'v> {
                 Ok(())
             }
 
+            fn display(&mut self, _: &dyn fmt::Display) -> Result<(), Error> {
+                Ok(())
+            }
+
             fn u64(&mut self, v: u64) -> Result<(), Error> {
                 self.0 = Cast::Primitive(Primitive::Unsigned(v));
                 Ok(())
@@ -239,6 +155,16 @@ impl<'v> Internal<'v> {
 
             fn f64(&mut self, v: f64) -> Result<(), Error> {
                 self.0 = Cast::Primitive(Primitive::Float(v));
+                Ok(())
+            }
+
+            fn i128(&mut self, v: i128) -> Result<(), Error> {
+                self.0 = Cast::Primitive(Primitive::BigSigned(v));
+                Ok(())
+            }
+
+            fn u128(&mut self, v: u128) -> Result<(), Error> {
+                self.0 = Cast::Primitive(Primitive::BigUnsigned(v));
                 Ok(())
             }
 
@@ -328,8 +254,9 @@ impl<'v> Primitive<'v> {
     fn into_u64(self) -> Option<u64> {
         match self {
             Primitive::Unsigned(value) => Some(value),
-            Primitive::Signed(value) => Some(value as u64),
-            Primitive::Float(value) => Some(value as u64),
+            Primitive::BigUnsigned(value) => value.try_into().ok(),
+            Primitive::Signed(value) => value.try_into().ok(),
+            Primitive::BigSigned(value) => value.try_into().ok(),
             _ => None,
         }
     }
@@ -337,8 +264,29 @@ impl<'v> Primitive<'v> {
     fn into_i64(self) -> Option<i64> {
         match self {
             Primitive::Signed(value) => Some(value),
-            Primitive::Unsigned(value) => Some(value as i64),
-            Primitive::Float(value) => Some(value as i64),
+            Primitive::BigSigned(value) => value.try_into().ok(),
+            Primitive::Unsigned(value) => value.try_into().ok(),
+            Primitive::BigUnsigned(value) => value.try_into().ok(),
+            _ => None,
+        }
+    }
+
+    fn into_u128(self) -> Option<u128> {
+        match self {
+            Primitive::BigUnsigned(value) => Some(value),
+            Primitive::Unsigned(value) => Some(value.into()),
+            Primitive::Signed(value) => value.try_into().ok(),
+            Primitive::BigSigned(value) => value.try_into().ok(),
+            _ => None,
+        }
+    }
+
+    fn into_i128(self) -> Option<i128> {
+        match self {
+            Primitive::BigSigned(value) => Some(value),
+            Primitive::Signed(value) => Some(value.into()),
+            Primitive::Unsigned(value) => value.try_into().ok(),
+            Primitive::BigUnsigned(value) => value.try_into().ok(),
             _ => None,
         }
     }
@@ -346,8 +294,18 @@ impl<'v> Primitive<'v> {
     fn into_f64(self) -> Option<f64> {
         match self {
             Primitive::Float(value) => Some(value),
-            Primitive::Unsigned(value) => Some(value as f64),
-            Primitive::Signed(value) => Some(value as f64),
+            Primitive::Unsigned(value) => u32::try_from(value)
+                .ok()
+                .and_then(|value| value.try_into().ok()),
+            Primitive::Signed(value) => i32::try_from(value)
+                .ok()
+                .and_then(|value| value.try_into().ok()),
+            Primitive::BigUnsigned(value) => u32::try_from(value)
+                .ok()
+                .and_then(|value| value.try_into().ok()),
+            Primitive::BigSigned(value) => i32::try_from(value)
+                .ok()
+                .and_then(|value| value.try_into().ok()),
             _ => None,
         }
     }
@@ -453,39 +411,62 @@ mod tests {
                 .expect("invalid value")
         );
 
-        assert_eq!(1u8, 1u64.into_value_bag().to_u8().expect("invalid value"));
-        assert_eq!(1u16, 1u64.into_value_bag().to_u16().expect("invalid value"));
-        assert_eq!(1u32, 1u64.into_value_bag().to_u32().expect("invalid value"));
+        assert_eq!(1u64, 1u8.into_value_bag().to_u64().expect("invalid value"));
+        assert_eq!(1u64, 1u16.into_value_bag().to_u64().expect("invalid value"));
+        assert_eq!(1u64, 1u32.into_value_bag().to_u64().expect("invalid value"));
         assert_eq!(1u64, 1u64.into_value_bag().to_u64().expect("invalid value"));
         assert_eq!(
-            1usize,
-            1u64.into_value_bag().to_usize().expect("invalid value")
+            1u64,
+            1usize.into_value_bag().to_u64().expect("invalid value")
+        );
+        assert_eq!(
+            1u128,
+            1u128.into_value_bag().to_u128().expect("invalid value")
         );
 
-        assert_eq!(-1i8, -1i64.into_value_bag().to_i8().expect("invalid value"));
         assert_eq!(
-            -1i16,
-            -1i64.into_value_bag().to_i16().expect("invalid value")
+            -1i64,
+            -1i8.into_value_bag().to_i64().expect("invalid value")
         );
         assert_eq!(
-            -1i32,
-            -1i64.into_value_bag().to_i32().expect("invalid value")
+            -1i64,
+            -1i8.into_value_bag().to_i64().expect("invalid value")
+        );
+        assert_eq!(
+            -1i64,
+            -1i8.into_value_bag().to_i64().expect("invalid value")
         );
         assert_eq!(
             -1i64,
             -1i64.into_value_bag().to_i64().expect("invalid value")
         );
         assert_eq!(
-            -1isize,
-            -1i64.into_value_bag().to_isize().expect("invalid value")
+            -1i64,
+            -1isize.into_value_bag().to_i64().expect("invalid value")
+        );
+        assert_eq!(
+            -1i128,
+            -1i128.into_value_bag().to_i128().expect("invalid value")
         );
 
-        assert!(1f32.into_value_bag().to_f32().is_some(), "invalid value");
-        assert!(1f64.into_value_bag().to_f64().is_some(), "invalid value");
+        assert!(1f64.into_value_bag().to_f64().is_some());
+        assert!(1u64.into_value_bag().to_f64().is_some());
+        assert!((-1i64).into_value_bag().to_f64().is_some());
+        assert!(1u128.into_value_bag().to_f64().is_some());
+        assert!((-1i128).into_value_bag().to_f64().is_some());
 
-        assert_eq!(1u32, 1i64.into_value_bag().to_u32().expect("invalid value"));
-        assert_eq!(1i32, 1u64.into_value_bag().to_i32().expect("invalid value"));
-        assert!(1f32.into_value_bag().to_i32().is_some(), "invalid value");
+        assert!(u64::MAX.into_value_bag().to_u128().is_some());
+        assert!(i64::MIN.into_value_bag().to_i128().is_some());
+        assert!(i64::MAX.into_value_bag().to_u64().is_some());
+
+        assert!((-1i64).into_value_bag().to_u64().is_none());
+        assert!(u64::MAX.into_value_bag().to_i64().is_none());
+        assert!(u64::MAX.into_value_bag().to_f64().is_none());
+
+        assert!(i128::MAX.into_value_bag().to_i64().is_none());
+        assert!(u128::MAX.into_value_bag().to_u64().is_none());
+
+        assert!(1f64.into_value_bag().to_u64().is_none());
 
         assert_eq!('a', 'a'.into_value_bag().to_char().expect("invalid value"));
         assert_eq!(

@@ -49,7 +49,7 @@ pub use self::error::Error;
 ///
 /// let value = ValueBag::capture_debug(&42i32);
 ///
-/// assert_eq!(Some(42), value.to_i32());
+/// assert_eq!(Some(42), value.to_i64());
 /// ```
 ///
 /// Capturing a value using these methods will retain type information so that
@@ -64,7 +64,7 @@ pub use self::error::Error;
 ///
 /// let value = ValueBag::from_debug(&42i32);
 ///
-/// assert_eq!(None, value.to_i32());
+/// assert_eq!(None, value.to_i64());
 /// ```
 ///
 /// These `ValueBag::from_*` methods are lossy though and `ValueBag::capture_*` should be preferred.
@@ -78,7 +78,7 @@ pub use self::error::Error;
 ///
 /// let value = ValueBag::from(42i32);
 ///
-/// assert_eq!(Some(42), value.to_i32());
+/// assert_eq!(Some(42), value.to_i64());
 /// ```
 ///
 /// ## Using the `Fill` API
@@ -118,7 +118,7 @@ pub use self::error::Error;
 ///
 /// let value = ValueBag::from_fill(&FillDebug);
 ///
-/// assert_eq!(None, value.to_i32());
+/// assert_eq!(None, value.to_i64());
 /// ```
 ///
 /// # Inspecting values
@@ -328,7 +328,7 @@ pub use self::error::Error;
 ///
 /// let value = ValueBag::capture_display(&42u64);
 ///
-/// assert_eq!(Some(42u16), value.to_u16());
+/// assert_eq!(Some(42u64), value.to_u64());
 /// ```
 ///
 /// ## Using the `ValueBag::downcast_ref` method
@@ -361,7 +361,7 @@ mod tests {
     #[test]
     fn value_bag_size() {
         let size = mem::size_of::<ValueBag<'_>>();
-        let limit = mem::size_of::<usize>() * 4;
+        let limit = mem::size_of::<u64>() * 4;
 
         if size > limit {
             panic!(

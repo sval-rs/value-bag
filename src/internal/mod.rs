@@ -85,6 +85,8 @@ pub(super) enum Internal<'v> {
 pub(super) enum Primitive<'v> {
     Signed(i64),
     Unsigned(u64),
+    BigSigned(i128),
+    BigUnsigned(u128),
     Float(f64),
     Bool(bool),
     Char(char),
@@ -148,12 +150,12 @@ impl<'v> Internal<'v> {
 /// The internal serialization contract.
 pub(super) trait InternalVisitor<'v> {
     fn debug(&mut self, v: &dyn fmt::Debug) -> Result<(), Error>;
-    fn display(&mut self, v: &dyn fmt::Display) -> Result<(), Error> {
-        self.debug(&format_args!("{}", v))
-    }
+    fn display(&mut self, v: &dyn fmt::Display) -> Result<(), Error>;
 
     fn u64(&mut self, v: u64) -> Result<(), Error>;
     fn i64(&mut self, v: i64) -> Result<(), Error>;
+    fn u128(&mut self, v: u128) -> Result<(), Error>;
+    fn i128(&mut self, v: i128) -> Result<(), Error>;
     fn f64(&mut self, v: f64) -> Result<(), Error>;
     fn bool(&mut self, v: bool) -> Result<(), Error>;
     fn char(&mut self, v: char) -> Result<(), Error>;
@@ -184,6 +186,8 @@ impl<'v> Primitive<'v> {
         match self {
             Primitive::Signed(value) => visitor.i64(value),
             Primitive::Unsigned(value) => visitor.u64(value),
+            Primitive::BigSigned(value) => visitor.i128(value),
+            Primitive::BigUnsigned(value) => visitor.u128(value),
             Primitive::Float(value) => visitor.f64(value),
             Primitive::Bool(value) => visitor.bool(value),
             Primitive::Char(value) => visitor.char(value),
@@ -228,6 +232,13 @@ impl<'v> From<u64> for Primitive<'v> {
     }
 }
 
+impl<'v> From<u128> for Primitive<'v> {
+    #[inline]
+    fn from(v: u128) -> Self {
+        Primitive::BigUnsigned(v)
+    }
+}
+
 impl<'v> From<usize> for Primitive<'v> {
     #[inline]
     fn from(v: usize) -> Self {
@@ -260,6 +271,13 @@ impl<'v> From<i64> for Primitive<'v> {
     #[inline]
     fn from(v: i64) -> Self {
         Primitive::Signed(v)
+    }
+}
+
+impl<'v> From<i128> for Primitive<'v> {
+    #[inline]
+    fn from(v: i128) -> Self {
+        Primitive::BigSigned(v)
     }
 }
 

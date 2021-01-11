@@ -29,6 +29,8 @@ pub enum Token {
     U64(u64),
     I64(i64),
     F64(f64),
+    U128(u128),
+    I128(i128),
     Char(char),
     Bool(bool),
     Str(String),
@@ -77,6 +79,11 @@ impl<'v> ValueBag<'v> {
                 Ok(())
             }
 
+            fn display(&mut self, v: &dyn fmt::Display) -> Result<(), Error> {
+                self.0 = Some(Token::Str(format!("{}", v)));
+                Ok(())
+            }
+
             fn u64(&mut self, v: u64) -> Result<(), Error> {
                 self.0 = Some(Token::U64(v));
                 Ok(())
@@ -84,6 +91,16 @@ impl<'v> ValueBag<'v> {
 
             fn i64(&mut self, v: i64) -> Result<(), Error> {
                 self.0 = Some(Token::I64(v));
+                Ok(())
+            }
+
+            fn u128(&mut self, v: u128) -> Result<(), Error> {
+                self.0 = Some(Token::U128(v));
+                Ok(())
+            }
+
+            fn i128(&mut self, v: i128) -> Result<(), Error> {
+                self.0 = Some(Token::I128(v));
                 Ok(())
             }
 
@@ -152,6 +169,16 @@ impl<'v> Visit<'v> for TestVisit {
 
     fn visit_u64(&mut self, v: u64) -> Result<(), Error> {
         assert_eq!(42u64, v);
+        Ok(())
+    }
+
+    fn visit_i128(&mut self, v: i128) -> Result<(), Error> {
+        assert_eq!(-42i128, v);
+        Ok(())
+    }
+
+    fn visit_u128(&mut self, v: u128) -> Result<(), Error> {
+        assert_eq!(42u128, v);
         Ok(())
     }
 
