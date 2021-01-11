@@ -58,12 +58,14 @@ pub(super) fn from_any<'v, T: 'static>(value: &'v T) -> Option<Primitive<'v>> {
             u16: (U16, OPTION_U16),
             u32: (U32, OPTION_U32),
             u64: (U64, OPTION_U64),
+            u128: (U128, OPTION_U128),
 
             isize: (ISIZE, OPTION_ISIZE),
             i8: (I8, OPTION_I8),
             i16: (I16, OPTION_I16),
             i32: (I32, OPTION_I32),
             i64: (I64, OPTION_I64),
+            i128: (I128, OPTION_I128),
 
             f32: (F32, OPTION_F32),
             f64: (F64, OPTION_F64),
@@ -205,7 +207,7 @@ pub(super) fn from_any<'v, T: 'static>(value: &'v T) -> Option<Primitive<'v>> {
         static TYPE_IDS: [(
             TypeId,
             for<'a> fn(&'a (dyn std::any::Any + 'static)) -> Primitive<'a>,
-        ); 30] = {
+        ); 34] = {
             // NOTE: The types here *must* match the ones used above when `const_type_id` is available
             let mut type_ids = type_ids![
                 usize,
@@ -213,11 +215,13 @@ pub(super) fn from_any<'v, T: 'static>(value: &'v T) -> Option<Primitive<'v>> {
                 u16,
                 u32,
                 u64,
+                u128,
                 isize,
                 i8,
                 i16,
                 i32,
                 i64,
+                i128,
                 f32,
                 f64,
                 char,
@@ -269,11 +273,13 @@ pub(super) fn from_any<'v, T: 'static>(value: &'v T) -> Option<Primitive<'v>> {
             u16,
             u32,
             u64,
+            u128,
             isize,
             i8,
             i16,
             i32,
             i64,
+            i128,
             f32,
             f64,
             char,

@@ -75,12 +75,24 @@ impl<'v> Value for ValueBag<'v> {
                 self.0.debug(v).map_err(Error::from_sval1)
             }
 
+            fn display(&mut self, v: &dyn fmt::Display) -> Result<(), Error> {
+                self.0.display(v).map_err(Error::from_sval1)
+            }
+
             fn u64(&mut self, v: u64) -> Result<(), Error> {
                 self.0.u64(v).map_err(Error::from_sval1)
             }
 
             fn i64(&mut self, v: i64) -> Result<(), Error> {
                 self.0.i64(v).map_err(Error::from_sval1)
+            }
+
+            fn u128(&mut self, v: u128) -> Result<(), Error> {
+                self.0.u128(v).map_err(Error::from_sval1)
+            }
+
+            fn i128(&mut self, v: i128) -> Result<(), Error> {
+                self.0.i128(v).map_err(Error::from_sval1)
             }
 
             fn f64(&mut self, v: f64) -> Result<(), Error> {
@@ -150,6 +162,11 @@ pub(crate) fn internal_visit<'v>(
     struct VisitorStream<'a, 'v>(&'a mut dyn InternalVisitor<'v>);
 
     impl<'a, 'v> sval1_lib::stream::Stream for VisitorStream<'a, 'v> {
+        fn fmt(&mut self, v: sval1_lib::stream::Arguments) -> sval1_lib::stream::Result {
+            self.0.display(&v).map_err(Error::into_sval1)?;
+            Ok(())
+        }
+
         fn u64(&mut self, v: u64) -> sval1_lib::stream::Result {
             self.0.u64(v).map_err(Error::into_sval1)?;
             Ok(())
@@ -157,6 +174,16 @@ pub(crate) fn internal_visit<'v>(
 
         fn i64(&mut self, v: i64) -> sval1_lib::stream::Result {
             self.0.i64(v).map_err(Error::into_sval1)?;
+            Ok(())
+        }
+
+        fn u128(&mut self, v: u128) -> sval1_lib::stream::Result {
+            self.0.u128(v).map_err(Error::into_sval1)?;
+            Ok(())
+        }
+
+        fn i128(&mut self, v: i128) -> sval1_lib::stream::Result {
+            self.0.i128(v).map_err(Error::into_sval1)?;
             Ok(())
         }
 
@@ -224,9 +251,9 @@ mod tests {
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn sval1_capture_cast() {
         assert_eq!(
-            42u32,
+            42u64,
             ValueBag::capture_sval1(&42u64)
-                .to_u32()
+                .to_u64()
                 .expect("invalid value")
         );
 
@@ -250,9 +277,9 @@ mod tests {
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn sval1_from_cast() {
         assert_eq!(
-            42u32,
+            42u64,
             ValueBag::from_sval1(&42u64)
-                .to_u32()
+                .to_u64()
                 .expect("invalid value")
         );
 

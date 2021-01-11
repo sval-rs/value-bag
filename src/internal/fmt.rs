@@ -136,6 +136,18 @@ impl<'v> Debug for ValueBag<'v> {
                 Ok(())
             }
 
+            fn u128(&mut self, v: u128) -> Result<(), Error> {
+                Debug::fmt(&v, self.0)?;
+
+                Ok(())
+            }
+
+            fn i128(&mut self, v: i128) -> Result<(), Error> {
+                Debug::fmt(&v, self.0)?;
+
+                Ok(())
+            }
+
             fn f64(&mut self, v: f64) -> Result<(), Error> {
                 Debug::fmt(&v, self.0)?;
 
@@ -216,6 +228,18 @@ impl<'v> Display for ValueBag<'v> {
             }
 
             fn i64(&mut self, v: i64) -> Result<(), Error> {
+                Display::fmt(&v, self.0)?;
+
+                Ok(())
+            }
+
+            fn u128(&mut self, v: u128) -> Result<(), Error> {
+                Display::fmt(&v, self.0)?;
+
+                Ok(())
+            }
+
+            fn i128(&mut self, v: i128) -> Result<(), Error> {
                 Display::fmt(&v, self.0)?;
 
                 Ok(())
@@ -316,9 +340,9 @@ mod tests {
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn fmt_cast() {
         assert_eq!(
-            42u32,
+            42u64,
             ValueBag::capture_debug(&42u64)
-                .to_u32()
+                .to_u64()
                 .expect("invalid value")
         );
 

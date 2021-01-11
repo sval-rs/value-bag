@@ -89,6 +89,22 @@ pub trait Visit<'v> {
     #[cfg(test)]
     fn visit_i64(&mut self, value: i64) -> Result<(), Error>;
 
+    /// Visit a big unsigned integer.
+    #[cfg(not(test))]
+    fn visit_u128(&mut self, value: u128) -> Result<(), Error> {
+        self.visit_any(value.into())
+    }
+    #[cfg(test)]
+    fn visit_u128(&mut self, value: u128) -> Result<(), Error>;
+
+    /// Visit a big signed integer.
+    #[cfg(not(test))]
+    fn visit_i128(&mut self, value: i128) -> Result<(), Error> {
+        self.visit_any(value.into())
+    }
+    #[cfg(test)]
+    fn visit_i128(&mut self, value: i128) -> Result<(), Error>;
+
     /// Visit a floating point.
     #[cfg(not(test))]
     fn visit_f64(&mut self, value: f64) -> Result<(), Error> {
@@ -173,6 +189,14 @@ where
         (**self).visit_i64(value)
     }
 
+    fn visit_u128(&mut self, value: u128) -> Result<(), Error> {
+        (**self).visit_u128(value)
+    }
+
+    fn visit_i128(&mut self, value: i128) -> Result<(), Error> {
+        (**self).visit_i128(value)
+    }
+
     fn visit_f64(&mut self, value: f64) -> Result<(), Error> {
         (**self).visit_f64(value)
     }
@@ -229,6 +253,14 @@ impl<'v> ValueBag<'v> {
 
             fn i64(&mut self, v: i64) -> Result<(), Error> {
                 self.0.visit_i64(v)
+            }
+
+            fn u128(&mut self, v: u128) -> Result<(), Error> {
+                self.0.visit_u128(v)
+            }
+
+            fn i128(&mut self, v: i128) -> Result<(), Error> {
+                self.0.visit_i128(v)
             }
 
             fn f64(&mut self, v: f64) -> Result<(), Error> {
@@ -294,6 +326,12 @@ mod tests {
             .visit(TestVisit)
             .expect("failed to visit value");
         ValueBag::from(-42i64)
+            .visit(TestVisit)
+            .expect("failed to visit value");
+        ValueBag::from(42u128)
+            .visit(TestVisit)
+            .expect("failed to visit value");
+        ValueBag::from(-42i128)
             .visit(TestVisit)
             .expect("failed to visit value");
         ValueBag::from(11f64)
