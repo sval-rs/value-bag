@@ -361,7 +361,7 @@ mod tests {
     #[test]
     fn value_bag_size() {
         let size = mem::size_of::<ValueBag<'_>>();
-        let limit = mem::size_of::<usize>() * 4;
+        let limit = mem::size_of::<u64>() * 4;
 
         if size > limit {
             panic!(
