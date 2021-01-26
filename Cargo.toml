@@ -16,7 +16,7 @@ exclude = [
 build = "build.rs"
 
 [package.metadata.docs.rs]
-features = ["std", "sval", "serde"]
+features = ["std", "error", "sval", "serde", "test"]
 
 [features]
 # Use the standard library

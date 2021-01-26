@@ -56,7 +56,7 @@ jobs:
         run: cargo install cargo-hack
 
       - name: Powerset
-        run: cargo hack check --each-feature --exclude-features std,test -Z avoid-dev-deps --target thumbv6m-none-eabi
+        run: cargo hack check --each-feature --exclude-features std,test,error -Z avoid-dev-deps --target thumbv6m-none-eabi
 
   nodeps:
     name: Build (no dev deps)
