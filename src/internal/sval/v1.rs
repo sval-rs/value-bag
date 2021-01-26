@@ -235,9 +235,6 @@ mod tests {
     #[cfg(target_arch = "wasm32")]
     use wasm_bindgen_test::*;
 
-    #[cfg(target_arch = "wasm32")]
-    wasm_bindgen_test_configure!(run_in_browser);
-
     use super::*;
     use crate::test::*;
 
@@ -382,7 +379,7 @@ mod tests {
 
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-    #[cfg(feature = "std")]
+    #[cfg(feature = "error")]
     fn sval1_visit_error() {
         use crate::{
             internal::sval::v1 as sval,

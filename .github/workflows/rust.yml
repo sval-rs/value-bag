@@ -8,10 +8,14 @@ env:
 jobs:
   check:
     name: Test
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: true
       matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
         rust:
           - stable
           - beta
@@ -27,46 +31,11 @@ jobs:
           toolchain: ${{ matrix.rust }}
           override: true
 
-      - name: Default features
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
+      - name: Install cargo-hack
+        run: cargo install cargo-hack
 
-      - name: No features
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --no-default-features
-    
-      - name: All features
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --all-features
-
-      - name: With std
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --features std
-
-      - name: With error
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --features error
-
-      - name: With sval
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --features sval1
-
-      - name: With serde
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --features serde1
+      - name: Powerset
+        run: cargo hack test --feature-powerset
 
   embedded:
     name: Build (embedded)
@@ -83,19 +52,13 @@ jobs:
           target: thumbv6m-none-eabi
           override: true
 
-      - name: Default features
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: -Z avoid-dev-deps --target thumbv6m-none-eabi
+      - name: Install cargo-hack
+        run: cargo install cargo-hack
 
-      - name: With sval
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: -Z avoid-dev-deps --target thumbv6m-none-eabi --features sval
+      - name: Powerset
+        run: cargo hack check --each-feature --exclude-features std,test,error -Z avoid-dev-deps --target thumbv6m-none-eabi
 
-  sample:
+  nodeps:
     name: Build (no dev deps)
     runs-on: ubuntu-latest
     steps:
@@ -109,29 +72,11 @@ jobs:
           toolchain: nightly
           override: true
 
-      - name: Default features
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: -Z avoid-dev-deps
+      - name: Install cargo-hack
+        run: cargo install cargo-hack
 
-      - name: No features
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: -Z avoid-dev-deps --no-default-features
-
-      - name: All features
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: -Z avoid-dev-deps --all-features
-
-      - name: With test
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: -Z avoid-dev-deps --features test
+      - name: Powerset
+        run: cargo hack check --feature-powerset -Z avoid-dev-deps
 
   wasm:
     name: Test (wasm)
@@ -142,4 +87,6 @@ jobs:
 
       - name: Install
         run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
-      - run: wasm-pack test --headless --firefox
+      
+      - name: All features
+        run: wasm-pack test --node -- --all-features
