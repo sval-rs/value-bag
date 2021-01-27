@@ -27,6 +27,7 @@ impl<'v> ValueBag<'v> {
     pub fn to_borrowed_error(&self) -> Option<&(dyn Error + 'static)> {
         match self.inner {
             Internal::Error { value, .. } => Some(value),
+            Internal::AnonError { value } => Some(value),
             _ => None,
         }
     }
@@ -78,6 +79,14 @@ mod tests {
         assert_eq!(
             err.to_string(),
             ValueBag::capture_error(&err)
+                .to_borrowed_error()
+                .expect("invalid value")
+                .to_string()
+        );
+
+        assert_eq!(
+            err.to_string(),
+            ValueBag::from_dyn_error(&err)
                 .to_borrowed_error()
                 .expect("invalid value")
                 .to_string()
