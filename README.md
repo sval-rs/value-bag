@@ -10,20 +10,20 @@ Add the `value-bag` crate to your `Cargo.toml`:
 
 ```rust
 [dependencies.value-bag]
-version = "1.0.0-alpha.5"
+version = "1.0.0-alpha.6"
 ```
 
 You'll probably also want to add a feature for either `sval` (if you're in a no-std environment) or `serde` (if you need to integrate with other code that uses `serde`):
 
 ```rust
 [dependencies.value-bag]
-version = "1.0.0-alpha.5"
+version = "1.0.0-alpha.6"
 features = ["sval1"]
 ```
 
 ```rust
 [dependencies.value-bag]
-version = "1.0.0-alpha.5"
+version = "1.0.0-alpha.6"
 features = ["serde1"]
 ```
 
