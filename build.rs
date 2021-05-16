@@ -10,16 +10,17 @@ fn main() {
     }
 }
 
-fn target_arch_is_any(targets: &[&str]) -> bool {
-    match env::var("CARGO_CFG_TARGET_ARCH") {
-        Ok(arch) if targets.contains(&&*arch) => true,
-        _ => false,
-    }
+fn target_arch_is_any(archs: &[&str]) -> bool {
+    cargo_env_is_any("CARGO_CFG_TARGET_ARCH", archs)
 }
 
-fn target_os_is_any(family: &[&str]) -> bool {
-    match env::var("CARGO_CFG_TARGET_OS") {
-        Ok(arch) if targets.contains(&&*arch) => true,
+fn target_os_is_any(families: &[&str]) -> bool {
+    cargo_env_is_any("CARGO_CFG_TARGET_OS", families)
+}
+
+fn cargo_env_is_any(env: &str, values: &[&str]) -> bool {
+    match env::var(env) {
+        Ok(var) if values.contains(&&*var) => true,
         _ => false,
     }
 }
