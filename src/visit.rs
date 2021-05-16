@@ -69,7 +69,7 @@ pub trait Visit<'v> {
     ///
     /// This is the only required method on `Visit` and acts as a fallback for any
     /// more specific methods that aren't overridden.
-    /// The `ValueBag` may be formatted using its fmt::Debug` or `fmt::Display` implementation,
+    /// The `ValueBag` may be formatted using its `fmt::Debug` or `fmt::Display` implementation,
     /// or serialized using its `sval::Value` or `serde::Serialize` implementation.
     fn visit_any(&mut self, value: ValueBag) -> Result<(), Error>;
 
