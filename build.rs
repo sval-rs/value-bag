@@ -1,4 +1,4 @@
-use std::{env, process::Command, str};
+use std::{env, str};
 
 fn main() {
     if rustc::is_feature_flaggable().unwrap_or(false) {
