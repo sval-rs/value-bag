@@ -353,6 +353,15 @@ pub struct ValueBag<'v> {
     inner: internal::Internal<'v>,
 }
 
+impl<'v> ValueBag<'v> {
+    /// Get a `ValueBag` from a reference to a `ValueBag`.
+    pub fn by_ref<'u>(&'u self) -> ValueBag<'u> {
+        ValueBag {
+            inner: self.inner,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
