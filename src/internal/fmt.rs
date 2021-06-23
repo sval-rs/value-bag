@@ -60,6 +60,34 @@ impl<'v> ValueBag<'v> {
         }
     }
 
+    /// Get a value from a debuggable type.
+    ///
+    /// This method will attempt to capture the given value as a well-known primitive
+    /// before resorting to using its `Debug` implementation.
+    pub fn capture_dyn_debug<'u, T>(value: &'u &'v T) -> Self
+    where
+        'u: 'v,
+        T: Debug + ?Sized + 'static,
+    {
+        cast::try_from_primitive(&**value).unwrap_or(ValueBag {
+            inner: Internal::AnonDebug { value },
+        })
+    }
+
+    /// Get a value from a displayable type.
+    ///
+    /// This method will attempt to capture the given value as a well-known primitive
+    /// before resorting to using its `Display` implementation.
+    pub fn capture_dyn_display<'u, T>(value: &'u &'v T) -> Self
+    where
+        'u: 'v,
+        T: Display + ?Sized + 'static,
+    {
+        cast::try_from_primitive(&**value).unwrap_or(ValueBag {
+            inner: Internal::AnonDisplay { value },
+        })
+    }
+
     /// Get a value from a debuggable type without capturing support.
     pub fn from_dyn_debug(value: &'v dyn Debug) -> Self {
         ValueBag {

@@ -26,7 +26,7 @@ pub(super) fn type_id<T: 'static>() -> TypeId {
 ///
 /// If the value is a primitive type, then cast it here, avoiding needing to erase its value
 /// This makes `ValueBag`s produced by `ValueBag::from_*` more useful
-pub(super) fn try_from_primitive<'v, T: 'static>(value: &'v T) -> Option<ValueBag<'v>> {
+pub(super) fn try_from_primitive<'v, T: ?Sized + 'static>(value: &'v T) -> Option<ValueBag<'v>> {
     primitive::from_any(value).map(|primitive| ValueBag {
         inner: Internal::Primitive { value: primitive },
     })

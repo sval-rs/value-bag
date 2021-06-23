@@ -8,7 +8,7 @@ the `'static` bound altogether.
 
 use crate::internal::Primitive;
 
-pub(super) fn from_any<'v, T: 'static>(value: &'v T) -> Option<Primitive<'v>> {
+pub(super) fn from_any<'v, T: ?Sized + 'static>(value: &'v T) -> Option<Primitive<'v>> {
     // When we're on `nightly`, we can use const type ids
     #[cfg(value_bag_capture_const_type_id)]
     {
@@ -16,21 +16,23 @@ pub(super) fn from_any<'v, T: 'static>(value: &'v T) -> Option<Primitive<'v>> {
 
         macro_rules! to_primitive {
             ($($ty:ty : ($const_ident:ident, $option_ident:ident),)*) => {
-                trait ToPrimitive
+                trait ToPrimitive<'a>
                 where
                     Self: 'static,
                 {
-                    const CALL: fn(&Self) -> Option<Primitive> = {
+                    const CALL: fn(&&'a Self) -> Option<Primitive<'a>> = {
                         $(
                             const $const_ident: TypeId = TypeId::of::<$ty>();
                             const $option_ident: TypeId = TypeId::of::<Option<$ty>>();
                         )*
 
+                        const STR: TypeId = TypeId::of::<str>();
+
                         match TypeId::of::<Self>() {
                             $(
-                                $const_ident => |v| Some(Primitive::from(unsafe { *(v as *const Self as *const $ty) })),
+                                $const_ident => |v| Some(Primitive::from(unsafe { *(*v as *const Self as *const $ty) })),
                                 $option_ident => |v| Some({
-                                    let v = unsafe { *(v as *const Self as *const Option<$ty>) };
+                                    let v = unsafe { *(*v as *const Self as *const Option<$ty>) };
                                     match v {
                                         Some(v) => Primitive::from(v),
                                         None => Primitive::None,
@@ -38,16 +40,18 @@ pub(super) fn from_any<'v, T: 'static>(value: &'v T) -> Option<Primitive<'v>> {
                                 }),
                             )*
 
+                            STR => |v| Some(Primitive::from(*(unsafe { std::mem::transmute::<&&Self, &&str>(v) }))),
+
                             _ => |_| None,
                         }
                     };
 
-                    fn to_primitive(&self) -> Option<Primitive> {
-                        (Self::CALL)(self)
+                    fn to_primitive(&'a self) -> Option<Primitive> {
+                        (Self::CALL)(&self)
                     }
                 }
 
-                impl<T: ?Sized + 'static> ToPrimitive for T {}
+                impl<'a, T: ?Sized + 'static> ToPrimitive<'a> for T {}
             }
         }
 
@@ -72,7 +76,9 @@ pub(super) fn from_any<'v, T: 'static>(value: &'v T) -> Option<Primitive<'v>> {
 
             char: (CHAR, OPTION_CHAR),
             bool: (BOOL, OPTION_BOOL),
-            &'static str: (STR, OPTION_STR),
+
+            // We deal with `str` separately because it's unsized
+            // str: (STR),
         ];
 
         value.to_primitive()
