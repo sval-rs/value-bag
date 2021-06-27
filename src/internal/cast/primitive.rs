@@ -20,7 +20,7 @@ pub(super) fn from_any<'v, T: ?Sized + 'static>(value: &'v T) -> Option<Primitiv
                 where
                     Self: 'static,
                 {
-                    const CALL: fn(&&'a Self) -> Option<Primitive<'a>> = {
+                    const CALL: fn(&'_ &'a Self) -> Option<Primitive<'a>> = {
                         $(
                             const $const_ident: TypeId = TypeId::of::<$ty>();
                             const $option_ident: TypeId = TypeId::of::<Option<$ty>>();
@@ -40,13 +40,13 @@ pub(super) fn from_any<'v, T: ?Sized + 'static>(value: &'v T) -> Option<Primitiv
                                 }),
                             )*
 
-                            STR => |v| Some(Primitive::from(*(unsafe { std::mem::transmute::<&&Self, &&str>(v) }))),
+                            STR => |v| Some(Primitive::from(unsafe { *(v as *const &Self as *const &str) })),
 
                             _ => |_| None,
                         }
                     };
 
-                    fn to_primitive(&'a self) -> Option<Primitive> {
+                    fn to_primitive(&'a self) -> Option<Primitive<'a>> {
                         (Self::CALL)(&self)
                     }
                 }
