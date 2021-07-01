@@ -40,7 +40,7 @@ pub(super) fn from_any<'v, T: ?Sized + 'static>(value: &'v T) -> Option<Primitiv
                                 }),
                             )*
 
-                            STR => |v| Some(Primitive::from(unsafe { *(v as *const &Self as *const &str) })),
+                            STR => |v| Some(Primitive::from(unsafe { &**(v as *const &'a Self as *const &'a str) })),
 
                             _ => |_| None,
                         }
@@ -77,6 +77,7 @@ pub(super) fn from_any<'v, T: ?Sized + 'static>(value: &'v T) -> Option<Primitiv
             char: (CHAR, OPTION_CHAR),
             bool: (BOOL, OPTION_BOOL),
 
+            &'static str: (STATIC_STR, OPTION_STATIC_STR),
             // We deal with `str` separately because it's unsized
             // str: (STR),
         ];
@@ -94,42 +95,8 @@ pub(super) fn from_any<'v, T: ?Sized + 'static>(value: &'v T) -> Option<Primitiv
         use crate::std::{
             any::{Any, TypeId},
             cmp::Ordering,
+            marker::PhantomData,
         };
-
-        macro_rules! type_ids {
-            ($($ty:ty,)*) => {
-                [
-                    $(
-                        (
-                            std::any::TypeId::of::<$ty>(),
-                            (|value| unsafe {
-                                debug_assert_eq!(value.type_id(), std::any::TypeId::of::<$ty>());
-
-                                // SAFETY: We verify the value is $ty before casting
-                                let value = *(value as *const dyn std::any::Any as *const $ty);
-                                Primitive::from(value)
-                            }) as for<'a> fn(&'a (dyn std::any::Any + 'static)) -> Primitive<'a>
-                        ),
-                    )*
-                    $(
-                        (
-                            std::any::TypeId::of::<Option<$ty>>(),
-                            (|value| unsafe {
-                                debug_assert_eq!(value.type_id(), std::any::TypeId::of::<Option<$ty>>());
-
-                                // SAFETY: We verify the value is Option<$ty> before casting
-                                let value = *(value as *const dyn std::any::Any as *const Option<$ty>);
-                                if let Some(value) = value {
-                                    Primitive::from(value)
-                                } else {
-                                    Primitive::None
-                                }
-                            }) as for<'a> fn(&'a (dyn std::any::Any + 'static)) -> Primitive<'a>
-                        ),
-                    )*
-                ]
-            };
-        }
 
         // From: https://github.com/servo/rust-quicksort
         // We use this algorithm instead of the standard library's `sort_by` because it
@@ -209,11 +176,55 @@ pub(super) fn from_any<'v, T: ?Sized + 'static>(value: &'v T) -> Option<Primitiv
             quicksort_helper(arr, 0, (len - 1) as isize, &compare);
         }
 
+        enum Void {}
+
+        #[repr(transparent)]
+        struct VoidRef<'a>(*const *const Void, PhantomData<&'a Void>);
+
+        macro_rules! type_ids {
+            ($($ty:ty,)*) => {
+                [
+                    $(
+                        (
+                            std::any::TypeId::of::<$ty>(),
+                            (|v| unsafe {
+                                // SAFETY: We verify the value is $ty before casting
+                                let v = *(*v.0 as *const $ty);
+                                Primitive::from(v)
+                            }) as for<'a> fn(VoidRef<'a>) -> Primitive<'a>
+                        ),
+                    )*
+                    $(
+                        (
+                            std::any::TypeId::of::<Option<$ty>>(),
+                            (|v| unsafe {
+                                // SAFETY: We verify the value is Option<$ty> before casting
+                                let v = *(*v.0 as *const Option<$ty>);
+                                if let Some(v) = v {
+                                    Primitive::from(v)
+                                } else {
+                                    Primitive::None
+                                }
+                            }) as for<'a> fn(VoidRef<'a>) -> Primitive<'a>
+                        ),
+                    )*
+                    (
+                        std::any::TypeId::of::<str>(),
+                        (|v| unsafe {
+                            // SAFETY: We verify the value is str before casting
+                            let v = &**(v.0 as *const *const str);
+                            Primitive::from(v)
+                        }) as for<'a> fn(VoidRef<'a>) -> Primitive<'a>
+                    ),
+                ]
+            };
+        }
+
         #[ctor]
         static TYPE_IDS: [(
             TypeId,
-            for<'a> fn(&'a (dyn std::any::Any + 'static)) -> Primitive<'a>,
-        ); 34] = {
+            for<'a> fn(VoidRef<'a>) -> Primitive<'a>,
+        ); 35] = {
             // NOTE: The types here *must* match the ones used above when `const_type_id` is available
             let mut type_ids = type_ids![
                 usize,
@@ -233,6 +244,7 @@ pub(super) fn from_any<'v, T: ?Sized + 'static>(value: &'v T) -> Option<Primitiv
                 char,
                 bool,
                 &'static str,
+                // We deal with `str` separately because it's unsized
             ];
 
             quicksort_by(&mut type_ids, |&(ref a, _), &(ref b, _)| a.cmp(b));
@@ -241,7 +253,7 @@ pub(super) fn from_any<'v, T: ?Sized + 'static>(value: &'v T) -> Option<Primitiv
         };
 
         if let Ok(i) = TYPE_IDS.binary_search_by_key(&value.type_id(), |&(k, _)| k) {
-            Some((TYPE_IDS[i].1)(value))
+            Some((TYPE_IDS[i].1)(VoidRef(&(value) as *const &'v T as *const *const Void, PhantomData)))
         } else {
             None
         }
@@ -254,12 +266,12 @@ pub(super) fn from_any<'v, T: ?Sized + 'static>(value: &'v T) -> Option<Primitiv
             ($($ty:ty,)*) => {
                 |value| {
                     $(
-                        if let Some(value) = (value as &dyn std::any::Any).downcast_ref::<$ty>() {
+                        if let Some(value) = (*value as &dyn std::any::Any).downcast_ref::<$ty>() {
                             return Some(Primitive::from(*value));
                         }
                     )*
                     $(
-                        if let Some(value) = (value as &dyn std::any::Any).downcast_ref::<Option<$ty>>() {
+                        if let Some(value) = (*value as &dyn std::any::Any).downcast_ref::<Option<$ty>>() {
                             if let Some(value) = value {
                                 return Some(Primitive::from(*value));
                             } else {
@@ -293,6 +305,6 @@ pub(super) fn from_any<'v, T: ?Sized + 'static>(value: &'v T) -> Option<Primitiv
             &'static str,
         ];
 
-        (type_ids)(value)
+        (type_ids)(&value)
     }
 }

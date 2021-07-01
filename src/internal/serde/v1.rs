@@ -21,7 +21,7 @@ impl<'v> ValueBag<'v> {
     where
         T: Serialize + 'static,
     {
-        cast::try_from_primitive(value).unwrap_or(ValueBag {
+        Self::try_capture(value).unwrap_or(ValueBag {
             inner: Internal::Serde1 {
                 value,
                 type_id: cast::type_id::<T>(),

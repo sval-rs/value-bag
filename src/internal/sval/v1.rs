@@ -19,7 +19,7 @@ impl<'v> ValueBag<'v> {
     where
         T: Value + 'static,
     {
-        cast::try_from_primitive(value).unwrap_or(ValueBag {
+        Self::try_capture(value).unwrap_or(ValueBag {
             inner: Internal::Sval1 {
                 value,
                 type_id: cast::type_id::<T>(),
@@ -35,20 +35,6 @@ impl<'v> ValueBag<'v> {
         ValueBag {
             inner: Internal::AnonSval1 { value },
         }
-    }
-
-    /// Get a value from a structured type.
-    ///
-    /// This method will attempt to capture the given value as a well-known primitive
-    /// before resorting to using its `Value` implementation.
-    pub fn capture_dyn_sval1<'u, T>(value: &'u &'v T) -> Self
-    where
-        'u: 'v,
-        T: Value + ?Sized + 'static,
-    {
-        cast::try_from_primitive(&**value).unwrap_or(ValueBag {
-            inner: Internal::AnonSval1 { value },
-        })
     }
 
     /// Get a value from an erased structured type.
