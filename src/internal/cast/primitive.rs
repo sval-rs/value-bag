@@ -86,7 +86,8 @@ pub(super) fn from_any<'v, T: ?Sized + 'static>(value: &'v T) -> Option<Primitiv
     }
 
     // When we're not on `nightly`, use the ctor crate
-    #[cfg(value_bag_capture_ctor)]
+    // For `miri` though, we can't rely on `ctor` so use the fallback
+    #[cfg(all(value_bag_capture_ctor, not(miri)))]
     {
         #![allow(unused_unsafe)]
 
@@ -263,7 +264,7 @@ pub(super) fn from_any<'v, T: ?Sized + 'static>(value: &'v T) -> Option<Primitiv
     }
 
     // When we're not on `nightly` and aren't on a supported arch, we can't do capturing
-    #[cfg(value_bag_capture_fallback)]
+    #[cfg(any(all(value_bag_capture_ctor, miri), value_bag_capture_fallback))]
     {
         use crate::std::{any::TypeId, marker::PhantomData};
 

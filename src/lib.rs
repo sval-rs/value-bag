@@ -8,9 +8,15 @@
 #![doc(html_root_url = "https://docs.rs/value-bag/1.0.0-alpha.7")]
 #![no_std]
 
+#[cfg(any(feature = "std", test))]
 #[macro_use]
 #[allow(unused_imports)]
 extern crate std;
+
+#[cfg(not(any(feature = "std", test)))]
+#[macro_use]
+#[allow(unused_imports)]
+extern crate core as std;
 
 mod error;
 pub mod fill;
@@ -355,7 +361,7 @@ mod tests {
     #[test]
     fn value_bag_size() {
         let size = mem::size_of::<ValueBag<'_>>();
-        let limit = mem::size_of::<u64>() * 4;
+        let limit = mem::size_of::<u64>() * 6;
 
         if size > limit {
             panic!(
