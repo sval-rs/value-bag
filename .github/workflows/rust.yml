@@ -103,7 +103,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Install miri
-        run: rustup component add miri
+        run: rustup +nightly-2021-07-06 component add miri
 
       - name: Type Id
         run: VALUE_BAG_CAPTURE_CONST_TYPE_ID=1 cargo miri test
