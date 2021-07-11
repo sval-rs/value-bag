@@ -261,7 +261,10 @@ pub(super) fn from_any<'v, T: ?Sized + 'static>(value: &'v T) -> Option<Primitiv
         }
     }
 
-    // When we're not on `nightly` and aren't on a supported arch, we can't do capturing
+    // NOTE: The casts for unsized values (str) are dubious here. To really do this properly
+    // we need https://github.com/rust-lang/rust/issues/81513
+    // When we're not on `nightly` and aren't on a supported arch, we can't do any
+    // work at compile time for capturing
     #[cfg(any(all(value_bag_capture_ctor, miri), value_bag_capture_fallback))]
     {
         use crate::std::any::TypeId;
