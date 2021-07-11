@@ -94,19 +94,17 @@ jobs:
   miri:
     name: Test (miri)
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        rust:
-          - nightly-2021-07-06
+    env:
+      MIRI_TOOLCHAIN: nightly-2021-07-06
     steps:
       - name: Checkout sources
         uses: actions/checkout@v2
 
       - name: Install miri
-        run: rustup +nightly-2021-07-06 component add miri
+        run: rustup +$MIRI_TOOLCHAIN component add miri
 
       - name: Type Id
-        run: VALUE_BAG_CAPTURE_CONST_TYPE_ID=1 cargo miri test
+        run: VALUE_BAG_CAPTURE_CONST_TYPE_ID=1 cargo +$MIRI_TOOLCHAIN miri test
 
       - name: Fallback
-        run: VALUE_BAG_CAPTURE_FALLBACK=1 cargo miri test
+        run: VALUE_BAG_CAPTURE_FALLBACK=1 cargo +$MIRI_TOOLCHAIN miri test
