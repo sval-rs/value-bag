@@ -96,7 +96,6 @@ pub(super) fn from_any<'v, T: ?Sized + 'static>(value: &'v T) -> Option<Primitiv
         use crate::std::{
             any::{Any, TypeId},
             cmp::Ordering,
-            marker::PhantomData,
         };
 
         // From: https://github.com/servo/rust-quicksort
@@ -180,17 +179,26 @@ pub(super) fn from_any<'v, T: ?Sized + 'static>(value: &'v T) -> Option<Primitiv
         enum Void {}
 
         #[repr(transparent)]
-        struct VoidRef<'a>(*const *const Void, PhantomData<&'a Void>);
+        struct VoidRef<'a>(*const &'a Void);
 
         macro_rules! type_ids {
             ($($ty:ty,)*) => {
                 [
+                    (
+                        std::any::TypeId::of::<str>(),
+                        (|v| unsafe {
+                            // SAFETY: We verify the value is str before casting
+                            let v = *(v.0 as *const &'_ str);
+
+                            Primitive::from(v)
+                        }) as for<'a> fn(VoidRef<'a>) -> Primitive<'a>
+                    ),
                     $(
                         (
                             std::any::TypeId::of::<$ty>(),
                             (|v| unsafe {
                                 // SAFETY: We verify the value is $ty before casting
-                                let v = *(*v.0 as *const $ty);
+                                let v = **(v.0 as *const &'_ $ty);
 
                                 Primitive::from(v)
                             }) as for<'a> fn(VoidRef<'a>) -> Primitive<'a>
@@ -201,7 +209,7 @@ pub(super) fn from_any<'v, T: ?Sized + 'static>(value: &'v T) -> Option<Primitiv
                             std::any::TypeId::of::<Option<$ty>>(),
                             (|v| unsafe {
                                 // SAFETY: We verify the value is Option<$ty> before casting
-                                let v = *(*v.0 as *const Option<$ty>);
+                                let v = **(v.0 as *const &'_ Option<$ty>);
 
                                 if let Some(v) = v {
                                     Primitive::from(v)
@@ -211,15 +219,6 @@ pub(super) fn from_any<'v, T: ?Sized + 'static>(value: &'v T) -> Option<Primitiv
                             }) as for<'a> fn(VoidRef<'a>) -> Primitive<'a>
                         ),
                     )*
-                    (
-                        std::any::TypeId::of::<str>(),
-                        (|v| unsafe {
-                            // SAFETY: We verify the value is str before casting
-                            let v = &**(v.0 as *const *const str);
-
-                            Primitive::from(v)
-                        }) as for<'a> fn(VoidRef<'a>) -> Primitive<'a>
-                    ),
                 ]
             };
         }
@@ -255,8 +254,7 @@ pub(super) fn from_any<'v, T: ?Sized + 'static>(value: &'v T) -> Option<Primitiv
 
         if let Ok(i) = TYPE_IDS.binary_search_by_key(&value.type_id(), |&(k, _)| k) {
             Some((TYPE_IDS[i].1)(VoidRef(
-                &(value) as *const &'v T as *const *const Void,
-                PhantomData,
+                &(value) as *const &'v T as *const &'v Void,
             )))
         } else {
             None
@@ -266,19 +264,19 @@ pub(super) fn from_any<'v, T: ?Sized + 'static>(value: &'v T) -> Option<Primitiv
     // When we're not on `nightly` and aren't on a supported arch, we can't do capturing
     #[cfg(any(all(value_bag_capture_ctor, miri), value_bag_capture_fallback))]
     {
-        use crate::std::{any::TypeId, marker::PhantomData};
+        use crate::std::any::TypeId;
 
         enum Void {}
 
         #[repr(transparent)]
-        struct VoidRef<'a>(*const *const Void, PhantomData<&'a Void>);
+        struct VoidRef<'a>(*const &'a Void);
 
         macro_rules! type_ids {
             ($($ty:ty,)*) => {
                 |v: VoidRef<'_>| {
                     if TypeId::of::<T>() == TypeId::of::<str>() {
                         // SAFETY: We verify the value is str before casting
-                        let v = unsafe { &**(v.0 as *const *const str) };
+                        let v = unsafe { *(v.0 as *const &'_ str) };
 
                         return Some(Primitive::from(v));
                     }
@@ -286,7 +284,7 @@ pub(super) fn from_any<'v, T: ?Sized + 'static>(value: &'v T) -> Option<Primitiv
                     $(
                         if TypeId::of::<T>() == TypeId::of::<$ty>() {
                             // SAFETY: We verify the value is $ty before casting
-                            let v = unsafe { *(*v.0 as *const $ty) };
+                            let v = unsafe { **(v.0 as *const &'_ $ty) };
 
                             return Some(Primitive::from(v));
                         }
@@ -294,7 +292,7 @@ pub(super) fn from_any<'v, T: ?Sized + 'static>(value: &'v T) -> Option<Primitiv
                     $(
                         if TypeId::of::<T>() == TypeId::of::<Option<$ty>>() {
                             // SAFETY: We verify the value is Option<$ty> before casting
-                            let v = unsafe { *(*v.0 as *const Option<$ty>) };
+                            let v = unsafe { **(v.0 as *const &'_ Option<$ty>) };
 
                             if let Some(v) = v {
                                 return Some(Primitive::from(v));
@@ -331,8 +329,7 @@ pub(super) fn from_any<'v, T: ?Sized + 'static>(value: &'v T) -> Option<Primitiv
         ];
 
         (type_ids)(VoidRef(
-            &(value) as *const &'v T as *const *const Void,
-            PhantomData,
+            &(value) as *const &'v T as *const &'v Void,
         ))
     }
 }
