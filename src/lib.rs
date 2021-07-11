@@ -4,8 +4,6 @@
 //! `ValueBag`s can be captured in various ways and then formatted, inspected, and serialized
 //! without losing their original structure.
 
-#![feature(ptr_metadata)]
-
 #![cfg_attr(value_bag_capture_const_type_id, feature(const_type_id))]
 #![doc(html_root_url = "https://docs.rs/value-bag/1.0.0-alpha.7")]
 #![no_std]
