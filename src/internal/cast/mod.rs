@@ -22,17 +22,21 @@ pub(super) fn type_id<T: 'static>() -> TypeId {
     TypeId::of::<T>()
 }
 
-/// Attempt to capture a primitive from some generic value.
-///
-/// If the value is a primitive type, then cast it here, avoiding needing to erase its value
-/// This makes `ValueBag`s produced by `ValueBag::from_*` more useful
-pub(super) fn try_from_primitive<'v, T: 'static>(value: &'v T) -> Option<ValueBag<'v>> {
-    primitive::from_any(value).map(|primitive| ValueBag {
-        inner: Internal::Primitive { value: primitive },
-    })
-}
-
 impl<'v> ValueBag<'v> {
+    /// Try capture a raw value.
+    ///
+    /// This method will return `Some` if the value is a simple primitive
+    /// that can be captured without losing its structure. In other cases
+    /// this method will return `None`.
+    pub fn try_capture<T>(value: &'v T) -> Option<Self>
+    where
+        T: ?Sized + 'static,
+    {
+        primitive::from_any(value).map(|primitive| ValueBag {
+            inner: Internal::Primitive { value: primitive },
+        })
+    }
+
     /// Try get a `u64` from this value.
     ///
     /// This method is cheap for primitive types, but may call arbitrary
@@ -392,7 +396,24 @@ mod tests {
     #[cfg(target_arch = "wasm32")]
     use wasm_bindgen_test::*;
 
+    use super::*;
+
+    use crate::std::string::ToString;
+
     use crate::test::IntoValueBag;
+
+    #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn primitive_capture_str() {
+        let s: &str = &"short lived".to_string();
+        assert_eq!(
+            "short lived",
+            ValueBag::try_capture(s)
+                .unwrap()
+                .to_borrowed_str()
+                .expect("invalid value")
+        );
+    }
 
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]

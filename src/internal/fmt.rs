@@ -16,7 +16,7 @@ impl<'v> ValueBag<'v> {
     where
         T: Debug + 'static,
     {
-        cast::try_from_primitive(value).unwrap_or(ValueBag {
+        Self::try_capture(value).unwrap_or(ValueBag {
             inner: Internal::Debug {
                 value,
                 type_id: cast::type_id::<T>(),
@@ -32,7 +32,7 @@ impl<'v> ValueBag<'v> {
     where
         T: Display + 'static,
     {
-        cast::try_from_primitive(value).unwrap_or(ValueBag {
+        Self::try_capture(value).unwrap_or(ValueBag {
             inner: Internal::Display {
                 value,
                 type_id: cast::type_id::<T>(),
