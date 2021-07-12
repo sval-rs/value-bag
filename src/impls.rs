@@ -2,12 +2,6 @@
 
 use super::ValueBag;
 
-impl<'v> From<&'v str> for ValueBag<'v> {
-    fn from(value: &'v str) -> Self {
-        ValueBag::from_primitive(value)
-    }
-}
-
 macro_rules! impl_from_primitive {
     ($($into_ty:ty,)*) => {
         $(
@@ -39,6 +33,25 @@ impl_from_primitive![
     char,
     bool,
 ];
+
+impl<'v> From<&'v str> for ValueBag<'v> {
+    fn from(value: &'v str) -> Self {
+        ValueBag::from_primitive(value)
+    }
+}
+
+#[cfg(feature = "std")]
+mod std_support {
+    use super::*;
+
+    use crate::std::string::String;
+
+    impl<'v> From<&'v String> for ValueBag<'v> {
+        fn from(v: &'v String) -> ValueBag<'v> {
+            ValueBag::from_primitive(&**v)
+        }
+    }
+}
 
 #[cfg(test)]
 mod tests {

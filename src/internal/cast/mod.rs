@@ -363,7 +363,7 @@ mod std_support {
         #[cfg(target_arch = "wasm32")]
         use wasm_bindgen_test::*;
 
-        use crate::{std::borrow::ToOwned, test::IntoValueBag};
+        use crate::{ValueBag, std::borrow::ToOwned, test::IntoValueBag};
 
         #[test]
         #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
@@ -384,7 +384,14 @@ mod std_support {
                 "a string",
                 (&*short_lived)
                     .into_value_bag()
-                    .to_str()
+                    .to_borrowed_str()
+                    .expect("invalid value")
+            );
+            assert_eq!(
+                "a string",
+                ValueBag::try_capture(&short_lived)
+                    .expect("invalid value")
+                    .to_borrowed_str()
                     .expect("invalid value")
             );
         }

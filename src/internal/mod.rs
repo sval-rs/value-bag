@@ -322,3 +322,146 @@ impl<'v> From<&'v str> for Primitive<'v> {
         Primitive::Str(v)
     }
 }
+
+impl<'v> From<&'v ()> for Primitive<'v> {
+    #[inline]
+    fn from(_: &'v ()) -> Self {
+        Primitive::None
+    }
+}
+
+impl<'v> From<&'v u8> for Primitive<'v> {
+    #[inline]
+    fn from(v: &'v u8) -> Self {
+        Primitive::Unsigned(*v as u64)
+    }
+}
+
+impl<'v> From<&'v u16> for Primitive<'v> {
+    #[inline]
+    fn from(v: &'v u16) -> Self {
+        Primitive::Unsigned(*v as u64)
+    }
+}
+
+impl<'v> From<&'v u32> for Primitive<'v> {
+    #[inline]
+    fn from(v: &'v u32) -> Self {
+        Primitive::Unsigned(*v as u64)
+    }
+}
+
+impl<'v> From<&'v u64> for Primitive<'v> {
+    #[inline]
+    fn from(v: &'v u64) -> Self {
+        Primitive::Unsigned(*v)
+    }
+}
+
+impl<'v> From<&'v u128> for Primitive<'v> {
+    #[inline]
+    fn from(v: &'v u128) -> Self {
+        Primitive::BigUnsigned(*v)
+    }
+}
+
+impl<'v> From<&'v usize> for Primitive<'v> {
+    #[inline]
+    fn from(v: &'v usize) -> Self {
+        Primitive::Unsigned(*v as u64)
+    }
+}
+
+impl<'v> From<&'v i8> for Primitive<'v> {
+    #[inline]
+    fn from(v: &'v i8) -> Self {
+        Primitive::Signed(*v as i64)
+    }
+}
+
+impl<'v> From<&'v i16> for Primitive<'v> {
+    #[inline]
+    fn from(v: &'v i16) -> Self {
+        Primitive::Signed(*v as i64)
+    }
+}
+
+impl<'v> From<&'v i32> for Primitive<'v> {
+    #[inline]
+    fn from(v: &'v i32) -> Self {
+        Primitive::Signed(*v as i64)
+    }
+}
+
+impl<'v> From<&'v i64> for Primitive<'v> {
+    #[inline]
+    fn from(v: &'v i64) -> Self {
+        Primitive::Signed(*v)
+    }
+}
+
+impl<'v> From<&'v i128> for Primitive<'v> {
+    #[inline]
+    fn from(v: &'v i128) -> Self {
+        Primitive::BigSigned(*v)
+    }
+}
+
+impl<'v> From<&'v isize> for Primitive<'v> {
+    #[inline]
+    fn from(v: &'v isize) -> Self {
+        Primitive::Signed(*v as i64)
+    }
+}
+
+impl<'v> From<&'v f32> for Primitive<'v> {
+    #[inline]
+    fn from(v: &'v f32) -> Self {
+        Primitive::Float(*v as f64)
+    }
+}
+
+impl<'v> From<&'v f64> for Primitive<'v> {
+    #[inline]
+    fn from(v: &'v f64) -> Self {
+        Primitive::Float(*v)
+    }
+}
+
+impl<'v> From<&'v bool> for Primitive<'v> {
+    #[inline]
+    fn from(v: &'v bool) -> Self {
+        Primitive::Bool(*v)
+    }
+}
+
+impl<'v> From<&'v char> for Primitive<'v> {
+    #[inline]
+    fn from(v: &'v char) -> Self {
+        Primitive::Char(*v)
+    }
+}
+
+impl<'v, 'u> From<&'v &'u str> for Primitive<'v>
+where
+    'u: 'v,
+{
+    #[inline]
+    fn from(v: &'v &'u str) -> Self {
+        Primitive::Str(*v)
+    }
+}
+
+#[cfg(feature = "std")]
+mod std_support {
+    use super::*;
+
+    use std::string::String;
+
+    impl<'v> From<&'v String> for Primitive<'v> {
+        #[inline]
+        fn from(v: &'v String) -> Self {
+            Primitive::Str(&**v)
+        }
+    }
+}

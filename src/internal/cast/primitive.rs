@@ -6,6 +6,9 @@ In the future when `min_specialization` is stabilized we could use it instead an
 the `'static` bound altogether.
 */
 
+#[cfg(feature = "std")]
+use crate::std::string::String;
+
 use crate::internal::Primitive;
 
 pub(super) fn from_any<'v, T: ?Sized + 'static>(value: &'v T) -> Option<Primitive<'v>> {
@@ -15,14 +18,20 @@ pub(super) fn from_any<'v, T: ?Sized + 'static>(value: &'v T) -> Option<Primitiv
         use crate::std::any::TypeId;
 
         macro_rules! to_primitive {
-            ($($ty:ty : ($const_ident:ident, $option_ident:ident),)*) => {
+            ($(
+                $(#[cfg($($cfg:tt)*)])*
+                $ty:ty : ($const_ident:ident, $option_ident:ident),
+            )*) => {
                 trait ToPrimitive<'a>
                 where
                     Self: 'static,
                 {
                     const CALL: fn(&'_ &'a Self) -> Option<Primitive<'a>> = {
                         $(
+                            $(#[cfg($($cfg)*)])*
                             const $const_ident: TypeId = TypeId::of::<$ty>();
+
+                            $(#[cfg($($cfg)*)])*
                             const $option_ident: TypeId = TypeId::of::<Option<$ty>>();
                         )*
 
@@ -30,9 +39,12 @@ pub(super) fn from_any<'v, T: ?Sized + 'static>(value: &'v T) -> Option<Primitiv
 
                         match TypeId::of::<Self>() {
                             $(
-                                $const_ident => |v| Some(Primitive::from(unsafe { *(*v as *const Self as *const $ty) })),
+                                $(#[cfg($($cfg)*)])*
+                                $const_ident => |v| Some(Primitive::from(unsafe { &*(*v as *const Self as *const $ty) })),
+
+                                $(#[cfg($($cfg)*)])*
                                 $option_ident => |v| Some({
-                                    let v = unsafe { *(*v as *const Self as *const Option<$ty>) };
+                                    let v = unsafe { &*(*v as *const Self as *const Option<$ty>) };
                                     match v {
                                         Some(v) => Primitive::from(v),
                                         None => Primitive::None,
@@ -80,6 +92,8 @@ pub(super) fn from_any<'v, T: ?Sized + 'static>(value: &'v T) -> Option<Primitiv
             &'static str: (STATIC_STR, OPTION_STATIC_STR),
             // We deal with `str` separately because it's unsized
             // str: (STR),
+            #[cfg(feature = "std")]
+            String: (STRING, OPTION_STRING),
         ];
 
         value.to_primitive()
@@ -182,7 +196,10 @@ pub(super) fn from_any<'v, T: ?Sized + 'static>(value: &'v T) -> Option<Primitiv
         struct VoidRef<'a>(*const &'a Void);
 
         macro_rules! type_ids {
-            ($($ty:ty,)*) => {
+            ($(
+                $(#[cfg($($cfg:tt)*)])*
+                $ty:ty,
+            )*) => {
                 [
                     (
                         std::any::TypeId::of::<str>(),
@@ -194,22 +211,24 @@ pub(super) fn from_any<'v, T: ?Sized + 'static>(value: &'v T) -> Option<Primitiv
                         }) as for<'a> fn(VoidRef<'a>) -> Primitive<'a>
                     ),
                     $(
+                        $(#[cfg($($cfg)*)])*
                         (
                             std::any::TypeId::of::<$ty>(),
                             (|v| unsafe {
                                 // SAFETY: We verify the value is $ty before casting
-                                let v = **(v.0 as *const &'_ $ty);
+                                let v = *(v.0 as *const &'_ $ty);
 
                                 Primitive::from(v)
                             }) as for<'a> fn(VoidRef<'a>) -> Primitive<'a>
                         ),
                     )*
                     $(
+                        $(#[cfg($($cfg)*)])*
                         (
                             std::any::TypeId::of::<Option<$ty>>(),
                             (|v| unsafe {
                                 // SAFETY: We verify the value is Option<$ty> before casting
-                                let v = **(v.0 as *const &'_ Option<$ty>);
+                                let v = *(v.0 as *const &'_ Option<$ty>);
 
                                 if let Some(v) = v {
                                     Primitive::from(v)
@@ -223,8 +242,13 @@ pub(super) fn from_any<'v, T: ?Sized + 'static>(value: &'v T) -> Option<Primitiv
             };
         }
 
+        #[cfg(not(feature = "std"))]
+        const LEN: usize = 35;
+        #[cfg(feature = "std")]
+        const LEN: usize = 37;
+
         #[ctor]
-        static TYPE_IDS: [(TypeId, for<'a> fn(VoidRef<'a>) -> Primitive<'a>); 35] = {
+        static TYPE_IDS: [(TypeId, for<'a> fn(VoidRef<'a>) -> Primitive<'a>); LEN] = {
             // NOTE: The types here *must* match the ones used above when `const_type_id` is available
             let mut type_ids = type_ids![
                 usize,
@@ -245,6 +269,8 @@ pub(super) fn from_any<'v, T: ?Sized + 'static>(value: &'v T) -> Option<Primitiv
                 bool,
                 &'static str,
                 // We deal with `str` separately because it's unsized
+                #[cfg(feature = "std")]
+                String,
             ];
 
             quicksort_by(&mut type_ids, |&(ref a, _), &(ref b, _)| a.cmp(b));
@@ -275,7 +301,10 @@ pub(super) fn from_any<'v, T: ?Sized + 'static>(value: &'v T) -> Option<Primitiv
         struct VoidRef<'a>(*const &'a Void);
 
         macro_rules! type_ids {
-            ($($ty:ty,)*) => {
+            ($(
+                $(#[cfg($($cfg:tt)*)])*
+                $ty:ty,
+            )*) => {
                 |v: VoidRef<'_>| {
                     if TypeId::of::<T>() == TypeId::of::<str>() {
                         // SAFETY: We verify the value is str before casting
@@ -285,17 +314,19 @@ pub(super) fn from_any<'v, T: ?Sized + 'static>(value: &'v T) -> Option<Primitiv
                     }
 
                     $(
+                        $(#[cfg($($cfg)*)])*
                         if TypeId::of::<T>() == TypeId::of::<$ty>() {
                             // SAFETY: We verify the value is $ty before casting
-                            let v = unsafe { **(v.0 as *const &'_ $ty) };
+                            let v = unsafe { *(v.0 as *const &'_ $ty) };
 
                             return Some(Primitive::from(v));
                         }
                     )*
                     $(
+                        $(#[cfg($($cfg)*)])*
                         if TypeId::of::<T>() == TypeId::of::<Option<$ty>>() {
                             // SAFETY: We verify the value is Option<$ty> before casting
-                            let v = unsafe { **(v.0 as *const &'_ Option<$ty>) };
+                            let v = unsafe { *(v.0 as *const &'_ Option<$ty>) };
 
                             if let Some(v) = v {
                                 return Some(Primitive::from(v));
@@ -329,6 +360,8 @@ pub(super) fn from_any<'v, T: ?Sized + 'static>(value: &'v T) -> Option<Primitiv
             bool,
             &'static str,
             // We deal with `str` separately because it's unsized
+            #[cfg(feature = "std")]
+            String,
         ];
 
         (type_ids)(VoidRef(
