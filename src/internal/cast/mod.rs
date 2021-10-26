@@ -135,85 +135,102 @@ impl<'v> ValueBag<'v> {
 
 impl<'v> Internal<'v> {
     /// Cast the inner value to another type.
+    #[inline]
     fn cast(self) -> Cast<'v> {
         struct CastVisitor<'v>(Cast<'v>);
 
         impl<'v> InternalVisitor<'v> for CastVisitor<'v> {
+            #[inline]
             fn debug(&mut self, _: &dyn fmt::Debug) -> Result<(), Error> {
                 Ok(())
             }
 
+            #[inline]
             fn display(&mut self, _: &dyn fmt::Display) -> Result<(), Error> {
                 Ok(())
             }
 
+            #[inline]
             fn u64(&mut self, v: u64) -> Result<(), Error> {
                 self.0 = Cast::Primitive(Primitive::Unsigned(v));
                 Ok(())
             }
 
+            #[inline]
             fn i64(&mut self, v: i64) -> Result<(), Error> {
                 self.0 = Cast::Primitive(Primitive::Signed(v));
                 Ok(())
             }
 
+            #[inline]
             fn f64(&mut self, v: f64) -> Result<(), Error> {
                 self.0 = Cast::Primitive(Primitive::Float(v));
                 Ok(())
             }
 
+            #[inline]
             fn i128(&mut self, v: i128) -> Result<(), Error> {
                 self.0 = Cast::Primitive(Primitive::BigSigned(v));
                 Ok(())
             }
 
+            #[inline]
             fn u128(&mut self, v: u128) -> Result<(), Error> {
                 self.0 = Cast::Primitive(Primitive::BigUnsigned(v));
                 Ok(())
             }
 
+            #[inline]
             fn bool(&mut self, v: bool) -> Result<(), Error> {
                 self.0 = Cast::Primitive(Primitive::Bool(v));
                 Ok(())
             }
 
+            #[inline]
             fn char(&mut self, v: char) -> Result<(), Error> {
                 self.0 = Cast::Primitive(Primitive::Char(v));
                 Ok(())
             }
 
             #[cfg(feature = "std")]
+            #[inline]
             fn str(&mut self, s: &str) -> Result<(), Error> {
                 self.0 = Cast::String(s.to_owned());
                 Ok(())
             }
 
             #[cfg(not(feature = "std"))]
+            #[inline]
             fn str(&mut self, _: &str) -> Result<(), Error> {
                 Ok(())
             }
 
+            #[inline]
             fn borrowed_str(&mut self, v: &'v str) -> Result<(), Error> {
                 self.0 = Cast::Primitive(Primitive::Str(v));
                 Ok(())
             }
 
+            #[inline]
             fn none(&mut self) -> Result<(), Error> {
                 self.0 = Cast::Primitive(Primitive::None);
                 Ok(())
             }
 
             #[cfg(feature = "error")]
+            #[inline]
             fn error(&mut self, _: &dyn super::error::Error) -> Result<(), Error> {
                 Ok(())
             }
 
             #[cfg(feature = "sval1")]
+            #[inline]
             fn sval1(&mut self, v: &dyn super::sval::v1::Value) -> Result<(), Error> {
                 super::sval::v1::internal_visit(v, self)
             }
 
             #[cfg(feature = "serde1")]
+            #[inline]
             fn serde1(&mut self, v: &dyn super::serde::v1::Serialize) -> Result<(), Error> {
                 super::serde::v1::internal_visit(v, self)
             }
@@ -237,6 +254,7 @@ pub(in crate::internal) enum Cast<'v> {
 }
 
 impl<'v> Cast<'v> {
+    #[inline]
     fn into_primitive(self) -> Primitive<'v> {
         match self {
             Cast::Primitive(value) => value,
@@ -247,6 +265,7 @@ impl<'v> Cast<'v> {
 }
 
 impl<'v> Primitive<'v> {
+    #[inline]
     fn into_borrowed_str(self) -> Option<&'v str> {
         if let Primitive::Str(value) = self {
             Some(value)
@@ -255,6 +274,7 @@ impl<'v> Primitive<'v> {
         }
     }
 
+    #[inline]
     fn into_u64(self) -> Option<u64> {
         match self {
             Primitive::Unsigned(value) => Some(value),
@@ -265,6 +285,7 @@ impl<'v> Primitive<'v> {
         }
     }
 
+    #[inline]
     fn into_i64(self) -> Option<i64> {
         match self {
             Primitive::Signed(value) => Some(value),
@@ -275,6 +296,7 @@ impl<'v> Primitive<'v> {
         }
     }
 
+    #[inline]
     fn into_u128(self) -> Option<u128> {
         match self {
             Primitive::BigUnsigned(value) => Some(value),
@@ -285,6 +307,7 @@ impl<'v> Primitive<'v> {
         }
     }
 
+    #[inline]
     fn into_i128(self) -> Option<i128> {
         match self {
             Primitive::BigSigned(value) => Some(value),
@@ -295,6 +318,7 @@ impl<'v> Primitive<'v> {
         }
     }
 
+    #[inline]
     fn into_f64(self) -> Option<f64> {
         match self {
             Primitive::Float(value) => Some(value),
@@ -314,6 +338,7 @@ impl<'v> Primitive<'v> {
         }
     }
 
+    #[inline]
     fn into_char(self) -> Option<char> {
         if let Primitive::Char(value) = self {
             Some(value)
@@ -322,6 +347,7 @@ impl<'v> Primitive<'v> {
         }
     }
 
+    #[inline]
     fn into_bool(self) -> Option<bool> {
         if let Primitive::Bool(value) = self {
             Some(value)
@@ -343,12 +369,14 @@ mod std_support {
         /// This method is cheap for primitive types, but may call arbitrary
         /// serialization implementations for complex ones. If the serialization
         /// implementation produces a short lived string it will be allocated.
+        #[inline]
         pub fn to_str(&self) -> Option<Cow<str>> {
             self.inner.cast().into_str()
         }
     }
 
     impl<'v> Cast<'v> {
+        #[inline]
         pub(super) fn into_str(self) -> Option<Cow<'v, str>> {
             match self {
                 Cast::Primitive(Primitive::Str(value)) => Some(value.into()),

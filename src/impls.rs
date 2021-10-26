@@ -6,6 +6,7 @@ macro_rules! impl_from_primitive {
     ($($into_ty:ty,)*) => {
         $(
             impl<'v> From<$into_ty> for ValueBag<'v> {
+                #[inline]
                 fn from(value: $into_ty) -> Self {
                     ValueBag::from_primitive(value)
                 }
@@ -35,6 +36,7 @@ impl_from_primitive![
 ];
 
 impl<'v> From<&'v str> for ValueBag<'v> {
+    #[inline]
     fn from(value: &'v str) -> Self {
         ValueBag::from_primitive(value)
     }
@@ -47,6 +49,7 @@ mod std_support {
     use crate::std::string::String;
 
     impl<'v> From<&'v String> for ValueBag<'v> {
+        #[inline]
         fn from(v: &'v String) -> ValueBag<'v> {
             ValueBag::from_primitive(&**v)
         }

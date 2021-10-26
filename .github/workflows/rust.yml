@@ -77,6 +77,23 @@ jobs:
 
       - name: Powerset
         run: cargo hack check --feature-powerset -Z avoid-dev-deps
+  
+  benches:
+    name: Build (benches)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: nightly
+          override: true
+
+      - name: Benches
+        run: cargo bench --no-run
 
   wasm:
     name: Test (wasm)

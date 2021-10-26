@@ -38,6 +38,7 @@ impl<'v> ValueBag<'v> {
     }
 
     /// Get a value from an erased structured type.
+    #[inline]
     pub fn from_dyn_sval1(value: &'v dyn Value) -> Self {
         ValueBag {
             inner: Internal::AnonSval1 { value },

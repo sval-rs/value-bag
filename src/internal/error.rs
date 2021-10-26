@@ -17,6 +17,7 @@ impl<'v> ValueBag<'v> {
     }
 
     /// Get a value from an erased value.
+    #[inline]
     pub fn from_dyn_error(value: &'v (dyn error::Error + 'static)) -> Self {
         ValueBag {
             inner: Internal::AnonError { value },
@@ -24,6 +25,7 @@ impl<'v> ValueBag<'v> {
     }
 
     /// Try get an error from this value.
+    #[inline]
     pub fn to_borrowed_error(&self) -> Option<&(dyn Error + 'static)> {
         match self.inner {
             Internal::Error { value, .. } => Some(value),
