@@ -40,9 +40,21 @@ fn u8_capture_debug_to_u64(b: &mut test::Bencher) {
 }
 
 #[bench]
+fn u8_capture_debug_to_borrowed_str(b: &mut test::Bencher) {
+    let v = ValueBag::capture_debug(&1u8);
+    b.iter(|| v.to_borrowed_str())
+}
+
+#[bench]
 fn str_capture_debug_to_borrowed_str(b: &mut test::Bencher) {
     let v = ValueBag::capture_debug(&"a string");
     b.iter(|| v.to_borrowed_str())
+}
+
+#[bench]
+fn str_capture_debug_to_u64(b: &mut test::Bencher) {
+    let v = ValueBag::capture_debug(&"a string");
+    b.iter(|| v.to_u64())
 }
 
 #[bench]
