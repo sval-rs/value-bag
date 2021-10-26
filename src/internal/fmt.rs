@@ -61,6 +61,7 @@ impl<'v> ValueBag<'v> {
     }
 
     /// Get a value from a debuggable type without capturing support.
+    #[inline]
     pub fn from_dyn_debug(value: &'v dyn Debug) -> Self {
         ValueBag {
             inner: Internal::AnonDebug { value },
@@ -68,6 +69,7 @@ impl<'v> ValueBag<'v> {
     }
 
     /// Get a value from a displayable type without capturing support.
+    #[inline]
     pub fn from_dyn_display(value: &'v dyn Display) -> Self {
         ValueBag {
             inner: Internal::AnonDisplay { value },

@@ -108,6 +108,7 @@ impl<'v> ValueBag<'v> {
     }
 
     /// Visit the value using an internal visitor.
+    #[inline]
     pub(super) fn internal_visit(
         &self,
         visitor: &mut dyn InternalVisitor<'v>,
