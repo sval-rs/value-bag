@@ -47,10 +47,7 @@ impl<'s, 'f> Slot<'s, 'f> {
     }
 
     /// Fill the slot with an error.
-    pub fn fill_dyn_error(
-        self,
-        value: &(dyn error::Error + 'static),
-    ) -> Result<(), crate::Error> {
+    pub fn fill_dyn_error(self, value: &(dyn error::Error + 'static)) -> Result<(), crate::Error> {
         self.fill(|visitor| visitor.error(value))
     }
 }
