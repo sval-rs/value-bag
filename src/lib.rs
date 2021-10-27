@@ -92,7 +92,7 @@ pub use self::error::Error;
 /// ```
 /// use value_bag::{ValueBag, fill::Slot};
 ///
-/// let value = ValueBag::from_fill(&|slot: &mut Slot| {
+/// let value = ValueBag::from_fill(&|slot: Slot| {
 ///     #[derive(Debug)]
 ///     struct MyShortLivedValue;
 ///
@@ -111,7 +111,7 @@ pub use self::error::Error;
 /// struct FillDebug;
 ///
 /// impl Fill for FillDebug {
-///     fn fill(&self, slot: &mut Slot) -> Result<(), Error> {
+///     fn fill(&self, slot: Slot) -> Result<(), Error> {
 ///         slot.fill_debug(&42i32 as &dyn Debug)
 ///     }
 /// }

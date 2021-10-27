@@ -50,11 +50,7 @@ impl<'s, 'f> Slot<'s, 'f> {
     /// Fill the slot with a structured value.
     ///
     /// The given value doesn't need to satisfy any particular lifetime constraints.
-    ///
-    /// # Panics
-    ///
-    /// Calling more than a single `fill` method on this slot will panic.
-    pub fn fill_sval1<T>(&mut self, value: T) -> Result<(), Error>
+    pub fn fill_sval1<T>(self, value: T) -> Result<(), Error>
     where
         T: Value,
     {
@@ -62,7 +58,7 @@ impl<'s, 'f> Slot<'s, 'f> {
     }
 
     /// Fill the slot with a structured value.
-    pub fn fill_dyn_sval1(&mut self, value: &dyn Value) -> Result<(), Error> {
+    pub fn fill_dyn_sval1(self, value: &dyn Value) -> Result<(), Error> {
         self.fill(|visitor| visitor.sval1(value))
     }
 }

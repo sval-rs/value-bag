@@ -39,11 +39,7 @@ impl<'s, 'f> Slot<'s, 'f> {
     /// Fill the slot with an error.
     ///
     /// The given value doesn't need to satisfy any particular lifetime constraints.
-    ///
-    /// # Panics
-    ///
-    /// Calling more than a single `fill` method on this slot will panic.
-    pub fn fill_error<T>(&mut self, value: T) -> Result<(), crate::Error>
+    pub fn fill_error<T>(self, value: T) -> Result<(), crate::Error>
     where
         T: error::Error + 'static,
     {
@@ -52,7 +48,7 @@ impl<'s, 'f> Slot<'s, 'f> {
 
     /// Fill the slot with an error.
     pub fn fill_dyn_error(
-        &mut self,
+        self,
         value: &(dyn error::Error + 'static),
     ) -> Result<(), crate::Error> {
         self.fill(|visitor| visitor.error(value))

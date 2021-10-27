@@ -81,11 +81,7 @@ impl<'s, 'f> Slot<'s, 'f> {
     /// Fill the slot with a debuggable value.
     ///
     /// The given value doesn't need to satisfy any particular lifetime constraints.
-    ///
-    /// # Panics
-    ///
-    /// Calling more than a single `fill` method on this slot will panic.
-    pub fn fill_debug<T>(&mut self, value: T) -> Result<(), Error>
+    pub fn fill_debug<T>(self, value: T) -> Result<(), Error>
     where
         T: Debug,
     {
@@ -95,11 +91,7 @@ impl<'s, 'f> Slot<'s, 'f> {
     /// Fill the slot with a displayable value.
     ///
     /// The given value doesn't need to satisfy any particular lifetime constraints.
-    ///
-    /// # Panics
-    ///
-    /// Calling more than a single `fill` method on this slot will panic.
-    pub fn fill_display<T>(&mut self, value: T) -> Result<(), Error>
+    pub fn fill_display<T>(self, value: T) -> Result<(), Error>
     where
         T: Display,
     {

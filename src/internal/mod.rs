@@ -122,7 +122,7 @@ impl<'v> Internal<'v> {
         match self {
             Internal::Primitive { value } => value.internal_visit(visitor),
 
-            Internal::Fill { value } => value.fill(&mut Slot::new(visitor)),
+            Internal::Fill { value } => value.fill(Slot::new(visitor)),
 
             Internal::AnonDebug { value } => visitor.debug(value),
             Internal::Debug { value, .. } => visitor.debug(value),

@@ -44,11 +44,7 @@ impl<'s, 'f> Slot<'s, 'f> {
     /// Fill the slot with a structured value.
     ///
     /// The given value doesn't need to satisfy any particular lifetime constraints.
-    ///
-    /// # Panics
-    ///
-    /// Calling more than a single `fill` method on this slot will panic.
-    pub fn fill_serde1<T>(&mut self, value: T) -> Result<(), Error>
+    pub fn fill_serde1<T>(self, value: T) -> Result<(), Error>
     where
         T: Serialize,
     {
