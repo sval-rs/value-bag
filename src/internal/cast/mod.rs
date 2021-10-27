@@ -391,7 +391,7 @@ mod std_support {
         #[cfg(target_arch = "wasm32")]
         use wasm_bindgen_test::*;
 
-        use crate::{ValueBag, std::borrow::ToOwned, test::IntoValueBag};
+        use crate::{std::borrow::ToOwned, test::IntoValueBag, ValueBag};
 
         #[test]
         #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]

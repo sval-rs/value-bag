@@ -364,8 +364,6 @@ pub(super) fn from_any<'v, T: ?Sized + 'static>(value: &'v T) -> Option<Primitiv
             String,
         ];
 
-        (type_ids)(VoidRef(
-            &(value) as *const &'v T as *const &'v Void,
-        ))
+        (type_ids)(VoidRef(&(value) as *const &'v T as *const &'v Void))
     }
 }
