@@ -93,7 +93,7 @@ jobs:
           override: true
 
       - name: Benches
-        run: cargo bench --no-run
+        run: cargo bench --no-run --features "error sval1 serde1"
 
   wasm:
     name: Test (wasm)

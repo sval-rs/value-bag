@@ -118,6 +118,7 @@ impl<'v> ValueBag<'v> {
 }
 
 impl<'v> Internal<'v> {
+    #[inline]
     pub(super) fn internal_visit(self, visitor: &mut dyn InternalVisitor<'v>) -> Result<(), Error> {
         match self {
             Internal::Primitive { value } => value.internal_visit(visitor),

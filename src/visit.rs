@@ -74,6 +74,7 @@ pub trait Visit<'v> {
     fn visit_any(&mut self, value: ValueBag) -> Result<(), Error>;
 
     /// Visit an unsigned integer.
+    #[inline]
     #[cfg(not(test))]
     fn visit_u64(&mut self, value: u64) -> Result<(), Error> {
         self.visit_any(value.into())
@@ -82,6 +83,7 @@ pub trait Visit<'v> {
     fn visit_u64(&mut self, value: u64) -> Result<(), Error>;
 
     /// Visit a signed integer.
+    #[inline]
     #[cfg(not(test))]
     fn visit_i64(&mut self, value: i64) -> Result<(), Error> {
         self.visit_any(value.into())
@@ -90,6 +92,7 @@ pub trait Visit<'v> {
     fn visit_i64(&mut self, value: i64) -> Result<(), Error>;
 
     /// Visit a big unsigned integer.
+    #[inline]
     #[cfg(not(test))]
     fn visit_u128(&mut self, value: u128) -> Result<(), Error> {
         self.visit_any(value.into())
@@ -98,6 +101,7 @@ pub trait Visit<'v> {
     fn visit_u128(&mut self, value: u128) -> Result<(), Error>;
 
     /// Visit a big signed integer.
+    #[inline]
     #[cfg(not(test))]
     fn visit_i128(&mut self, value: i128) -> Result<(), Error> {
         self.visit_any(value.into())
@@ -106,6 +110,7 @@ pub trait Visit<'v> {
     fn visit_i128(&mut self, value: i128) -> Result<(), Error>;
 
     /// Visit a floating point.
+    #[inline]
     #[cfg(not(test))]
     fn visit_f64(&mut self, value: f64) -> Result<(), Error> {
         self.visit_any(value.into())
@@ -114,6 +119,7 @@ pub trait Visit<'v> {
     fn visit_f64(&mut self, value: f64) -> Result<(), Error>;
 
     /// Visit a boolean.
+    #[inline]
     #[cfg(not(test))]
     fn visit_bool(&mut self, value: bool) -> Result<(), Error> {
         self.visit_any(value.into())
@@ -122,6 +128,7 @@ pub trait Visit<'v> {
     fn visit_bool(&mut self, value: bool) -> Result<(), Error>;
 
     /// Visit a string.
+    #[inline]
     #[cfg(not(test))]
     fn visit_str(&mut self, value: &str) -> Result<(), Error> {
         self.visit_any(value.into())
@@ -130,6 +137,7 @@ pub trait Visit<'v> {
     fn visit_str(&mut self, value: &str) -> Result<(), Error>;
 
     /// Visit a string.
+    #[inline]
     #[cfg(not(test))]
     fn visit_borrowed_str(&mut self, value: &'v str) -> Result<(), Error> {
         self.visit_str(value)
@@ -138,6 +146,7 @@ pub trait Visit<'v> {
     fn visit_borrowed_str(&mut self, value: &'v str) -> Result<(), Error>;
 
     /// Visit a Unicode character.
+    #[inline]
     #[cfg(not(test))]
     fn visit_char(&mut self, value: char) -> Result<(), Error> {
         let mut b = [0; 4];
@@ -147,6 +156,7 @@ pub trait Visit<'v> {
     fn visit_char(&mut self, value: char) -> Result<(), Error>;
 
     /// Visit an error.
+    #[inline]
     #[cfg(not(test))]
     #[cfg(feature = "error")]
     fn visit_error(&mut self, err: &(dyn crate::std::error::Error + 'static)) -> Result<(), Error> {
@@ -157,6 +167,7 @@ pub trait Visit<'v> {
     fn visit_error(&mut self, err: &(dyn crate::std::error::Error + 'static)) -> Result<(), Error>;
 
     /// Visit an error.
+    #[inline]
     #[cfg(not(test))]
     #[cfg(feature = "error")]
     fn visit_borrowed_error(
@@ -177,51 +188,63 @@ impl<'a, 'v, T: ?Sized> Visit<'v> for &'a mut T
 where
     T: Visit<'v>,
 {
+    #[inline]
     fn visit_any(&mut self, value: ValueBag) -> Result<(), Error> {
         (**self).visit_any(value)
     }
 
+    #[inline]
     fn visit_u64(&mut self, value: u64) -> Result<(), Error> {
         (**self).visit_u64(value)
     }
 
+    #[inline]
     fn visit_i64(&mut self, value: i64) -> Result<(), Error> {
         (**self).visit_i64(value)
     }
 
+    #[inline]
     fn visit_u128(&mut self, value: u128) -> Result<(), Error> {
         (**self).visit_u128(value)
     }
 
+    #[inline]
     fn visit_i128(&mut self, value: i128) -> Result<(), Error> {
         (**self).visit_i128(value)
     }
 
+    #[inline]
     fn visit_f64(&mut self, value: f64) -> Result<(), Error> {
         (**self).visit_f64(value)
     }
 
+    #[inline]
     fn visit_bool(&mut self, value: bool) -> Result<(), Error> {
         (**self).visit_bool(value)
     }
 
+    #[inline]
     fn visit_str(&mut self, value: &str) -> Result<(), Error> {
         (**self).visit_str(value)
     }
 
+    #[inline]
     fn visit_borrowed_str(&mut self, value: &'v str) -> Result<(), Error> {
         (**self).visit_borrowed_str(value)
     }
 
+    #[inline]
     fn visit_char(&mut self, value: char) -> Result<(), Error> {
         (**self).visit_char(value)
     }
 
+    #[inline]
     #[cfg(feature = "error")]
     fn visit_error(&mut self, err: &(dyn crate::std::error::Error + 'static)) -> Result<(), Error> {
         (**self).visit_error(err)
     }
 
+    #[inline]
     #[cfg(feature = "error")]
     fn visit_borrowed_error(
         &mut self,
@@ -232,6 +255,11 @@ where
 }
 
 impl<'v> ValueBag<'v> {
+    /// Visit this value using a simple visitor.
+    ///
+    /// The visitor isn't strictly required to inspect the contents of a value bag.
+    /// It's useful for simple cases where a full framework like `serde` or `sval`
+    /// isn't necessary.
     pub fn visit(&self, visitor: impl Visit<'v>) -> Result<(), Error> {
         struct Visitor<V>(V);
 

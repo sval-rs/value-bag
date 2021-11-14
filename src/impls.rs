@@ -11,6 +11,13 @@ macro_rules! impl_from_primitive {
                     ValueBag::from_primitive(value)
                 }
             }
+
+            impl<'a, 'v> From<&'a $into_ty> for ValueBag<'v> {
+                #[inline]
+                fn from(value: &'a $into_ty) -> Self {
+                    ValueBag::from_primitive(*value)
+                }
+            }
         )*
     };
 }
