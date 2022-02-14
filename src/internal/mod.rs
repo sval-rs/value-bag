@@ -5,13 +5,13 @@
 
 use crate::{
     fill::{Fill, Slot},
-    std::any::TypeId,
     Error, ValueBag,
 };
 
 pub(super) mod cast;
 #[cfg(feature = "error")]
 pub(super) mod error;
+pub(super) mod fill;
 pub(super) mod fmt;
 #[cfg(feature = "serde1")]
 pub(super) mod serde;
@@ -24,86 +24,68 @@ pub(super) mod sval;
 /// A container for a structured value for a specific kind of visitor.
 #[derive(Clone, Copy)]
 pub(super) enum Internal<'v> {
-    /// A simple primitive value that can be copied without allocating.
-    Primitive { value: Primitive<'v> },
-    /// A value that can be filled.
-    Fill { value: &'v dyn Fill },
-
-    /// A debuggable value.
-    AnonDebug { value: &'v dyn fmt::Debug },
-    /// A debuggable value.
-    Debug {
-        value: &'v dyn fmt::Debug,
-        type_id: TypeId,
-    },
-
-    /// A displayable value.
-    AnonDisplay { value: &'v dyn fmt::Display },
-    /// A displayable value.
-    Display {
-        value: &'v dyn fmt::Display,
-        type_id: TypeId,
-    },
-
-    #[cfg(feature = "error")]
-    /// An error.
-    AnonError {
-        value: &'v (dyn error::Error + 'static),
-    },
-    #[cfg(feature = "error")]
-    /// An error.
-    Error {
-        value: &'v (dyn error::Error + 'static),
-        type_id: TypeId,
-    },
-
-    #[cfg(feature = "sval1")]
-    /// A structured value from `sval`.
-    AnonSval1 { value: &'v dyn sval::v1::Value },
-    #[cfg(feature = "sval1")]
-    /// A structured value from `sval`.
-    Sval1 {
-        value: &'v dyn sval::v1::Value,
-        type_id: TypeId,
-    },
-
-    #[cfg(feature = "serde1")]
-    /// A structured value from `serde`.
-    AnonSerde1 { value: &'v dyn serde::v1::Serialize },
-    #[cfg(feature = "serde1")]
-    /// A structured value from `serde`.
-    Serde1 {
-        value: &'v dyn serde::v1::Serialize,
-        type_id: TypeId,
-    },
-}
-
-/// A captured primitive value.
-///
-/// These values are common and cheap to copy around.
-#[derive(Clone, Copy)]
-pub(super) enum Primitive<'v> {
+    /// A signed integer.
     Signed(i64),
+    /// An unsigned integer.
     Unsigned(u64),
+    /// An extra large signed integer.
     BigSigned(i128),
+    /// An extra large unsigned integer.
     BigUnsigned(u128),
+    /// A floating point number.
     Float(f64),
+    /// A boolean value.
     Bool(bool),
+    /// A UTF8 codepoint.
     Char(char),
+    /// A UTF8 string.
     Str(&'v str),
+    /// An empty value.
     None,
+
+    /// A value that can be filled.
+    Fill(&'v dyn Fill),
+
+    /// A debuggable value.
+    AnonDebug(&'v dyn fmt::Debug),
+    /// A debuggable value.
+    Debug(&'v dyn fmt::DowncastDebug),
+
+    /// A displayable value.
+    AnonDisplay(&'v dyn fmt::Display),
+    /// A displayable value.
+    Display(&'v dyn fmt::DowncastDisplay),
+
+    #[cfg(feature = "error")]
+    /// An error.
+    AnonError(&'v (dyn error::Error + 'static)),
+    #[cfg(feature = "error")]
+    /// An error.
+    Error(&'v dyn error::DowncastError),
+
+    #[cfg(feature = "sval1")]
+    /// A structured value from `sval`.
+    AnonSval1(&'v dyn sval::v1::Value),
+    #[cfg(feature = "sval1")]
+    /// A structured value from `sval`.
+    Sval1(&'v dyn sval::v1::DowncastValue),
+
+    #[cfg(feature = "serde1")]
+    /// A structured value from `serde`.
+    AnonSerde1(&'v dyn serde::v1::Serialize),
+    #[cfg(feature = "serde1")]
+    /// A structured value from `serde`.
+    Serde1(&'v dyn serde::v1::DowncastSerialize),
 }
 
 impl<'v> ValueBag<'v> {
     /// Get a value from an internal primitive.
-    pub(super) fn from_primitive<T>(value: T) -> Self
+    pub(super) fn from_internal<T>(value: T) -> Self
     where
-        T: Into<Primitive<'v>>,
+        T: Into<Internal<'v>>,
     {
         ValueBag {
-            inner: Internal::Primitive {
-                value: value.into(),
-            },
+            inner: value.into(),
         }
     }
 
@@ -121,30 +103,38 @@ impl<'v> Internal<'v> {
     #[inline]
     pub(super) fn internal_visit(self, visitor: &mut dyn InternalVisitor<'v>) -> Result<(), Error> {
         match self {
-            Internal::Primitive { value } => value.internal_visit(visitor),
+            Internal::Signed(value) => visitor.i64(value),
+            Internal::Unsigned(value) => visitor.u64(value),
+            Internal::BigSigned(value) => visitor.i128(value),
+            Internal::BigUnsigned(value) => visitor.u128(value),
+            Internal::Float(value) => visitor.f64(value),
+            Internal::Bool(value) => visitor.bool(value),
+            Internal::Char(value) => visitor.char(value),
+            Internal::Str(value) => visitor.borrowed_str(value),
+            Internal::None => visitor.none(),
 
-            Internal::Fill { value } => value.fill(Slot::new(visitor)),
+            Internal::Fill(value) => value.fill(Slot::new(visitor)),
 
-            Internal::AnonDebug { value } => visitor.debug(value),
-            Internal::Debug { value, .. } => visitor.debug(value),
+            Internal::AnonDebug(value) => visitor.debug(value),
+            Internal::Debug(value) => visitor.debug(value.as_super()),
 
-            Internal::AnonDisplay { value } => visitor.display(value),
-            Internal::Display { value, .. } => visitor.display(value),
+            Internal::AnonDisplay(value) => visitor.display(value),
+            Internal::Display(value) => visitor.display(value.as_super()),
 
             #[cfg(feature = "error")]
-            Internal::AnonError { value } => visitor.borrowed_error(value),
+            Internal::AnonError(value) => visitor.borrowed_error(value),
             #[cfg(feature = "error")]
-            Internal::Error { value, .. } => visitor.borrowed_error(value),
+            Internal::Error(value) => visitor.borrowed_error(value.as_super()),
 
             #[cfg(feature = "sval1")]
-            Internal::AnonSval1 { value } => visitor.sval1(value),
+            Internal::AnonSval1(value) => visitor.sval1(value),
             #[cfg(feature = "sval1")]
-            Internal::Sval1 { value, .. } => visitor.sval1(value),
+            Internal::Sval1(value) => visitor.sval1(value.as_super()),
 
             #[cfg(feature = "serde1")]
-            Internal::AnonSerde1 { value } => visitor.serde1(value),
+            Internal::AnonSerde1(value) => visitor.serde1(value),
             #[cfg(feature = "serde1")]
-            Internal::Serde1 { value, .. } => visitor.serde1(value),
+            Internal::Serde1(value) => visitor.serde1(value.as_super()),
         }
     }
 }
@@ -183,274 +173,258 @@ pub(super) trait InternalVisitor<'v> {
     fn serde1(&mut self, v: &dyn serde::v1::Serialize) -> Result<(), Error>;
 }
 
-impl<'v> Primitive<'v> {
-    fn internal_visit(self, visitor: &mut dyn InternalVisitor<'v>) -> Result<(), Error> {
-        match self {
-            Primitive::Signed(value) => visitor.i64(value),
-            Primitive::Unsigned(value) => visitor.u64(value),
-            Primitive::BigSigned(value) => visitor.i128(value),
-            Primitive::BigUnsigned(value) => visitor.u128(value),
-            Primitive::Float(value) => visitor.f64(value),
-            Primitive::Bool(value) => visitor.bool(value),
-            Primitive::Char(value) => visitor.char(value),
-            Primitive::Str(value) => visitor.borrowed_str(value),
-            Primitive::None => visitor.none(),
-        }
-    }
-}
-
-impl<'v> From<()> for Primitive<'v> {
+impl<'v> From<()> for Internal<'v> {
     #[inline]
     fn from(_: ()) -> Self {
-        Primitive::None
+        Internal::None
     }
 }
 
-impl<'v> From<u8> for Primitive<'v> {
+impl<'v> From<u8> for Internal<'v> {
     #[inline]
     fn from(v: u8) -> Self {
-        Primitive::Unsigned(v as u64)
+        Internal::Unsigned(v as u64)
     }
 }
 
-impl<'v> From<u16> for Primitive<'v> {
+impl<'v> From<u16> for Internal<'v> {
     #[inline]
     fn from(v: u16) -> Self {
-        Primitive::Unsigned(v as u64)
+        Internal::Unsigned(v as u64)
     }
 }
 
-impl<'v> From<u32> for Primitive<'v> {
+impl<'v> From<u32> for Internal<'v> {
     #[inline]
     fn from(v: u32) -> Self {
-        Primitive::Unsigned(v as u64)
+        Internal::Unsigned(v as u64)
     }
 }
 
-impl<'v> From<u64> for Primitive<'v> {
+impl<'v> From<u64> for Internal<'v> {
     #[inline]
     fn from(v: u64) -> Self {
-        Primitive::Unsigned(v)
+        Internal::Unsigned(v)
     }
 }
 
-impl<'v> From<u128> for Primitive<'v> {
+impl<'v> From<u128> for Internal<'v> {
     #[inline]
     fn from(v: u128) -> Self {
-        Primitive::BigUnsigned(v)
+        Internal::BigUnsigned(v)
     }
 }
 
-impl<'v> From<usize> for Primitive<'v> {
+impl<'v> From<usize> for Internal<'v> {
     #[inline]
     fn from(v: usize) -> Self {
-        Primitive::Unsigned(v as u64)
+        Internal::Unsigned(v as u64)
     }
 }
 
-impl<'v> From<i8> for Primitive<'v> {
+impl<'v> From<i8> for Internal<'v> {
     #[inline]
     fn from(v: i8) -> Self {
-        Primitive::Signed(v as i64)
+        Internal::Signed(v as i64)
     }
 }
 
-impl<'v> From<i16> for Primitive<'v> {
+impl<'v> From<i16> for Internal<'v> {
     #[inline]
     fn from(v: i16) -> Self {
-        Primitive::Signed(v as i64)
+        Internal::Signed(v as i64)
     }
 }
 
-impl<'v> From<i32> for Primitive<'v> {
+impl<'v> From<i32> for Internal<'v> {
     #[inline]
     fn from(v: i32) -> Self {
-        Primitive::Signed(v as i64)
+        Internal::Signed(v as i64)
     }
 }
 
-impl<'v> From<i64> for Primitive<'v> {
+impl<'v> From<i64> for Internal<'v> {
     #[inline]
     fn from(v: i64) -> Self {
-        Primitive::Signed(v)
+        Internal::Signed(v)
     }
 }
 
-impl<'v> From<i128> for Primitive<'v> {
+impl<'v> From<i128> for Internal<'v> {
     #[inline]
     fn from(v: i128) -> Self {
-        Primitive::BigSigned(v)
+        Internal::BigSigned(v)
     }
 }
 
-impl<'v> From<isize> for Primitive<'v> {
+impl<'v> From<isize> for Internal<'v> {
     #[inline]
     fn from(v: isize) -> Self {
-        Primitive::Signed(v as i64)
+        Internal::Signed(v as i64)
     }
 }
 
-impl<'v> From<f32> for Primitive<'v> {
+impl<'v> From<f32> for Internal<'v> {
     #[inline]
     fn from(v: f32) -> Self {
-        Primitive::Float(v as f64)
+        Internal::Float(v as f64)
     }
 }
 
-impl<'v> From<f64> for Primitive<'v> {
+impl<'v> From<f64> for Internal<'v> {
     #[inline]
     fn from(v: f64) -> Self {
-        Primitive::Float(v)
+        Internal::Float(v)
     }
 }
 
-impl<'v> From<bool> for Primitive<'v> {
+impl<'v> From<bool> for Internal<'v> {
     #[inline]
     fn from(v: bool) -> Self {
-        Primitive::Bool(v)
+        Internal::Bool(v)
     }
 }
 
-impl<'v> From<char> for Primitive<'v> {
+impl<'v> From<char> for Internal<'v> {
     #[inline]
     fn from(v: char) -> Self {
-        Primitive::Char(v)
+        Internal::Char(v)
     }
 }
 
-impl<'v> From<&'v str> for Primitive<'v> {
+impl<'v> From<&'v str> for Internal<'v> {
     #[inline]
     fn from(v: &'v str) -> Self {
-        Primitive::Str(v)
+        Internal::Str(v)
     }
 }
 
-impl<'v> From<&'v ()> for Primitive<'v> {
+impl<'v> From<&'v ()> for Internal<'v> {
     #[inline]
     fn from(_: &'v ()) -> Self {
-        Primitive::None
+        Internal::None
     }
 }
 
-impl<'v> From<&'v u8> for Primitive<'v> {
+impl<'v> From<&'v u8> for Internal<'v> {
     #[inline]
     fn from(v: &'v u8) -> Self {
-        Primitive::Unsigned(*v as u64)
+        Internal::Unsigned(*v as u64)
     }
 }
 
-impl<'v> From<&'v u16> for Primitive<'v> {
+impl<'v> From<&'v u16> for Internal<'v> {
     #[inline]
     fn from(v: &'v u16) -> Self {
-        Primitive::Unsigned(*v as u64)
+        Internal::Unsigned(*v as u64)
     }
 }
 
-impl<'v> From<&'v u32> for Primitive<'v> {
+impl<'v> From<&'v u32> for Internal<'v> {
     #[inline]
     fn from(v: &'v u32) -> Self {
-        Primitive::Unsigned(*v as u64)
+        Internal::Unsigned(*v as u64)
     }
 }
 
-impl<'v> From<&'v u64> for Primitive<'v> {
+impl<'v> From<&'v u64> for Internal<'v> {
     #[inline]
     fn from(v: &'v u64) -> Self {
-        Primitive::Unsigned(*v)
+        Internal::Unsigned(*v)
     }
 }
 
-impl<'v> From<&'v u128> for Primitive<'v> {
+impl<'v> From<&'v u128> for Internal<'v> {
     #[inline]
     fn from(v: &'v u128) -> Self {
-        Primitive::BigUnsigned(*v)
+        Internal::BigUnsigned(*v)
     }
 }
 
-impl<'v> From<&'v usize> for Primitive<'v> {
+impl<'v> From<&'v usize> for Internal<'v> {
     #[inline]
     fn from(v: &'v usize) -> Self {
-        Primitive::Unsigned(*v as u64)
+        Internal::Unsigned(*v as u64)
     }
 }
 
-impl<'v> From<&'v i8> for Primitive<'v> {
+impl<'v> From<&'v i8> for Internal<'v> {
     #[inline]
     fn from(v: &'v i8) -> Self {
-        Primitive::Signed(*v as i64)
+        Internal::Signed(*v as i64)
     }
 }
 
-impl<'v> From<&'v i16> for Primitive<'v> {
+impl<'v> From<&'v i16> for Internal<'v> {
     #[inline]
     fn from(v: &'v i16) -> Self {
-        Primitive::Signed(*v as i64)
+        Internal::Signed(*v as i64)
     }
 }
 
-impl<'v> From<&'v i32> for Primitive<'v> {
+impl<'v> From<&'v i32> for Internal<'v> {
     #[inline]
     fn from(v: &'v i32) -> Self {
-        Primitive::Signed(*v as i64)
+        Internal::Signed(*v as i64)
     }
 }
 
-impl<'v> From<&'v i64> for Primitive<'v> {
+impl<'v> From<&'v i64> for Internal<'v> {
     #[inline]
     fn from(v: &'v i64) -> Self {
-        Primitive::Signed(*v)
+        Internal::Signed(*v)
     }
 }
 
-impl<'v> From<&'v i128> for Primitive<'v> {
+impl<'v> From<&'v i128> for Internal<'v> {
     #[inline]
     fn from(v: &'v i128) -> Self {
-        Primitive::BigSigned(*v)
+        Internal::BigSigned(*v)
     }
 }
 
-impl<'v> From<&'v isize> for Primitive<'v> {
+impl<'v> From<&'v isize> for Internal<'v> {
     #[inline]
     fn from(v: &'v isize) -> Self {
-        Primitive::Signed(*v as i64)
+        Internal::Signed(*v as i64)
     }
 }
 
-impl<'v> From<&'v f32> for Primitive<'v> {
+impl<'v> From<&'v f32> for Internal<'v> {
     #[inline]
     fn from(v: &'v f32) -> Self {
-        Primitive::Float(*v as f64)
+        Internal::Float(*v as f64)
     }
 }
 
-impl<'v> From<&'v f64> for Primitive<'v> {
+impl<'v> From<&'v f64> for Internal<'v> {
     #[inline]
     fn from(v: &'v f64) -> Self {
-        Primitive::Float(*v)
+        Internal::Float(*v)
     }
 }
 
-impl<'v> From<&'v bool> for Primitive<'v> {
+impl<'v> From<&'v bool> for Internal<'v> {
     #[inline]
     fn from(v: &'v bool) -> Self {
-        Primitive::Bool(*v)
+        Internal::Bool(*v)
     }
 }
 
-impl<'v> From<&'v char> for Primitive<'v> {
+impl<'v> From<&'v char> for Internal<'v> {
     #[inline]
     fn from(v: &'v char) -> Self {
-        Primitive::Char(*v)
+        Internal::Char(*v)
     }
 }
 
-impl<'v, 'u> From<&'v &'u str> for Primitive<'v>
+impl<'v, 'u> From<&'v &'u str> for Internal<'v>
 where
     'u: 'v,
 {
     #[inline]
     fn from(v: &'v &'u str) -> Self {
-        Primitive::Str(*v)
+        Internal::Str(*v)
     }
 }
 
@@ -460,10 +434,10 @@ mod std_support {
 
     use std::string::String;
 
-    impl<'v> From<&'v String> for Primitive<'v> {
+    impl<'v> From<&'v String> for Internal<'v> {
         #[inline]
         fn from(v: &'v String) -> Self {
-            Primitive::Str(&**v)
+            Internal::Str(&**v)
         }
     }
 }

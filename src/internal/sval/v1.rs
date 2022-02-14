@@ -5,8 +5,8 @@
 
 use crate::{
     fill::Slot,
-    internal::{cast, Internal, InternalVisitor},
-    std::fmt,
+    internal::{Internal, InternalVisitor},
+    std::{any::Any, fmt},
     Error, ValueBag,
 };
 
@@ -20,10 +20,7 @@ impl<'v> ValueBag<'v> {
         T: Value + 'static,
     {
         Self::try_capture(value).unwrap_or(ValueBag {
-            inner: Internal::Sval1 {
-                value,
-                type_id: cast::type_id::<T>(),
-            },
+            inner: Internal::Sval1(value),
         })
     }
 
@@ -33,7 +30,7 @@ impl<'v> ValueBag<'v> {
         T: Value,
     {
         ValueBag {
-            inner: Internal::AnonSval1 { value },
+            inner: Internal::AnonSval1(value),
         }
     }
 
@@ -41,8 +38,23 @@ impl<'v> ValueBag<'v> {
     #[inline]
     pub fn from_dyn_sval1(value: &'v dyn Value) -> Self {
         ValueBag {
-            inner: Internal::AnonSval1 { value },
+            inner: Internal::AnonSval1(value),
         }
+    }
+}
+
+pub(crate) trait DowncastValue {
+    fn as_any(&self) -> &dyn Any;
+    fn as_super(&self) -> &dyn Value;
+}
+
+impl<T: Value + 'static> DowncastValue for T {
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
+    fn as_super(&self) -> &dyn Value {
+        self
     }
 }
 

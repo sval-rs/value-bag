@@ -2,27 +2,27 @@
 
 use super::ValueBag;
 
-macro_rules! impl_from_primitive {
+macro_rules! impl_from_internal {
     ($($into_ty:ty,)*) => {
         $(
             impl<'v> From<$into_ty> for ValueBag<'v> {
                 #[inline]
                 fn from(value: $into_ty) -> Self {
-                    ValueBag::from_primitive(value)
+                    ValueBag::from_internal(value)
                 }
             }
 
             impl<'a, 'v> From<&'a $into_ty> for ValueBag<'v> {
                 #[inline]
                 fn from(value: &'a $into_ty) -> Self {
-                    ValueBag::from_primitive(*value)
+                    ValueBag::from_internal(*value)
                 }
             }
         )*
     };
 }
 
-impl_from_primitive![
+impl_from_internal![
     (),
     usize,
     u8,
@@ -45,7 +45,7 @@ impl_from_primitive![
 impl<'v> From<&'v str> for ValueBag<'v> {
     #[inline]
     fn from(value: &'v str) -> Self {
-        ValueBag::from_primitive(value)
+        ValueBag::from_internal(value)
     }
 }
 
@@ -58,7 +58,7 @@ mod std_support {
     impl<'v> From<&'v String> for ValueBag<'v> {
         #[inline]
         fn from(v: &'v String) -> ValueBag<'v> {
-            ValueBag::from_primitive(&**v)
+            ValueBag::from_internal(&**v)
         }
     }
 }

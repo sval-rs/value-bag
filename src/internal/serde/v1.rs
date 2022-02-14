@@ -5,8 +5,8 @@
 
 use crate::{
     fill::Slot,
-    internal::{cast, Internal, InternalVisitor},
-    std::fmt,
+    internal::{Internal, InternalVisitor},
+    std::{any::Any, fmt},
     Error, ValueBag,
 };
 
@@ -19,24 +19,36 @@ impl<'v> ValueBag<'v> {
     /// before resorting to using its `Value` implementation.
     pub fn capture_serde1<T>(value: &'v T) -> Self
     where
-        T: Serialize + 'static,
+        T: serde1_lib::Serialize + 'static,
     {
         Self::try_capture(value).unwrap_or(ValueBag {
-            inner: Internal::Serde1 {
-                value,
-                type_id: cast::type_id::<T>(),
-            },
+            inner: Internal::Serde1(value),
         })
     }
 
     /// Get a value from a structured type without capturing support.
     pub fn from_serde1<T>(value: &'v T) -> Self
     where
-        T: Serialize,
+        T: serde1_lib::Serialize,
     {
         ValueBag {
-            inner: Internal::AnonSerde1 { value },
+            inner: Internal::AnonSerde1(value),
         }
+    }
+}
+
+pub(crate) trait DowncastSerialize {
+    fn as_any(&self) -> &dyn Any;
+    fn as_super(&self) -> &dyn Serialize;
+}
+
+impl<T: serde1_lib::Serialize + 'static> DowncastSerialize for T {
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
+    fn as_super(&self) -> &dyn Serialize {
+        self
     }
 }
 
@@ -46,7 +58,7 @@ impl<'s, 'f> Slot<'s, 'f> {
     /// The given value doesn't need to satisfy any particular lifetime constraints.
     pub fn fill_serde1<T>(self, value: T) -> Result<(), Error>
     where
-        T: Serialize,
+        T: serde1_lib::Serialize,
     {
         self.fill(|visitor| visitor.serde1(&value))
     }

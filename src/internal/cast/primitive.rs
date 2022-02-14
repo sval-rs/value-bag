@@ -1,6 +1,6 @@
 /*
 This module generates code to try efficiently convert some arbitrary `T: 'static` into
-a `Primitive`.
+a `Internal`.
 
 In the future when `min_specialization` is stabilized we could use it instead and avoid needing
 the `'static` bound altogether.
@@ -9,24 +9,24 @@ the `'static` bound altogether.
 #[cfg(feature = "std")]
 use crate::std::string::String;
 
-use crate::internal::Primitive;
+use crate::internal::Internal;
 
-pub(super) fn from_any<'v, T: ?Sized + 'static>(value: &'v T) -> Option<Primitive<'v>> {
+pub(super) fn from_any<'v, T: ?Sized + 'static>(value: &'v T) -> Option<Internal<'v>> {
     // When we're on `nightly`, we can use const type ids
     #[cfg(value_bag_capture_const_type_id)]
     {
         use crate::std::any::TypeId;
 
-        macro_rules! to_primitive {
+        macro_rules! to_internal {
             ($(
                 $(#[cfg($($cfg:tt)*)])*
                 $ty:ty : ($const_ident:ident, $option_ident:ident),
             )*) => {
-                trait ToPrimitive<'a>
+                trait ToInternal<'a>
                 where
                     Self: 'static,
                 {
-                    const CALL: fn(&'_ &'a Self) -> Option<Primitive<'a>> = {
+                    const CALL: fn(&'_ &'a Self) -> Option<Internal<'a>> = {
                         $(
                             $(#[cfg($($cfg)*)])*
                             const $const_ident: TypeId = TypeId::of::<$ty>();
@@ -40,35 +40,35 @@ pub(super) fn from_any<'v, T: ?Sized + 'static>(value: &'v T) -> Option<Primitiv
                         match TypeId::of::<Self>() {
                             $(
                                 $(#[cfg($($cfg)*)])*
-                                $const_ident => |v| Some(Primitive::from(unsafe { &*(*v as *const Self as *const $ty) })),
+                                $const_ident => |v| Some(Internal::from(unsafe { &*(*v as *const Self as *const $ty) })),
 
                                 $(#[cfg($($cfg)*)])*
                                 $option_ident => |v| Some({
                                     let v = unsafe { &*(*v as *const Self as *const Option<$ty>) };
                                     match v {
-                                        Some(v) => Primitive::from(v),
-                                        None => Primitive::None,
+                                        Some(v) => Internal::from(v),
+                                        None => Internal::None,
                                     }
                                 }),
                             )*
 
-                            STR => |v| Some(Primitive::from(unsafe { &**(v as *const &'a Self as *const &'a str) })),
+                            STR => |v| Some(Internal::from(unsafe { &**(v as *const &'a Self as *const &'a str) })),
 
                             _ => |_| None,
                         }
                     };
 
-                    fn to_primitive(&'a self) -> Option<Primitive<'a>> {
+                    fn to_internal(&'a self) -> Option<Internal<'a>> {
                         (Self::CALL)(&self)
                     }
                 }
 
-                impl<'a, T: ?Sized + 'static> ToPrimitive<'a> for T {}
+                impl<'a, T: ?Sized + 'static> ToInternal<'a> for T {}
             }
         }
 
         // NOTE: The types here *must* match the ones used below when `const_type_id` is not available
-        to_primitive![
+        to_internal![
             usize: (USIZE, OPTION_USIZE),
             u8: (U8, OPTION_U8),
             u16: (U16, OPTION_U16),
@@ -96,7 +96,7 @@ pub(super) fn from_any<'v, T: ?Sized + 'static>(value: &'v T) -> Option<Primitiv
             String: (STRING, OPTION_STRING),
         ];
 
-        value.to_primitive()
+        value.to_internal()
     }
 
     // When we're not on `nightly`, use the ctor crate
@@ -207,8 +207,8 @@ pub(super) fn from_any<'v, T: ?Sized + 'static>(value: &'v T) -> Option<Primitiv
                             // SAFETY: We verify the value is str before casting
                             let v = *(v.0 as *const &'_ str);
 
-                            Primitive::from(v)
-                        }) as for<'a> fn(VoidRef<'a>) -> Primitive<'a>
+                            Internal::from(v)
+                        }) as for<'a> fn(VoidRef<'a>) -> Internal<'a>
                     ),
                     $(
                         $(#[cfg($($cfg)*)])*
@@ -218,8 +218,8 @@ pub(super) fn from_any<'v, T: ?Sized + 'static>(value: &'v T) -> Option<Primitiv
                                 // SAFETY: We verify the value is $ty before casting
                                 let v = *(v.0 as *const &'_ $ty);
 
-                                Primitive::from(v)
-                            }) as for<'a> fn(VoidRef<'a>) -> Primitive<'a>
+                                Internal::from(v)
+                            }) as for<'a> fn(VoidRef<'a>) -> Internal<'a>
                         ),
                     )*
                     $(
@@ -231,11 +231,11 @@ pub(super) fn from_any<'v, T: ?Sized + 'static>(value: &'v T) -> Option<Primitiv
                                 let v = *(v.0 as *const &'_ Option<$ty>);
 
                                 if let Some(v) = v {
-                                    Primitive::from(v)
+                                    Internal::from(v)
                                 } else {
-                                    Primitive::None
+                                    Internal::None
                                 }
-                            }) as for<'a> fn(VoidRef<'a>) -> Primitive<'a>
+                            }) as for<'a> fn(VoidRef<'a>) -> Internal<'a>
                         ),
                     )*
                 ]
@@ -248,7 +248,7 @@ pub(super) fn from_any<'v, T: ?Sized + 'static>(value: &'v T) -> Option<Primitiv
         const LEN: usize = 37;
 
         #[ctor]
-        static TYPE_IDS: [(TypeId, for<'a> fn(VoidRef<'a>) -> Primitive<'a>); LEN] = {
+        static TYPE_IDS: [(TypeId, for<'a> fn(VoidRef<'a>) -> Internal<'a>); LEN] = {
             // NOTE: The types here *must* match the ones used above when `const_type_id` is available
             let mut type_ids = type_ids![
                 usize,
@@ -269,6 +269,7 @@ pub(super) fn from_any<'v, T: ?Sized + 'static>(value: &'v T) -> Option<Primitiv
                 bool,
                 &'static str,
                 // We deal with `str` separately because it's unsized
+                // str,
                 #[cfg(feature = "std")]
                 String,
             ];
@@ -310,7 +311,7 @@ pub(super) fn from_any<'v, T: ?Sized + 'static>(value: &'v T) -> Option<Primitiv
                         // SAFETY: We verify the value is str before casting
                         let v = unsafe { *(v.0 as *const &'_ str) };
 
-                        return Some(Primitive::from(v));
+                        return Some(Internal::from(v));
                     }
 
                     $(
@@ -319,7 +320,7 @@ pub(super) fn from_any<'v, T: ?Sized + 'static>(value: &'v T) -> Option<Primitiv
                             // SAFETY: We verify the value is $ty before casting
                             let v = unsafe { *(v.0 as *const &'_ $ty) };
 
-                            return Some(Primitive::from(v));
+                            return Some(Internal::from(v));
                         }
                     )*
                     $(
@@ -329,9 +330,9 @@ pub(super) fn from_any<'v, T: ?Sized + 'static>(value: &'v T) -> Option<Primitiv
                             let v = unsafe { *(v.0 as *const &'_ Option<$ty>) };
 
                             if let Some(v) = v {
-                                return Some(Primitive::from(v));
+                                return Some(Internal::from(v));
                             } else {
-                                return Some(Primitive::None);
+                                return Some(Internal::None);
                             }
                         }
                     )*
@@ -360,6 +361,7 @@ pub(super) fn from_any<'v, T: ?Sized + 'static>(value: &'v T) -> Option<Primitiv
             bool,
             &'static str,
             // We deal with `str` separately because it's unsized
+            // str,
             #[cfg(feature = "std")]
             String,
         ];

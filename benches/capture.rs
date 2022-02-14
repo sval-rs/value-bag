@@ -29,12 +29,14 @@ fn custom_capture_debug(b: &mut test::Bencher) {
 
 #[bench]
 fn fill_debug(b: &mut test::Bencher) {
-    b.iter(|| ValueBag::from_fill(&|slot: value_bag::fill::Slot| {
-        #[derive(Debug)]
-        struct A;
-    
-        slot.fill_debug(&A)
-    }))
+    b.iter(|| {
+        ValueBag::from_fill(&|slot: value_bag::fill::Slot| {
+            #[derive(Debug)]
+            struct A;
+
+            slot.fill_debug(&A)
+        })
+    })
 }
 
 #[bench]
@@ -51,9 +53,7 @@ fn u8_capture_debug_to_u64(b: &mut test::Bencher) {
 
 #[bench]
 fn u8_fill_to_u64(b: &mut test::Bencher) {
-    let v = ValueBag::from_fill(&|slot: value_bag::fill::Slot| {
-        slot.fill_any(1u8)
-    });
+    let v = ValueBag::from_fill(&|slot: value_bag::fill::Slot| slot.fill_any(1u8));
 
     b.iter(|| v.to_u64())
 }
@@ -69,9 +69,7 @@ fn u8_from_sval_to_u64(b: &mut test::Bencher) {
 #[bench]
 #[cfg(feature = "sval1")]
 fn u8_fill_sval_to_u64(b: &mut test::Bencher) {
-    let v = ValueBag::from_fill(&|slot: value_bag::fill::Slot| {
-        slot.fill_sval1(&1u8)
-    });
+    let v = ValueBag::from_fill(&|slot: value_bag::fill::Slot| slot.fill_sval1(&1u8));
 
     b.iter(|| v.to_u64())
 }

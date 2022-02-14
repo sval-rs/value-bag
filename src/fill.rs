@@ -40,20 +40,8 @@
 
 use crate::std::fmt;
 
-use super::internal::{Internal, InternalVisitor};
+use super::internal::InternalVisitor;
 use super::{Error, ValueBag};
-
-impl<'v> ValueBag<'v> {
-    /// Get a value from a fillable slot.
-    pub fn from_fill<T>(value: &'v T) -> Self
-    where
-        T: Fill,
-    {
-        ValueBag {
-            inner: Internal::Fill { value },
-        }
-    }
-}
 
 /// A type that requires extra work to convert into a [`ValueBag`](../struct.ValueBag.html).
 ///
