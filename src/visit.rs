@@ -95,7 +95,7 @@ pub trait Visit<'v> {
     #[inline]
     #[cfg(not(test))]
     fn visit_u128(&mut self, value: u128) -> Result<(), Error> {
-        self.visit_any(value.into())
+        self.visit_any((&value).into())
     }
     #[cfg(test)]
     fn visit_u128(&mut self, value: u128) -> Result<(), Error>;
@@ -104,7 +104,7 @@ pub trait Visit<'v> {
     #[inline]
     #[cfg(not(test))]
     fn visit_i128(&mut self, value: i128) -> Result<(), Error> {
-        self.visit_any(value.into())
+        self.visit_any((&value).into())
     }
     #[cfg(test)]
     fn visit_i128(&mut self, value: i128) -> Result<(), Error>;
@@ -283,12 +283,12 @@ impl<'v> ValueBag<'v> {
                 self.0.visit_i64(v)
             }
 
-            fn u128(&mut self, v: u128) -> Result<(), Error> {
-                self.0.visit_u128(v)
+            fn u128(&mut self, v: &u128) -> Result<(), Error> {
+                self.0.visit_u128(*v)
             }
 
-            fn i128(&mut self, v: i128) -> Result<(), Error> {
-                self.0.visit_i128(v)
+            fn i128(&mut self, v: &i128) -> Result<(), Error> {
+                self.0.visit_i128(*v)
             }
 
             fn f64(&mut self, v: f64) -> Result<(), Error> {
@@ -356,10 +356,10 @@ mod tests {
         ValueBag::from(-42i64)
             .visit(TestVisit)
             .expect("failed to visit value");
-        ValueBag::from(42u128)
+        ValueBag::from(&42u128)
             .visit(TestVisit)
             .expect("failed to visit value");
-        ValueBag::from(-42i128)
+        ValueBag::from(&-42i128)
             .visit(TestVisit)
             .expect("failed to visit value");
         ValueBag::from(11f64)

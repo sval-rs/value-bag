@@ -96,12 +96,12 @@ impl<'v> Value for ValueBag<'v> {
                 self.0.i64(v).map_err(Error::from_sval1)
             }
 
-            fn u128(&mut self, v: u128) -> Result<(), Error> {
-                self.0.u128(v).map_err(Error::from_sval1)
+            fn u128(&mut self, v: &u128) -> Result<(), Error> {
+                self.0.u128(*v).map_err(Error::from_sval1)
             }
 
-            fn i128(&mut self, v: i128) -> Result<(), Error> {
-                self.0.i128(v).map_err(Error::from_sval1)
+            fn i128(&mut self, v: &i128) -> Result<(), Error> {
+                self.0.i128(*v).map_err(Error::from_sval1)
             }
 
             fn f64(&mut self, v: f64) -> Result<(), Error> {
@@ -176,8 +176,9 @@ pub(crate) fn internal_visit<'v>(
             Ok(())
         }
 
-        fn u64(&mut self, v: u64) -> sval1_lib::stream::Result {
-            self.0.u64(v).map_err(Error::into_sval1)?;
+        #[cfg(feature = "error")]
+        fn error(&mut self, v: sval1_lib::stream::Source) -> sval1_lib::stream::Result {
+            self.0.error(v.get()).map_err(Error::into_sval1)?;
             Ok(())
         }
 
@@ -186,13 +187,18 @@ pub(crate) fn internal_visit<'v>(
             Ok(())
         }
 
-        fn u128(&mut self, v: u128) -> sval1_lib::stream::Result {
-            self.0.u128(v).map_err(Error::into_sval1)?;
+        fn u64(&mut self, v: u64) -> sval1_lib::stream::Result {
+            self.0.u64(v).map_err(Error::into_sval1)?;
             Ok(())
         }
 
         fn i128(&mut self, v: i128) -> sval1_lib::stream::Result {
-            self.0.i128(v).map_err(Error::into_sval1)?;
+            self.0.i128(&v).map_err(Error::into_sval1)?;
+            Ok(())
+        }
+
+        fn u128(&mut self, v: u128) -> sval1_lib::stream::Result {
+            self.0.u128(&v).map_err(Error::into_sval1)?;
             Ok(())
         }
 
@@ -201,24 +207,18 @@ pub(crate) fn internal_visit<'v>(
             Ok(())
         }
 
-        fn char(&mut self, v: char) -> sval1_lib::stream::Result {
-            self.0.char(v).map_err(Error::into_sval1)?;
-            Ok(())
-        }
-
         fn bool(&mut self, v: bool) -> sval1_lib::stream::Result {
             self.0.bool(v).map_err(Error::into_sval1)?;
             Ok(())
         }
 
-        fn str(&mut self, s: &str) -> sval1_lib::stream::Result {
-            self.0.str(s).map_err(Error::into_sval1)?;
+        fn char(&mut self, v: char) -> sval1_lib::stream::Result {
+            self.0.char(v).map_err(Error::into_sval1)?;
             Ok(())
         }
 
-        #[cfg(feature = "error")]
-        fn error(&mut self, v: sval1_lib::stream::Source) -> sval1_lib::stream::Result {
-            self.0.error(v.get()).map_err(Error::into_sval1)?;
+        fn str(&mut self, s: &str) -> sval1_lib::stream::Result {
+            self.0.str(s).map_err(Error::into_sval1)?;
             Ok(())
         }
     }

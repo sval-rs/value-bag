@@ -133,13 +133,13 @@ impl<'v> serde1_lib::Serialize for ValueBag<'v> {
                 self.result()
             }
 
-            fn u128(&mut self, v: u128) -> Result<(), Error> {
-                self.result = Some(self.serializer()?.serialize_u128(v));
+            fn u128(&mut self, v: &u128) -> Result<(), Error> {
+                self.result = Some(self.serializer()?.serialize_u128(*v));
                 self.result()
             }
 
-            fn i128(&mut self, v: i128) -> Result<(), Error> {
-                self.result = Some(self.serializer()?.serialize_i128(v));
+            fn i128(&mut self, v: &i128) -> Result<(), Error> {
+                self.result = Some(self.serializer()?.serialize_i128(*v));
                 self.result()
             }
 
@@ -249,7 +249,7 @@ pub(crate) fn internal_visit<'v>(
         }
 
         fn serialize_u128(self, v: u128) -> Result<Self::Ok, Self::Error> {
-            self.0.u128(v).map_err(|_| Unsupported)
+            self.0.u128(&v).map_err(|_| Unsupported)
         }
 
         fn serialize_i8(self, v: i8) -> Result<Self::Ok, Self::Error> {
@@ -269,7 +269,7 @@ pub(crate) fn internal_visit<'v>(
         }
 
         fn serialize_i128(self, v: i128) -> Result<Self::Ok, Self::Error> {
-            self.0.i128(v).map_err(|_| Unsupported)
+            self.0.i128(&v).map_err(|_| Unsupported)
         }
 
         fn serialize_f32(self, v: f32) -> Result<Self::Ok, Self::Error> {

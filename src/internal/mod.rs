@@ -29,9 +29,9 @@ pub(super) enum Internal<'v> {
     /// An unsigned integer.
     Unsigned(u64),
     /// An extra large signed integer.
-    BigSigned(i128),
+    BigSigned(&'v i128),
     /// An extra large unsigned integer.
-    BigUnsigned(u128),
+    BigUnsigned(&'v u128),
     /// A floating point number.
     Float(f64),
     /// A boolean value.
@@ -146,8 +146,14 @@ pub(super) trait InternalVisitor<'v> {
 
     fn u64(&mut self, v: u64) -> Result<(), Error>;
     fn i64(&mut self, v: i64) -> Result<(), Error>;
-    fn u128(&mut self, v: u128) -> Result<(), Error>;
-    fn i128(&mut self, v: i128) -> Result<(), Error>;
+    fn u128(&mut self, v: &u128) -> Result<(), Error>;
+    fn borrowed_u128(&mut self, v: &'v u128) -> Result<(), Error> {
+        self.u128(v)
+    }
+    fn i128(&mut self, v: &i128) -> Result<(), Error>;
+    fn borrowed_i128(&mut self, v: &'v i128) -> Result<(), Error> {
+        self.i128(v)
+    }
     fn f64(&mut self, v: f64) -> Result<(), Error>;
     fn bool(&mut self, v: bool) -> Result<(), Error>;
     fn char(&mut self, v: char) -> Result<(), Error>;
@@ -208,13 +214,6 @@ impl<'v> From<u64> for Internal<'v> {
     }
 }
 
-impl<'v> From<u128> for Internal<'v> {
-    #[inline]
-    fn from(v: u128) -> Self {
-        Internal::BigUnsigned(v)
-    }
-}
-
 impl<'v> From<usize> for Internal<'v> {
     #[inline]
     fn from(v: usize) -> Self {
@@ -247,13 +246,6 @@ impl<'v> From<i64> for Internal<'v> {
     #[inline]
     fn from(v: i64) -> Self {
         Internal::Signed(v)
-    }
-}
-
-impl<'v> From<i128> for Internal<'v> {
-    #[inline]
-    fn from(v: i128) -> Self {
-        Internal::BigSigned(v)
     }
 }
 
@@ -337,7 +329,7 @@ impl<'v> From<&'v u64> for Internal<'v> {
 impl<'v> From<&'v u128> for Internal<'v> {
     #[inline]
     fn from(v: &'v u128) -> Self {
-        Internal::BigUnsigned(*v)
+        Internal::BigUnsigned(v)
     }
 }
 
@@ -379,7 +371,7 @@ impl<'v> From<&'v i64> for Internal<'v> {
 impl<'v> From<&'v i128> for Internal<'v> {
     #[inline]
     fn from(v: &'v i128) -> Self {
-        Internal::BigSigned(*v)
+        Internal::BigSigned(v)
     }
 }
 

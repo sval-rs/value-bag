@@ -158,13 +158,13 @@ impl<'v> Debug for ValueBag<'v> {
                 Ok(())
             }
 
-            fn u128(&mut self, v: u128) -> Result<(), Error> {
+            fn u128(&mut self, v: &u128) -> Result<(), Error> {
                 Debug::fmt(&v, self.0)?;
 
                 Ok(())
             }
 
-            fn i128(&mut self, v: i128) -> Result<(), Error> {
+            fn i128(&mut self, v: &i128) -> Result<(), Error> {
                 Debug::fmt(&v, self.0)?;
 
                 Ok(())
@@ -255,13 +255,13 @@ impl<'v> Display for ValueBag<'v> {
                 Ok(())
             }
 
-            fn u128(&mut self, v: u128) -> Result<(), Error> {
+            fn u128(&mut self, v: &u128) -> Result<(), Error> {
                 Display::fmt(&v, self.0)?;
 
                 Ok(())
             }
 
-            fn i128(&mut self, v: i128) -> Result<(), Error> {
+            fn i128(&mut self, v: &i128) -> Result<(), Error> {
                 Display::fmt(&v, self.0)?;
 
                 Ok(())
