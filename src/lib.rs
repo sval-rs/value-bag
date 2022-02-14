@@ -369,14 +369,13 @@ mod tests {
     #[test]
     fn value_bag_size() {
         let size = mem::size_of::<ValueBag<'_>>();
-        let limit = mem::size_of::<u64>() * 6;
+        let limit = mem::size_of::<u64>() * 4;
 
         if size > limit {
             panic!(
-                "`ValueBag` size ({} bytes) is too large (expected up to {} bytes)\n`Primitive`: {} bytes\n`(`&dyn` + `TypeId`): {} bytes",
+                "`ValueBag` size ({} bytes) is too large (expected up to {} bytes)\n`(`&dyn` + `TypeId`): {} bytes",
                 size,
                 limit,
-                mem::size_of::<internal::Primitive<'_>>(),
                 mem::size_of::<(&dyn internal::fmt::Debug, crate::std::any::TypeId)>(),
             );
         }

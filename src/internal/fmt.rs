@@ -3,9 +3,13 @@
 //! This module allows any `Value` to implement the `Debug` and `Display` traits,
 //! and for any `Debug` or `Display` to be captured as a `Value`.
 
-use crate::{fill::Slot, std::fmt, Error, ValueBag};
+use crate::{
+    fill::Slot,
+    std::{any::Any, fmt},
+    Error, ValueBag,
+};
 
-use super::{cast, Internal, InternalVisitor};
+use super::{Internal, InternalVisitor};
 
 impl<'v> ValueBag<'v> {
     /// Get a value from a debuggable type.
@@ -17,10 +21,7 @@ impl<'v> ValueBag<'v> {
         T: Debug + 'static,
     {
         Self::try_capture(value).unwrap_or(ValueBag {
-            inner: Internal::Debug {
-                value,
-                type_id: cast::type_id::<T>(),
-            },
+            inner: Internal::Debug(value),
         })
     }
 
@@ -33,10 +34,7 @@ impl<'v> ValueBag<'v> {
         T: Display + 'static,
     {
         Self::try_capture(value).unwrap_or(ValueBag {
-            inner: Internal::Display {
-                value,
-                type_id: cast::type_id::<T>(),
-            },
+            inner: Internal::Display(value),
         })
     }
 
@@ -46,7 +44,7 @@ impl<'v> ValueBag<'v> {
         T: Debug,
     {
         ValueBag {
-            inner: Internal::AnonDebug { value },
+            inner: Internal::AnonDebug(value),
         }
     }
 
@@ -56,7 +54,7 @@ impl<'v> ValueBag<'v> {
         T: Display,
     {
         ValueBag {
-            inner: Internal::AnonDisplay { value },
+            inner: Internal::AnonDisplay(value),
         }
     }
 
@@ -64,7 +62,7 @@ impl<'v> ValueBag<'v> {
     #[inline]
     pub fn from_dyn_debug(value: &'v dyn Debug) -> Self {
         ValueBag {
-            inner: Internal::AnonDebug { value },
+            inner: Internal::AnonDebug(value),
         }
     }
 
@@ -72,8 +70,38 @@ impl<'v> ValueBag<'v> {
     #[inline]
     pub fn from_dyn_display(value: &'v dyn Display) -> Self {
         ValueBag {
-            inner: Internal::AnonDisplay { value },
+            inner: Internal::AnonDisplay(value),
         }
+    }
+}
+
+pub(crate) trait DowncastDisplay {
+    fn as_any(&self) -> &dyn Any;
+    fn as_super(&self) -> &dyn fmt::Display;
+}
+
+impl<T: fmt::Display + 'static> DowncastDisplay for T {
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
+    fn as_super(&self) -> &dyn fmt::Display {
+        self
+    }
+}
+
+pub(crate) trait DowncastDebug {
+    fn as_any(&self) -> &dyn Any;
+    fn as_super(&self) -> &dyn fmt::Debug;
+}
+
+impl<T: fmt::Debug + 'static> DowncastDebug for T {
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
+    fn as_super(&self) -> &dyn fmt::Debug {
+        self
     }
 }
 

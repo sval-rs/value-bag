@@ -1,6 +1,10 @@
-use crate::{fill::Slot, std::error, ValueBag};
+use crate::{
+    fill::Slot,
+    std::{any::Any, error},
+    ValueBag,
+};
 
-use super::{cast, Internal};
+use super::Internal;
 
 impl<'v> ValueBag<'v> {
     /// Get a value from an error.
@@ -9,10 +13,7 @@ impl<'v> ValueBag<'v> {
         T: error::Error + 'static,
     {
         ValueBag {
-            inner: Internal::Error {
-                value,
-                type_id: cast::type_id::<T>(),
-            },
+            inner: Internal::Error(value),
         }
     }
 
@@ -20,7 +21,7 @@ impl<'v> ValueBag<'v> {
     #[inline]
     pub fn from_dyn_error(value: &'v (dyn error::Error + 'static)) -> Self {
         ValueBag {
-            inner: Internal::AnonError { value },
+            inner: Internal::AnonError(value),
         }
     }
 
@@ -28,10 +29,27 @@ impl<'v> ValueBag<'v> {
     #[inline]
     pub fn to_borrowed_error(&self) -> Option<&(dyn Error + 'static)> {
         match self.inner {
-            Internal::Error { value, .. } => Some(value),
-            Internal::AnonError { value } => Some(value),
+            Internal::Error(value) => Some(value.as_super()),
+            Internal::AnonError(value) => Some(value),
             _ => None,
         }
+    }
+}
+
+#[cfg(feature = "error")]
+pub(crate) trait DowncastError {
+    fn as_any(&self) -> &dyn Any;
+    fn as_super(&self) -> &(dyn error::Error + 'static);
+}
+
+#[cfg(feature = "error")]
+impl<T: error::Error + 'static> DowncastError for T {
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
+    fn as_super(&self) -> &(dyn error::Error + 'static) {
+        self
     }
 }
 

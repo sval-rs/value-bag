@@ -5,7 +5,6 @@
 //! They will also attempt to downcast erased types into a primitive where possible.
 
 use crate::std::{
-    any::TypeId,
     convert::{TryFrom, TryInto},
     fmt,
 };
@@ -13,14 +12,10 @@ use crate::std::{
 #[cfg(feature = "std")]
 use crate::std::{borrow::ToOwned, string::String};
 
-use super::{Internal, InternalVisitor, Primitive};
+use super::{Internal, InternalVisitor};
 use crate::{Error, ValueBag};
 
 mod primitive;
-
-pub(super) fn type_id<T: 'static>() -> TypeId {
-    TypeId::of::<T>()
-}
 
 impl<'v> ValueBag<'v> {
     /// Try capture a raw value.
@@ -32,9 +27,7 @@ impl<'v> ValueBag<'v> {
     where
         T: ?Sized + 'static,
     {
-        primitive::from_any(value).map(|primitive| ValueBag {
-            inner: Internal::Primitive { value: primitive },
-        })
+        primitive::from_any(value).map(|inner| ValueBag { inner })
     }
 
     /// Try get a `u64` from this value.
@@ -42,7 +35,7 @@ impl<'v> ValueBag<'v> {
     /// This method is cheap for primitive types, but may call arbitrary
     /// serialization implementations for complex ones.
     pub fn to_u64(&self) -> Option<u64> {
-        self.inner.cast().into_primitive().into_u64()
+        self.inner.cast().into_u64()
     }
 
     /// Try get a `i64` from this value.
@@ -50,7 +43,7 @@ impl<'v> ValueBag<'v> {
     /// This method is cheap for primitive types, but may call arbitrary
     /// serialization implementations for complex ones.
     pub fn to_i64(&self) -> Option<i64> {
-        self.inner.cast().into_primitive().into_i64()
+        self.inner.cast().into_i64()
     }
 
     /// Try get a `u128` from this value.
@@ -58,7 +51,7 @@ impl<'v> ValueBag<'v> {
     /// This method is cheap for primitive types, but may call arbitrary
     /// serialization implementations for complex ones.
     pub fn to_u128(&self) -> Option<u128> {
-        self.inner.cast().into_primitive().into_u128()
+        self.inner.cast().into_u128()
     }
 
     /// Try get a `i128` from this value.
@@ -66,7 +59,7 @@ impl<'v> ValueBag<'v> {
     /// This method is cheap for primitive types, but may call arbitrary
     /// serialization implementations for complex ones.
     pub fn to_i128(&self) -> Option<i128> {
-        self.inner.cast().into_primitive().into_i128()
+        self.inner.cast().into_i128()
     }
 
     /// Try get a `f64` from this value.
@@ -74,7 +67,7 @@ impl<'v> ValueBag<'v> {
     /// This method is cheap for primitive types, but may call arbitrary
     /// serialization implementations for complex ones.
     pub fn to_f64(&self) -> Option<f64> {
-        self.inner.cast().into_primitive().into_f64()
+        self.inner.cast().into_f64()
     }
 
     /// Try get a `bool` from this value.
@@ -82,7 +75,7 @@ impl<'v> ValueBag<'v> {
     /// This method is cheap for primitive types, but may call arbitrary
     /// serialization implementations for complex ones.
     pub fn to_bool(&self) -> Option<bool> {
-        self.inner.cast().into_primitive().into_bool()
+        self.inner.cast().into_bool()
     }
 
     /// Try get a `char` from this value.
@@ -90,7 +83,7 @@ impl<'v> ValueBag<'v> {
     /// This method is cheap for primitive types, but may call arbitrary
     /// serialization implementations for complex ones.
     pub fn to_char(&self) -> Option<char> {
-        self.inner.cast().into_primitive().into_char()
+        self.inner.cast().into_char()
     }
 
     /// Try get a `str` from this value.
@@ -98,7 +91,7 @@ impl<'v> ValueBag<'v> {
     /// This method is cheap for primitive types. It won't allocate an owned
     /// `String` if the value is a complex type.
     pub fn to_borrowed_str(&self) -> Option<&str> {
-        self.inner.cast().into_primitive().into_borrowed_str()
+        self.inner.cast().into_borrowed_str()
     }
 
     /// Check whether this value can be downcast to `T`.
@@ -108,26 +101,15 @@ impl<'v> ValueBag<'v> {
 
     /// Try downcast this value to `T`.
     pub fn downcast_ref<T: 'static>(&self) -> Option<&T> {
-        let target = TypeId::of::<T>();
         match self.inner {
-            Internal::Debug { type_id, value } if type_id == target => {
-                Some(unsafe { &*(value as *const _ as *const T) })
-            }
-            Internal::Display { type_id, value } if type_id == target => {
-                Some(unsafe { &*(value as *const _ as *const T) })
-            }
+            Internal::Debug(value) => value.as_any().downcast_ref(),
+            Internal::Display(value) => value.as_any().downcast_ref(),
             #[cfg(feature = "error")]
-            Internal::Error { type_id, value } if type_id == target => {
-                Some(unsafe { &*(value as *const _ as *const T) })
-            }
+            Internal::Error(value) => value.as_any().downcast_ref(),
             #[cfg(feature = "sval1")]
-            Internal::Sval1 { type_id, value } if type_id == target => {
-                Some(unsafe { &*(value as *const _ as *const T) })
-            }
+            Internal::Sval1(value) => value.as_any().downcast_ref(),
             #[cfg(feature = "serde1")]
-            Internal::Serde1 { type_id, value } if type_id == target => {
-                Some(unsafe { &*(value as *const _ as *const T) })
-            }
+            Internal::Serde1(value) => value.as_any().downcast_ref(),
             _ => None,
         }
     }
@@ -152,43 +134,43 @@ impl<'v> Internal<'v> {
 
             #[inline]
             fn u64(&mut self, v: u64) -> Result<(), Error> {
-                self.0 = Cast::Primitive(Primitive::Unsigned(v));
+                self.0 = Cast::Unsigned(v);
                 Ok(())
             }
 
             #[inline]
             fn i64(&mut self, v: i64) -> Result<(), Error> {
-                self.0 = Cast::Primitive(Primitive::Signed(v));
-                Ok(())
-            }
-
-            #[inline]
-            fn f64(&mut self, v: f64) -> Result<(), Error> {
-                self.0 = Cast::Primitive(Primitive::Float(v));
-                Ok(())
-            }
-
-            #[inline]
-            fn i128(&mut self, v: i128) -> Result<(), Error> {
-                self.0 = Cast::Primitive(Primitive::BigSigned(v));
+                self.0 = Cast::Signed(v);
                 Ok(())
             }
 
             #[inline]
             fn u128(&mut self, v: u128) -> Result<(), Error> {
-                self.0 = Cast::Primitive(Primitive::BigUnsigned(v));
+                self.0 = Cast::BigUnsigned(v);
+                Ok(())
+            }
+
+            #[inline]
+            fn i128(&mut self, v: i128) -> Result<(), Error> {
+                self.0 = Cast::BigSigned(v);
+                Ok(())
+            }
+
+            #[inline]
+            fn f64(&mut self, v: f64) -> Result<(), Error> {
+                self.0 = Cast::Float(v);
                 Ok(())
             }
 
             #[inline]
             fn bool(&mut self, v: bool) -> Result<(), Error> {
-                self.0 = Cast::Primitive(Primitive::Bool(v));
+                self.0 = Cast::Bool(v);
                 Ok(())
             }
 
             #[inline]
             fn char(&mut self, v: char) -> Result<(), Error> {
-                self.0 = Cast::Primitive(Primitive::Char(v));
+                self.0 = Cast::Char(v);
                 Ok(())
             }
 
@@ -207,13 +189,13 @@ impl<'v> Internal<'v> {
 
             #[inline]
             fn borrowed_str(&mut self, v: &'v str) -> Result<(), Error> {
-                self.0 = Cast::Primitive(Primitive::Str(v));
+                self.0 = Cast::Str(v);
                 Ok(())
             }
 
             #[inline]
             fn none(&mut self) -> Result<(), Error> {
-                self.0 = Cast::Primitive(Primitive::None);
+                self.0 = Cast::None;
                 Ok(())
             }
 
@@ -236,38 +218,44 @@ impl<'v> Internal<'v> {
             }
         }
 
-        if let Internal::Primitive { value } = self {
-            Cast::Primitive(value)
-        } else {
-            // If the erased value isn't a primitive then we visit it
-            let mut cast = CastVisitor(Cast::Primitive(Primitive::None));
-            let _ = self.internal_visit(&mut cast);
-            cast.0
+        match &self {
+            Internal::Signed(value) => Cast::Signed(*value),
+            Internal::Unsigned(value) => Cast::Unsigned(*value),
+            Internal::BigSigned(value) => Cast::BigSigned(*value),
+            Internal::BigUnsigned(value) => Cast::BigUnsigned(*value),
+            Internal::Float(value) => Cast::Float(*value),
+            Internal::Bool(value) => Cast::Bool(*value),
+            Internal::Char(value) => Cast::Char(*value),
+            Internal::Str(value) => Cast::Str(*value),
+            Internal::None => Cast::None,
+            other => {
+                // If the erased value isn't a primitive then we visit it
+                let mut cast = CastVisitor(Cast::None);
+                let _ = other.internal_visit(&mut cast);
+                cast.0
+            }
         }
     }
 }
 
 pub(in crate::internal) enum Cast<'v> {
-    Primitive(Primitive<'v>),
+    Signed(i64),
+    Unsigned(u64),
+    BigSigned(i128),
+    BigUnsigned(u128),
+    Float(f64),
+    Bool(bool),
+    Char(char),
+    Str(&'v str),
+    None,
     #[cfg(feature = "std")]
     String(String),
 }
 
 impl<'v> Cast<'v> {
     #[inline]
-    fn into_primitive(self) -> Primitive<'v> {
-        match self {
-            Cast::Primitive(value) => value,
-            #[cfg(feature = "std")]
-            _ => Primitive::None,
-        }
-    }
-}
-
-impl<'v> Primitive<'v> {
-    #[inline]
     fn into_borrowed_str(self) -> Option<&'v str> {
-        if let Primitive::Str(value) = self {
+        if let Cast::Str(value) = self {
             Some(value)
         } else {
             None
@@ -277,10 +265,10 @@ impl<'v> Primitive<'v> {
     #[inline]
     fn into_u64(self) -> Option<u64> {
         match self {
-            Primitive::Unsigned(value) => Some(value),
-            Primitive::BigUnsigned(value) => value.try_into().ok(),
-            Primitive::Signed(value) => value.try_into().ok(),
-            Primitive::BigSigned(value) => value.try_into().ok(),
+            Cast::Unsigned(value) => Some(value),
+            Cast::BigUnsigned(value) => value.try_into().ok(),
+            Cast::Signed(value) => value.try_into().ok(),
+            Cast::BigSigned(value) => value.try_into().ok(),
             _ => None,
         }
     }
@@ -288,10 +276,10 @@ impl<'v> Primitive<'v> {
     #[inline]
     fn into_i64(self) -> Option<i64> {
         match self {
-            Primitive::Signed(value) => Some(value),
-            Primitive::BigSigned(value) => value.try_into().ok(),
-            Primitive::Unsigned(value) => value.try_into().ok(),
-            Primitive::BigUnsigned(value) => value.try_into().ok(),
+            Cast::Signed(value) => Some(value),
+            Cast::BigSigned(value) => value.try_into().ok(),
+            Cast::Unsigned(value) => value.try_into().ok(),
+            Cast::BigUnsigned(value) => value.try_into().ok(),
             _ => None,
         }
     }
@@ -299,10 +287,10 @@ impl<'v> Primitive<'v> {
     #[inline]
     fn into_u128(self) -> Option<u128> {
         match self {
-            Primitive::BigUnsigned(value) => Some(value),
-            Primitive::Unsigned(value) => Some(value.into()),
-            Primitive::Signed(value) => value.try_into().ok(),
-            Primitive::BigSigned(value) => value.try_into().ok(),
+            Cast::BigUnsigned(value) => Some(value),
+            Cast::Unsigned(value) => Some(value.into()),
+            Cast::Signed(value) => value.try_into().ok(),
+            Cast::BigSigned(value) => value.try_into().ok(),
             _ => None,
         }
     }
@@ -310,10 +298,10 @@ impl<'v> Primitive<'v> {
     #[inline]
     fn into_i128(self) -> Option<i128> {
         match self {
-            Primitive::BigSigned(value) => Some(value),
-            Primitive::Signed(value) => Some(value.into()),
-            Primitive::Unsigned(value) => value.try_into().ok(),
-            Primitive::BigUnsigned(value) => value.try_into().ok(),
+            Cast::BigSigned(value) => Some(value),
+            Cast::Signed(value) => Some(value.into()),
+            Cast::Unsigned(value) => value.try_into().ok(),
+            Cast::BigUnsigned(value) => value.try_into().ok(),
             _ => None,
         }
     }
@@ -321,17 +309,17 @@ impl<'v> Primitive<'v> {
     #[inline]
     fn into_f64(self) -> Option<f64> {
         match self {
-            Primitive::Float(value) => Some(value),
-            Primitive::Unsigned(value) => u32::try_from(value)
+            Cast::Float(value) => Some(value),
+            Cast::Unsigned(value) => u32::try_from(value)
                 .ok()
                 .and_then(|value| value.try_into().ok()),
-            Primitive::Signed(value) => i32::try_from(value)
+            Cast::Signed(value) => i32::try_from(value)
                 .ok()
                 .and_then(|value| value.try_into().ok()),
-            Primitive::BigUnsigned(value) => u32::try_from(value)
+            Cast::BigUnsigned(value) => u32::try_from(value)
                 .ok()
                 .and_then(|value| value.try_into().ok()),
-            Primitive::BigSigned(value) => i32::try_from(value)
+            Cast::BigSigned(value) => i32::try_from(value)
                 .ok()
                 .and_then(|value| value.try_into().ok()),
             _ => None,
@@ -340,7 +328,7 @@ impl<'v> Primitive<'v> {
 
     #[inline]
     fn into_char(self) -> Option<char> {
-        if let Primitive::Char(value) = self {
+        if let Cast::Char(value) = self {
             Some(value)
         } else {
             None
@@ -349,7 +337,7 @@ impl<'v> Primitive<'v> {
 
     #[inline]
     fn into_bool(self) -> Option<bool> {
-        if let Primitive::Bool(value) = self {
+        if let Cast::Bool(value) = self {
             Some(value)
         } else {
             None
@@ -379,7 +367,7 @@ mod std_support {
         #[inline]
         pub(super) fn into_str(self) -> Option<Cow<'v, str>> {
             match self {
-                Cast::Primitive(Primitive::Str(value)) => Some(value.into()),
+                Cast::Str(value) => Some(value.into()),
                 Cast::String(value) => Some(value.into()),
                 _ => None,
             }
