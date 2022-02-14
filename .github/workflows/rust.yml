@@ -112,7 +112,7 @@ jobs:
     name: Test (miri)
     runs-on: ubuntu-latest
     env:
-      MIRI_TOOLCHAIN: nightly-2021-07-06
+      MIRI_TOOLCHAIN: nightly-2022-02-14
     steps:
       - name: Checkout sources
         uses: actions/checkout@v2

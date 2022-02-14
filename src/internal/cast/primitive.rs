@@ -269,6 +269,7 @@ pub(super) fn from_any<'v, T: ?Sized + 'static>(value: &'v T) -> Option<Internal
                 bool,
                 &'static str,
                 // We deal with `str` separately because it's unsized
+                // str,
                 #[cfg(feature = "std")]
                 String,
             ];
@@ -360,6 +361,7 @@ pub(super) fn from_any<'v, T: ?Sized + 'static>(value: &'v T) -> Option<Internal
             bool,
             &'static str,
             // We deal with `str` separately because it's unsized
+            // str,
             #[cfg(feature = "std")]
             String,
         ];
