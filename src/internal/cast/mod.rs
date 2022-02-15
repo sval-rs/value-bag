@@ -145,14 +145,14 @@ impl<'v> Internal<'v> {
             }
 
             #[inline]
-            fn u128(&mut self, v: u128) -> Result<(), Error> {
-                self.0 = Cast::BigUnsigned(v);
+            fn u128(&mut self, v: &u128) -> Result<(), Error> {
+                self.0 = Cast::BigUnsigned(*v);
                 Ok(())
             }
 
             #[inline]
-            fn i128(&mut self, v: i128) -> Result<(), Error> {
-                self.0 = Cast::BigSigned(v);
+            fn i128(&mut self, v: &i128) -> Result<(), Error> {
+                self.0 = Cast::BigSigned(*v);
                 Ok(())
             }
 
@@ -221,8 +221,8 @@ impl<'v> Internal<'v> {
         match &self {
             Internal::Signed(value) => Cast::Signed(*value),
             Internal::Unsigned(value) => Cast::Unsigned(*value),
-            Internal::BigSigned(value) => Cast::BigSigned(*value),
-            Internal::BigUnsigned(value) => Cast::BigUnsigned(*value),
+            Internal::BigSigned(value) => Cast::BigSigned(**value),
+            Internal::BigUnsigned(value) => Cast::BigUnsigned(**value),
             Internal::Float(value) => Cast::Float(*value),
             Internal::Bool(value) => Cast::Bool(*value),
             Internal::Char(value) => Cast::Char(*value),

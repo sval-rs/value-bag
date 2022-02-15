@@ -94,13 +94,13 @@ impl<'v> ValueBag<'v> {
                 Ok(())
             }
 
-            fn u128(&mut self, v: u128) -> Result<(), Error> {
-                self.0 = Some(Token::U128(v));
+            fn u128(&mut self, v: &u128) -> Result<(), Error> {
+                self.0 = Some(Token::U128(*v));
                 Ok(())
             }
 
-            fn i128(&mut self, v: i128) -> Result<(), Error> {
-                self.0 = Some(Token::I128(v));
+            fn i128(&mut self, v: &i128) -> Result<(), Error> {
+                self.0 = Some(Token::I128(*v));
                 Ok(())
             }
 

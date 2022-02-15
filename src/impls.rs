@@ -29,13 +29,11 @@ impl_from_internal![
     u16,
     u32,
     u64,
-    u128,
     isize,
     i8,
     i16,
     i32,
     i64,
-    i128,
     f32,
     f64,
     char,
@@ -45,6 +43,20 @@ impl_from_internal![
 impl<'v> From<&'v str> for ValueBag<'v> {
     #[inline]
     fn from(value: &'v str) -> Self {
+        ValueBag::from_internal(value)
+    }
+}
+
+impl<'v> From<&'v u128> for ValueBag<'v> {
+    #[inline]
+    fn from(value: &'v u128) -> Self {
+        ValueBag::from_internal(value)
+    }
+}
+
+impl<'v> From<&'v i128> for ValueBag<'v> {
+    #[inline]
+    fn from(value: &'v i128) -> Self {
         ValueBag::from_internal(value)
     }
 }
