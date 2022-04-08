@@ -26,6 +26,9 @@ pub(super) fn from_any<'v, T: ?Sized + 'static>(value: &'v T) -> Option<Internal
                 where
                     Self: 'static,
                 {
+                    // Note the double reference here. We cast a thin pointer to a potentially fat pointer
+                    // into a thin pointer to a thin pointer to a concrete type. This lets us deal with
+                    // types like `&str`.
                     const CALL: fn(&'_ &'a Self) -> Option<Internal<'a>> = {
                         $(
                             $(#[cfg($($cfg)*)])*

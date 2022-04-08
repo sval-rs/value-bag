@@ -20,26 +20,30 @@ features = ["std", "error", "sval", "serde", "test"]
 
 [features]
 # Use the standard library
-std = []
+std = [
+    "sval1_lib?/std",
+    "serde1_lib?/std",
+]
 
 # Add support for sval
 sval = ["sval1"]
-sval1 = ["sval1_lib"]
+sval1 = [
+    "sval1_lib",
+]
 
 # Add support for `serde`
 serde = ["serde1"]
 serde1 = [
     "serde1_lib",
-    "sval1_lib/serde1",
-    "sval1_lib/alloc",
-    "erased-serde1/alloc",
-    "serde1_fmt"
+    "erased-serde1_lib/alloc",
+    "serde1_fmt_lib",
+    "sval1_lib?/serde1",
+    "sval1_lib?/alloc",
 ]
 
 # Add support for `std::error`
 error = [
     "std",
-    "sval1_lib/std"
 ]
 
 # Add support for converting value bags into test tokens
@@ -58,12 +62,12 @@ default-features = false
 optional = true
 package = "serde"
 
-[dependencies.serde1_fmt]
+[dependencies.serde1_fmt_lib]
 version = "1"
 optional = true
 package = "serde_fmt"
 
-[dependencies.erased-serde1]
+[dependencies.erased-serde1_lib]
 version = "0.3"
 default-features = false
 optional = true

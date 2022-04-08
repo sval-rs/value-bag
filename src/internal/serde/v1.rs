@@ -181,7 +181,7 @@ impl<'v> serde1_lib::Serialize for ValueBag<'v> {
             }
 
             fn serde1(&mut self, v: &dyn Serialize) -> Result<(), Error> {
-                self.result = Some(erased_serde1::serialize(v, self.serializer()?));
+                self.result = Some(erased_serde1_lib::serialize(v, self.serializer()?));
                 self.result()
             }
         }
@@ -198,10 +198,10 @@ impl<'v> serde1_lib::Serialize for ValueBag<'v> {
     }
 }
 
-pub use erased_serde1::Serialize;
+pub use erased_serde1_lib::Serialize;
 
 pub(in crate::internal) fn fmt(f: &mut fmt::Formatter, v: &dyn Serialize) -> Result<(), Error> {
-    fmt::Debug::fmt(&serde1_fmt::to_debug(v), f)?;
+    fmt::Debug::fmt(&serde1_fmt_lib::to_debug(v), f)?;
     Ok(())
 }
 
@@ -403,7 +403,7 @@ pub(crate) fn internal_visit<'v>(
         }
     }
 
-    erased_serde1::serialize(v, VisitorSerializer(visitor)).map_err(|_| Error::serde())
+    erased_serde1_lib::serialize(v, VisitorSerializer(visitor)).map_err(|_| Error::serde())
 }
 
 impl Error {
