@@ -101,6 +101,12 @@ jobs:
     steps:
       - name: Checkout sources
         uses: actions/checkout@v2
+      
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
 
       - name: Install
         run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
