@@ -22,10 +22,11 @@ fn main() {
             VALUE_BAG_CAPTURE_FALLBACK.to_lowercase()
         );
     } else if rustc::is_feature_flaggable().unwrap_or(false) {
-        println!(
-            "cargo:rustc-cfg={}",
-            VALUE_BAG_CAPTURE_CONST_TYPE_ID.to_lowercase()
-        );
+        // Disabled after: https://github.com/rust-lang/rust/pull/95845
+        // println!(
+        //     "cargo:rustc-cfg={}",
+        //     VALUE_BAG_CAPTURE_CONST_TYPE_ID.to_lowercase()
+        // );
     } else if target_arch_is_any(CTOR_ARCHS) && target_os_is_any(CTOR_OSES) {
         println!("cargo:rustc-cfg={}", VALUE_BAG_CAPTURE_CTOR.to_lowercase());
     } else {
