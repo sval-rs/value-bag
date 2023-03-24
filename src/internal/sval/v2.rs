@@ -73,56 +73,63 @@ impl<'v> value_bag_sval2::lib::Value for ValueBag<'v> {
 
         impl<'a, 'v, S: value_bag_sval2::lib::Stream<'v> + ?Sized> InternalVisitor<'v> for Sval2Visitor<'a, S> {
             fn debug(&mut self, v: &dyn fmt::Debug) -> Result<(), Error> {
-                todo!()
+                value_bag_sval2::fmt::stream_debug(self.0, v).map_err(Error::from_sval2)
             }
 
             fn display(&mut self, v: &dyn fmt::Display) -> Result<(), Error> {
-                todo!()
+                value_bag_sval2::fmt::stream_display(self.0, v).map_err(Error::from_sval2)
             }
 
             fn u64(&mut self, v: u64) -> Result<(), Error> {
-                todo!()
+                self.0.u64(v).map_err(Error::from_sval2)
             }
 
             fn i64(&mut self, v: i64) -> Result<(), Error> {
-                todo!()
+                self.0.i64(v).map_err(Error::from_sval2)
             }
 
             fn u128(&mut self, v: &u128) -> Result<(), Error> {
-                todo!()
+                self.0.u128(*v).map_err(Error::from_sval2)
             }
 
             fn i128(&mut self, v: &i128) -> Result<(), Error> {
-                todo!()
+                self.0.i128(*v).map_err(Error::from_sval2)
             }
 
             fn f64(&mut self, v: f64) -> Result<(), Error> {
-                todo!()
+                self.0.f64(v).map_err(Error::from_sval2)
             }
 
             fn bool(&mut self, v: bool) -> Result<(), Error> {
-                todo!()
+                self.0.bool(v).map_err(Error::from_sval2)
             }
 
             fn char(&mut self, v: char) -> Result<(), Error> {
-                todo!()
+                let mut buf = [0; 4];
+                let v = v.encode_utf8(&mut buf);
+
+                self.0.value_computed(v).map_err(Error::from_sval2)
             }
 
             fn str(&mut self, v: &str) -> Result<(), Error> {
-                todo!()
+                self.0.value_computed(v).map_err(Error::from_sval2)
+            }
+
+            fn borrowed_str(&mut self, v: &'v str) -> Result<(), Error> {
+                self.0.value(v).map_err(Error::from_sval2)
             }
 
             fn none(&mut self) -> Result<(), Error> {
-                todo!()
+                self.0.null().map_err(Error::from_sval2)
             }
 
             #[cfg(feature = "error")]
             fn error(&mut self, v: &(dyn std::error::Error + 'static)) -> Result<(), Error> {
-                todo!()
+                self.display(v)
             }
 
             fn sval2(&mut self, v: &dyn Value) -> Result<(), Error> {
-                todo!()
+                self.0.value_computed(v).map_err(Error::from_sval2)
             }
 
             #[cfg(feature = "serde1")]
@@ -160,7 +167,11 @@ pub(crate) fn internal_visit<'v>(
     v: &dyn Value,
     visitor: &mut dyn InternalVisitor<'v>,
 ) -> Result<(), Error> {
-    let mut visitor = VisitorStream(visitor);
+    let mut visitor = VisitorStream {
+        visitor,
+        text_buf: Default::default(),
+    };
+
     value_bag_sval2::lib::stream_computed(&mut visitor, v).map_err(Error::from_sval2)?;
 
     Ok(())
@@ -170,57 +181,85 @@ pub(crate) fn borrowed_internal_visit<'v>(
     v: &'v dyn Value,
     visitor: &mut dyn InternalVisitor<'v>,
 ) -> Result<(), Error> {
-    let mut visitor = VisitorStream(visitor);
+    let mut visitor = VisitorStream {
+        visitor,
+        text_buf: Default::default(),
+    };
+
     value_bag_sval2::lib::stream(&mut visitor, v).map_err(Error::from_sval2)?;
 
     Ok(())
 }
 
-struct VisitorStream<'a, 'v>(&'a mut dyn InternalVisitor<'v>);
+struct VisitorStream<'a, 'v> {
+    visitor: &'a mut dyn InternalVisitor<'v>,
+    text_buf: value_bag_sval2::buffer::TextBuf<'v>,
+}
 
 impl<'a, 'v> value_bag_sval2::lib::Stream<'v> for VisitorStream<'a, 'v> {
     fn null(&mut self) -> value_bag_sval2::lib::Result {
-        todo!()
+        self.visitor.none().map_err(Error::into_sval2)
     }
 
     fn bool(&mut self, v: bool) -> value_bag_sval2::lib::Result {
-        todo!()
+        self.visitor.bool(v).map_err(Error::into_sval2)
     }
 
     fn i64(&mut self, v: i64) -> value_bag_sval2::lib::Result {
-        todo!()
+        self.visitor.i64(v).map_err(Error::into_sval2)
+    }
+
+    fn u64(&mut self, v: u64) -> value_bag_sval2::lib::Result {
+        self.visitor.u64(v).map_err(Error::into_sval2)
+    }
+
+    fn i128(&mut self, v: i128) -> value_bag_sval2::lib::Result {
+        self.visitor.i128(&v).map_err(Error::into_sval2)
+    }
+
+    fn u128(&mut self, v: u128) -> value_bag_sval2::lib::Result {
+        self.visitor.u128(&v).map_err(Error::into_sval2)
     }
 
     fn f64(&mut self, v: f64) -> value_bag_sval2::lib::Result {
-        todo!()
+        self.visitor.f64(v).map_err(Error::into_sval2)
     }
 
     fn text_begin(&mut self, _: Option<usize>) -> value_bag_sval2::lib::Result {
-        todo!()
+        self.text_buf = Default::default();
+        Ok(())
     }
 
     fn text_fragment_computed(&mut self, f: &str) -> value_bag_sval2::lib::Result {
-        todo!()
+        self.text_buf.push_fragment_computed(f).map_err(|_| value_bag_sval2::lib::Error::new())
+    }
+
+    fn text_fragment(&mut self, f: &'v str) -> value_bag_sval2::lib::Result {
+        self.text_buf.push_fragment(f).map_err(|_| value_bag_sval2::lib::Error::new())
     }
 
     fn text_end(&mut self) -> value_bag_sval2::lib::Result {
-        todo!()
+        if let Some(v) = self.text_buf.as_borrowed_str() {
+            self.visitor.borrowed_str(v).map_err(Error::into_sval2)
+        } else {
+            self.visitor.str(self.text_buf.as_str()).map_err(Error::into_sval2)
+        }
     }
 
     fn seq_begin(&mut self, _: Option<usize>) -> value_bag_sval2::lib::Result {
-        todo!()
+        value_bag_sval2::lib::error()
     }
 
     fn seq_value_begin(&mut self) -> value_bag_sval2::lib::Result {
-        todo!()
+        value_bag_sval2::lib::error()
     }
 
     fn seq_value_end(&mut self) -> value_bag_sval2::lib::Result {
-        todo!()
+        value_bag_sval2::lib::error()
     }
 
     fn seq_end(&mut self) -> value_bag_sval2::lib::Result {
-        todo!()
+        value_bag_sval2::lib::error()
     }
 }
 
