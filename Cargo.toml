@@ -18,27 +18,36 @@ build = "build.rs"
 [package.metadata.docs.rs]
 features = ["std", "error", "sval", "serde", "test"]
 
+[workspace]
+members = [
+    "meta/serde1",
+    "meta/sval2",
+]
+
 [features]
 # Use the standard library
 std = [
-    "sval1_lib?/std",
-    "serde1_lib?/std",
+    "value-bag-sval2?/std",
+    "value-bag-serde1?/std",
+]
+
+alloc = [
+    "value-bag-sval2?/alloc",
+    "value-bag-serde1?/alloc",
 ]
 
 # Add support for sval
-sval = ["sval1"]
-sval1 = [
-    "sval1_lib",
+sval = ["sval2"]
+sval2 = [
+    "value-bag-sval2",
 ]
 
 # Add support for `serde`
 serde = ["serde1"]
 serde1 = [
-    "serde1_lib",
-    "erased-serde1_lib/alloc",
-    "serde1_fmt_lib",
-    "sval1_lib?/serde1",
-    "sval1_lib?/alloc",
+    "alloc",
+    "value-bag-serde1",
+    "value-bag-sval2?/serde1",
 ]
 
 # Add support for `std::error`
@@ -49,51 +58,25 @@ error = [
 # Add support for converting value bags into test tokens
 test = ["std"]
 
-[dependencies.sval1_lib]
-version = "=1.0.0-alpha.5"
+[dependencies.value-bag-sval2]
+path = "meta/sval2"
 optional = true
-default-features = false
-features = ["fmt"]
-package = "sval"
 
-[dependencies.serde1_lib]
-version = "1"
-default-features = false
+[dependencies.value-bag-serde1]
+path = "meta/serde1"
 optional = true
-package = "serde"
-
-[dependencies.serde1_fmt_lib]
-version = "1"
-optional = true
-package = "serde_fmt"
-
-[dependencies.erased-serde1_lib]
-version = "0.3"
-default-features = false
-optional = true
-package = "erased-serde"
 
 # Only needed on non-nightly compilers
 [dependencies.ctor]
 version = "0.1"
 
-[dev-dependencies.sval1_lib]
-version = "=1.0.0-alpha.5"
-features = ["test"]
-package = "sval"
+[dev-dependencies.value-bag-sval2]
+path = "meta/sval2"
+features = ["test", "json"]
 
-[dev-dependencies.serde1_test]
-version = "1"
-package = "serde_test"
-
-[dev-dependencies.sval1_json]
-version = "=1.0.0-alpha.5"
-features = ["std"]
-package = "sval_json"
-
-[dev-dependencies.serde1_json]
-version = "1"
-package = "serde_json"
+[dev-dependencies.value-bag-serde1]
+path = "meta/serde1"
+features = ["test", "json"]
 
 [dev-dependencies.wasm-bindgen]
 version = "0.2"

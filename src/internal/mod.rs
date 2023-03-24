@@ -15,7 +15,7 @@ pub(super) mod fill;
 pub(super) mod fmt;
 #[cfg(feature = "serde1")]
 pub(super) mod serde;
-#[cfg(feature = "sval1")]
+#[cfg(feature = "sval2")]
 pub(super) mod sval;
 
 // NOTE: It takes less space to have separate variants for the presence
@@ -63,12 +63,12 @@ pub(super) enum Internal<'v> {
     /// An error.
     Error(&'v dyn error::DowncastError),
 
-    #[cfg(feature = "sval1")]
+    #[cfg(feature = "sval2")]
     /// A structured value from `sval`.
-    AnonSval1(&'v dyn sval::v1::Value),
-    #[cfg(feature = "sval1")]
+    AnonSval2(&'v dyn sval::v2::Value),
+    #[cfg(feature = "sval2")]
     /// A structured value from `sval`.
-    Sval1(&'v dyn sval::v1::DowncastValue),
+    Sval2(&'v dyn sval::v2::DowncastValue),
 
     #[cfg(feature = "serde1")]
     /// A structured value from `serde`.
@@ -126,10 +126,10 @@ impl<'v> Internal<'v> {
             #[cfg(feature = "error")]
             Internal::Error(value) => visitor.borrowed_error(value.as_super()),
 
-            #[cfg(feature = "sval1")]
-            Internal::AnonSval1(value) => visitor.sval1(value),
-            #[cfg(feature = "sval1")]
-            Internal::Sval1(value) => visitor.sval1(value.as_super()),
+            #[cfg(feature = "sval2")]
+            Internal::AnonSval2(value) => visitor.sval2(value),
+            #[cfg(feature = "sval2")]
+            Internal::Sval2(value) => visitor.sval2(value.as_super()),
 
             #[cfg(feature = "serde1")]
             Internal::AnonSerde1(value) => visitor.serde1(value),
@@ -172,8 +172,13 @@ pub(super) trait InternalVisitor<'v> {
         self.error(v)
     }
 
-    #[cfg(feature = "sval1")]
-    fn sval1(&mut self, v: &dyn sval::v1::Value) -> Result<(), Error>;
+    #[cfg(feature = "sval2")]
+    fn sval2(&mut self, v: &dyn sval::v2::Value) -> Result<(), Error>;
+
+    #[cfg(feature = "sval2")]
+    fn borrowed_sval2(&mut self, v: &'v dyn sval::v2::Value) -> Result<(), Error> {
+        self.sval2(v)
+    }
 
     #[cfg(feature = "serde1")]
     fn serde1(&mut self, v: &dyn serde::v1::Serialize) -> Result<(), Error>;

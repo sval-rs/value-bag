@@ -205,9 +205,9 @@ impl<'v> Debug for ValueBag<'v> {
                 Ok(())
             }
 
-            #[cfg(feature = "sval1")]
-            fn sval1(&mut self, v: &dyn crate::internal::sval::v1::Value) -> Result<(), Error> {
-                crate::internal::sval::v1::fmt(self.0, v)
+            #[cfg(feature = "sval2")]
+            fn sval2(&mut self, v: &dyn crate::internal::sval::v2::Value) -> Result<(), Error> {
+                crate::internal::sval::v2::fmt(self.0, v)
             }
 
             #[cfg(feature = "serde1")]
@@ -302,9 +302,9 @@ impl<'v> Display for ValueBag<'v> {
                 Ok(())
             }
 
-            #[cfg(feature = "sval1")]
-            fn sval1(&mut self, v: &dyn crate::internal::sval::v1::Value) -> Result<(), Error> {
-                crate::internal::sval::v1::fmt(self.0, v)
+            #[cfg(feature = "sval2")]
+            fn sval2(&mut self, v: &dyn crate::internal::sval::v2::Value) -> Result<(), Error> {
+                crate::internal::sval::v2::fmt(self.0, v)
             }
 
             #[cfg(feature = "serde1")]

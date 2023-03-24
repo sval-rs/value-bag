@@ -1,0 +1,58 @@
+[package]
+name = "value-bag-sval2"
+version = "0.0.0"
+edition = "2021"
+
+[features]
+std = [
+    "sval/std",
+    "sval_buffer/std",
+    "sval_serde?/std",
+]
+
+alloc = [
+    "sval/alloc",
+    "sval_buffer/alloc",
+    "sval_serde?/alloc",
+]
+
+serde1 = [
+    "sval_serde",
+]
+
+json = [
+    "sval_json",
+]
+
+test = [
+    "sval_test",
+]
+
+[dependencies.sval]
+version = "2"
+default-features = false
+
+[dependencies.sval_dynamic]
+version = "2"
+default-features = false
+
+[dependencies.sval_buffer]
+version = "2"
+default-features = false
+
+[dependencies.sval_fmt]
+version = "2"
+default-features = false
+
+[dependencies.sval_serde]
+version = "2"
+default-features = false
+optional = true
+
+[dependencies.sval_json]
+version = "2"
+optional = true
+
+[dependencies.sval_test]
+version = "2"
+optional = true
