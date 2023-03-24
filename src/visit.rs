@@ -334,7 +334,10 @@ impl<'v> ValueBag<'v> {
             }
 
             #[cfg(feature = "sval2")]
-            fn borrowed_sval2(&mut self, v: &'v dyn internal::sval::v2::Value) -> Result<(), Error> {
+            fn borrowed_sval2(
+                &mut self,
+                v: &'v dyn internal::sval::v2::Value,
+            ) -> Result<(), Error> {
                 internal::sval::v2::borrowed_internal_visit(v, self)
             }
 

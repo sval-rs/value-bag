@@ -39,7 +39,7 @@ pub enum Token {
     #[cfg(feature = "error")]
     Error,
 
-    #[cfg(feature = "sval1")]
+    #[cfg(feature = "sval2")]
     Sval(Sval),
 
     #[cfg(feature = "serde1")]
@@ -135,9 +135,9 @@ impl<'v> ValueBag<'v> {
                 Ok(())
             }
 
-            #[cfg(feature = "sval1")]
-            fn sval1(&mut self, _: &dyn internal::sval::v1::Value) -> Result<(), Error> {
-                self.0 = Some(Token::Sval(Sval { version: 1 }));
+            #[cfg(feature = "sval2")]
+            fn sval2(&mut self, _: &dyn internal::sval::v2::Value) -> Result<(), Error> {
+                self.0 = Some(Token::Sval(Sval { version: 2 }));
                 Ok(())
             }
 

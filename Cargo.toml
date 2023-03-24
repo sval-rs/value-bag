@@ -2,7 +2,7 @@
 name = "value-bag"
 version = "1.0.0-alpha.9"
 authors = ["Ashley Mannix <ashleymannix@live.com.au>"]
-edition = "2018"
+edition = "2021"
 license = "Apache-2.0 OR MIT"
 documentation = "https://docs.rs/value-bag"
 description = "Anonymous structured values"
@@ -31,12 +31,13 @@ std = [
     "value-bag-serde1?/std",
 ]
 
+# Assume an allocator
 alloc = [
     "value-bag-sval2?/alloc",
     "value-bag-serde1?/alloc",
 ]
 
-# Add support for sval
+# Add support for `sval`
 sval = ["sval2"]
 sval2 = [
     "value-bag-sval2",
@@ -55,14 +56,16 @@ error = [
     "std",
 ]
 
-# Add support for converting value bags into test tokens
+# Add support for testing the contents of a value bag
 test = ["std"]
 
 [dependencies.value-bag-sval2]
+version = "1.0.0-alpha.9"
 path = "meta/sval2"
 optional = true
 
 [dependencies.value-bag-serde1]
+version = "1.0.0-alpha.9"
 path = "meta/serde1"
 optional = true
 

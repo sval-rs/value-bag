@@ -60,18 +60,18 @@ impl<'s, 'f> Slot<'s, 'f> {
     {
         self.fill(|visitor| visitor.sval2(&value))
     }
-
-    /// Fill the slot with a structured value.
-    pub fn fill_dyn_sval2(self, value: &dyn Value) -> Result<(), Error> {
-        self.fill(|visitor| visitor.sval2(value))
-    }
 }
 
 impl<'v> value_bag_sval2::lib::Value for ValueBag<'v> {
-    fn stream<'sval, S: value_bag_sval2::lib::Stream<'sval> + ?Sized>(&'sval self, s: &mut S) -> value_bag_sval2::lib::Result {
+    fn stream<'sval, S: value_bag_sval2::lib::Stream<'sval> + ?Sized>(
+        &'sval self,
+        s: &mut S,
+    ) -> value_bag_sval2::lib::Result {
         struct Sval2Visitor<'a, S: ?Sized>(&'a mut S);
 
-        impl<'a, 'v, S: value_bag_sval2::lib::Stream<'v> + ?Sized> InternalVisitor<'v> for Sval2Visitor<'a, S> {
+        impl<'a, 'v, S: value_bag_sval2::lib::Stream<'v> + ?Sized> InternalVisitor<'v>
+            for Sval2Visitor<'a, S>
+        {
             fn debug(&mut self, v: &dyn fmt::Debug) -> Result<(), Error> {
                 value_bag_sval2::fmt::stream_debug(self.0, v).map_err(Error::from_sval2)
             }
@@ -125,11 +125,15 @@ impl<'v> value_bag_sval2::lib::Value for ValueBag<'v> {
 
             #[cfg(feature = "error")]
             fn error(&mut self, v: &(dyn std::error::Error + 'static)) -> Result<(), Error> {
-                self.display(v)
+                self.display(&v)
             }
 
             fn sval2(&mut self, v: &dyn Value) -> Result<(), Error> {
                 self.0.value_computed(v).map_err(Error::from_sval2)
+            }
+
+            fn borrowed_sval2(&mut self, v: &'v dyn Value) -> Result<(), Error> {
+                self.0.value(v).map_err(Error::from_sval2)
             }
 
             #[cfg(feature = "serde1")]
@@ -151,14 +155,14 @@ impl<'v> value_bag_sval2::lib::Value for ValueBag<'v> {
 pub use value_bag_sval2::dynamic::Value;
 
 pub(in crate::internal) fn fmt(f: &mut fmt::Formatter, v: &dyn Value) -> Result<(), Error> {
-    value_bag_sval2::fmt::stream_to_write(f, v)?;
+    value_bag_sval2::fmt::stream_to_fmt(f, v)?;
     Ok(())
 }
 
 #[cfg(feature = "serde1")]
 pub(in crate::internal) fn serde1<S>(s: S, v: &dyn Value) -> Result<S::Ok, S::Error>
 where
-    S: serde1_lib::Serializer,
+    S: value_bag_serde1::lib::Serializer,
 {
     value_bag_sval2::serde1::serialize(s, v)
 }
@@ -226,23 +230,29 @@ impl<'a, 'v> value_bag_sval2::lib::Stream<'v> for VisitorStream<'a, 'v> {
     }
 
     fn text_begin(&mut self, _: Option<usize>) -> value_bag_sval2::lib::Result {
-        self.text_buf = Default::default();
+        self.text_buf.clear();
         Ok(())
     }
 
     fn text_fragment_computed(&mut self, f: &str) -> value_bag_sval2::lib::Result {
-        self.text_buf.push_fragment_computed(f).map_err(|_| value_bag_sval2::lib::Error::new())
+        self.text_buf
+            .push_fragment_computed(f)
+            .map_err(|_| value_bag_sval2::lib::Error::new())
     }
 
     fn text_fragment(&mut self, f: &'v str) -> value_bag_sval2::lib::Result {
-        self.text_buf.push_fragment(f).map_err(|_| value_bag_sval2::lib::Error::new())
+        self.text_buf
+            .push_fragment(f)
+            .map_err(|_| value_bag_sval2::lib::Error::new())
     }
 
     fn text_end(&mut self) -> value_bag_sval2::lib::Result {
         if let Some(v) = self.text_buf.as_borrowed_str() {
             self.visitor.borrowed_str(v).map_err(Error::into_sval2)
         } else {
-            self.visitor.str(self.text_buf.as_str()).map_err(Error::into_sval2)
+            self.visitor
+                .str(self.text_buf.as_str())
+                .map_err(Error::into_sval2)
         }
     }
 
@@ -338,8 +348,11 @@ mod tests {
         #[derive(Debug, PartialEq, Eq)]
         struct Timestamp(usize);
 
-        impl Value for Timestamp {
-            fn stream(&self, stream: &mut value_bag_sval2::lib::value::Stream) -> value_bag_sval2::lib::value::Result {
+        impl value_bag_sval2::lib::Value for Timestamp {
+            fn stream<'sval, S: value_bag_sval2::lib::Stream<'sval> + ?Sized>(
+                &'sval self,
+                stream: &mut S,
+            ) -> value_bag_sval2::lib::Result {
                 stream.u64(self.0 as u64)
             }
         }
@@ -358,9 +371,8 @@ mod tests {
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn sval2_structured() {
         let value = ValueBag::from(42u64);
-        let expected = vec![value_bag_sval2::lib::test::Token::Unsigned(42)];
 
-        assert_eq!(value_bag_sval2::lib::test::tokens(value), expected);
+        value_bag_sval2::test::assert_tokens(&value, &[value_bag_sval2::test::Token::U64(42)]);
     }
 
     #[test]
@@ -368,8 +380,11 @@ mod tests {
     fn sval2_debug() {
         struct TestSval;
 
-        impl Value for TestSval {
-            fn stream(&self, stream: &mut value_bag_sval2::lib::value::Stream) -> value_bag_sval2::lib::value::Result {
+        impl value_bag_sval2::lib::Value for TestSval {
+            fn stream<'sval, S: value_bag_sval2::lib::Stream<'sval> + ?Sized>(
+                &'sval self,
+                stream: &mut S,
+            ) -> value_bag_sval2::lib::Result {
                 stream.u64(42)
             }
         }
@@ -383,22 +398,22 @@ mod tests {
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn sval2_visit() {
-        ValueBag::from_dyn_sval2(&42u64)
+        ValueBag::from_sval2(&42u64)
             .visit(TestVisit)
             .expect("failed to visit value");
-        ValueBag::from_dyn_sval2(&-42i64)
+        ValueBag::from_sval2(&-42i64)
             .visit(TestVisit)
             .expect("failed to visit value");
-        ValueBag::from_dyn_sval2(&11f64)
+        ValueBag::from_sval2(&11f64)
             .visit(TestVisit)
             .expect("failed to visit value");
-        ValueBag::from_dyn_sval2(&true)
+        ValueBag::from_sval2(&true)
             .visit(TestVisit)
             .expect("failed to visit value");
-        ValueBag::from_dyn_sval2(&"some string")
+        ValueBag::from_sval2(&"some string")
             .visit(TestVisit)
             .expect("failed to visit value");
-        ValueBag::from_dyn_sval2(&'n')
+        ValueBag::from_sval2(&'n')
             .visit(TestVisit)
             .expect("failed to visit value");
     }
@@ -407,35 +422,20 @@ mod tests {
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     #[cfg(feature = "serde1")]
     fn sval2_serde1() {
-        use serde1_test::{assert_ser_tokens, Token};
+        use value_bag_serde1::test::{assert_ser_tokens, Token};
 
         struct TestSval;
 
-        impl Value for TestSval {
-            fn stream(&self, stream: &mut value_bag_sval2::lib::value::Stream) -> value_bag_sval2::lib::value::Result {
+        impl value_bag_sval2::lib::Value for TestSval {
+            fn stream<'sval, S: value_bag_sval2::lib::Stream<'sval> + ?Sized>(
+                &'sval self,
+                stream: &mut S,
+            ) -> value_bag_sval2::lib::Result {
                 stream.u64(42)
             }
         }
 
         assert_ser_tokens(&ValueBag::capture_sval2(&TestSval), &[Token::U64(42)]);
-    }
-
-    #[test]
-    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-    #[cfg(feature = "error")]
-    fn sval2_visit_error() {
-        use crate::{
-            internal::sval::v1 as sval,
-            std::{error, io},
-        };
-
-        let err: &(dyn error::Error + 'static) = &io::Error::from(io::ErrorKind::Other);
-        let value: &dyn sval::Value = &err;
-
-        // Ensure that an error captured through `sval` can be visited as an error
-        ValueBag::from_dyn_sval2(value)
-            .visit(TestVisit)
-            .expect("failed to visit value");
     }
 
     #[cfg(feature = "std")]
