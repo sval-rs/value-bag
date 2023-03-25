@@ -106,7 +106,7 @@ impl<'v> ValueBag<'v> {
             Internal::Display(value) => value.as_any().downcast_ref(),
             #[cfg(feature = "error")]
             Internal::Error(value) => value.as_any().downcast_ref(),
-            #[cfg(feature = "")]
+            #[cfg(feature = "sval2")]
             Internal::Sval2(value) => value.as_any().downcast_ref(),
             #[cfg(feature = "serde1")]
             Internal::Serde1(value) => value.as_any().downcast_ref(),

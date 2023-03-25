@@ -155,7 +155,33 @@ impl<'v> ValueBag<'v> {
     }
 }
 
-pub(crate) struct TestVisit;
+pub(crate) struct TestVisit {
+    pub i64: i64,
+    pub u64: u64,
+    pub i128: i128,
+    pub u128: u128,
+    pub f64: f64,
+    pub bool: bool,
+    pub str: &'static str,
+    pub borrowed_str: &'static str,
+    pub char: char,
+}
+
+impl Default for TestVisit {
+    fn default() -> Self {
+        TestVisit {
+            i64: -42,
+            u64: 42,
+            i128: -42,
+            u128: 42,
+            f64: 11.0,
+            bool: true,
+            str: "some string",
+            borrowed_str: "some borrowed string",
+            char: 'n',
+        }
+    }
+}
 
 impl<'v> Visit<'v> for TestVisit {
     fn visit_any(&mut self, v: ValueBag) -> Result<(), Error> {
@@ -163,47 +189,47 @@ impl<'v> Visit<'v> for TestVisit {
     }
 
     fn visit_i64(&mut self, v: i64) -> Result<(), Error> {
-        assert_eq!(-42i64, v);
+        assert_eq!(self.i64, v);
         Ok(())
     }
 
     fn visit_u64(&mut self, v: u64) -> Result<(), Error> {
-        assert_eq!(42u64, v);
+        assert_eq!(self.u64, v);
         Ok(())
     }
 
     fn visit_i128(&mut self, v: i128) -> Result<(), Error> {
-        assert_eq!(-42i128, v);
+        assert_eq!(self.i128, v);
         Ok(())
     }
 
     fn visit_u128(&mut self, v: u128) -> Result<(), Error> {
-        assert_eq!(42u128, v);
+        assert_eq!(self.u128, v);
         Ok(())
     }
 
     fn visit_f64(&mut self, v: f64) -> Result<(), Error> {
-        assert_eq!(11f64, v);
+        assert_eq!(self.f64, v);
         Ok(())
     }
 
     fn visit_bool(&mut self, v: bool) -> Result<(), Error> {
-        assert_eq!(true, v);
+        assert_eq!(self.bool, v);
         Ok(())
     }
 
     fn visit_str(&mut self, v: &str) -> Result<(), Error> {
-        assert_eq!("some string", v);
+        assert_eq!(self.str, v);
         Ok(())
     }
 
     fn visit_borrowed_str(&mut self, v: &'v str) -> Result<(), Error> {
-        assert_eq!("some string", v);
+        assert_eq!(self.borrowed_str, v);
         Ok(())
     }
 
     fn visit_char(&mut self, v: char) -> Result<(), Error> {
-        assert_eq!('n', v);
+        assert_eq!(self.char, v);
         Ok(())
     }
 

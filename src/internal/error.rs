@@ -122,7 +122,7 @@ mod tests {
         let err = io::Error::from(io::ErrorKind::Other);
 
         ValueBag::from_dyn_error(&err)
-            .visit(TestVisit)
+            .visit(TestVisit::default())
             .expect("failed to visit value");
     }
 }

@@ -547,22 +547,22 @@ mod tests {
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn serde1_visit() {
         ValueBag::from_serde1(&42u64)
-            .visit(TestVisit)
+            .visit(TestVisit::default())
             .expect("failed to visit value");
         ValueBag::from_serde1(&-42i64)
-            .visit(TestVisit)
+            .visit(TestVisit::default())
             .expect("failed to visit value");
         ValueBag::from_serde1(&11f64)
-            .visit(TestVisit)
+            .visit(TestVisit::default())
             .expect("failed to visit value");
         ValueBag::from_serde1(&true)
-            .visit(TestVisit)
+            .visit(TestVisit::default())
             .expect("failed to visit value");
         ValueBag::from_serde1(&"some string")
-            .visit(TestVisit)
+            .visit(TestVisit::default())
             .expect("failed to visit value");
         ValueBag::from_serde1(&'n')
-            .visit(TestVisit)
+            .visit(TestVisit::default())
             .expect("failed to visit value");
     }
 

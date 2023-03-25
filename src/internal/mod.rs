@@ -127,9 +127,9 @@ impl<'v> Internal<'v> {
             Internal::Error(value) => visitor.borrowed_error(value.as_super()),
 
             #[cfg(feature = "sval2")]
-            Internal::AnonSval2(value) => visitor.sval2(value),
+            Internal::AnonSval2(value) => visitor.borrowed_sval2(value),
             #[cfg(feature = "sval2")]
-            Internal::Sval2(value) => visitor.sval2(value.as_super()),
+            Internal::Sval2(value) => visitor.borrowed_sval2(value.as_super()),
 
             #[cfg(feature = "serde1")]
             Internal::AnonSerde1(value) => visitor.serde1(value),

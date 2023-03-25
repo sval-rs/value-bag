@@ -8,12 +8,14 @@ std = [
     "sval/std",
     "sval_buffer/std",
     "sval_serde?/std",
+    "sval_json?/std",
 ]
 
 alloc = [
     "sval/alloc",
     "sval_buffer/alloc",
     "sval_serde?/alloc",
+    "sval_json?/alloc",
 ]
 
 serde1 = [
@@ -25,6 +27,7 @@ json = [
 ]
 
 test = [
+    "std",
     "sval_test",
 ]
 

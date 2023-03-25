@@ -207,80 +207,30 @@ pub use self::error::Error;
 ///
 /// ## Using `sval`
 ///
-/// When the `sval1` feature is enabled, any `ValueBag` can be serialized using `sval`.
+/// When the `sval2` feature is enabled, any `ValueBag` can be serialized using `sval`.
 /// This makes it possible to visit any typed structure captured in the `ValueBag`,
 /// including complex datatypes like maps and sequences.
 ///
 /// `sval` doesn't need to allocate so can be used in no-std environments.
 ///
-/// First, enable the `sval1` feature in your `Cargo.toml`:
+/// First, enable the `sval2` feature in your `Cargo.toml`:
 ///
 /// ```toml
 /// [dependencies.value-bag]
-/// features = ["sval1"]
+/// features = ["sval2"]
 /// ```
 ///
 /// Then stream the contents of the `ValueBag` using `sval`.
 ///
 /// ```
-/// #[cfg(not(all(feature = "std", feature = "sval1")))] fn main() {}
-/// #[cfg(all(feature = "std", feature = "sval1"))]
+/// #[cfg(not(all(feature = "std", feature = "sval2")))] fn main() {}
+/// #[cfg(all(feature = "std", feature = "sval2"))]
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// # extern crate sval1_json as sval_json;
+/// # use value_bag_sval2::json as sval_json;
 /// use value_bag::ValueBag;
 ///
 /// let value = ValueBag::from(42i64);
-/// let json = sval_json::to_string(value)?;
-/// # Ok(())
-/// # }
-/// ```
-///
-/// ```
-/// #[cfg(not(all(feature = "std", feature = "sval1")))] fn main() {}
-/// #[cfg(all(feature = "std", feature = "sval1"))]
-/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// # extern crate sval1_lib as sval;
-/// # fn escape(buf: &[u8]) -> &[u8] { buf }
-/// # fn itoa_fmt<T>(num: T) -> Vec<u8> { vec![] }
-/// # fn ryu_fmt<T>(num: T) -> Vec<u8> { vec![] }
-/// use value_bag::ValueBag;
-/// use sval::stream::{self, Stream};
-///
-/// // Implement some simple custom serialization
-/// struct MyStream(Vec<u8>);
-/// impl Stream for MyStream {
-///     fn u64(&mut self, v: u64) -> stream::Result {
-///         self.0.extend_from_slice(itoa_fmt(v).as_slice());
-///         Ok(())
-///     }
-///
-///     fn i64(&mut self, v: i64) -> stream::Result {
-///         self.0.extend_from_slice(itoa_fmt(v).as_slice());
-///         Ok(())
-///     }
-///
-///     fn f64(&mut self, v: f64) -> stream::Result {
-///         self.0.extend_from_slice(ryu_fmt(v).as_slice());
-///         Ok(())
-///     }
-///
-///     fn str(&mut self, v: &str) -> stream::Result {
-///         self.0.push(b'\"');
-///         self.0.extend_from_slice(escape(v.as_bytes()));
-///         self.0.push(b'\"');
-///         Ok(())
-///     }
-///
-///     fn bool(&mut self, v: bool) -> stream::Result {
-///         self.0.extend_from_slice(if v { b"true" } else { b"false" });
-///         Ok(())
-///     }
-/// }
-///
-/// let value = ValueBag::from(42i64);
-///
-/// let mut stream = MyStream(vec![]);
-/// sval::stream(&mut stream, &value)?;
+/// let json = sval_json::stream_to_string(value)?;
 /// # Ok(())
 /// # }
 /// ```
@@ -306,7 +256,7 @@ pub use self::error::Error;
 /// #[cfg(not(all(feature = "std", feature = "serde1")))] fn main() {}
 /// #[cfg(all(feature = "std", feature = "serde1"))]
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// # extern crate serde1_json as serde_json;
+/// # use value_bag_serde1::json as serde_json;
 /// use value_bag::ValueBag;
 ///
 /// let value = ValueBag::from(42i64);

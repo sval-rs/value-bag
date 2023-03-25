@@ -399,22 +399,25 @@ mod tests {
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn sval2_visit() {
         ValueBag::from_sval2(&42u64)
-            .visit(TestVisit)
+            .visit(TestVisit::default())
             .expect("failed to visit value");
         ValueBag::from_sval2(&-42i64)
-            .visit(TestVisit)
+            .visit(TestVisit::default())
             .expect("failed to visit value");
         ValueBag::from_sval2(&11f64)
-            .visit(TestVisit)
+            .visit(TestVisit::default())
             .expect("failed to visit value");
         ValueBag::from_sval2(&true)
-            .visit(TestVisit)
+            .visit(TestVisit::default())
             .expect("failed to visit value");
-        ValueBag::from_sval2(&"some string")
-            .visit(TestVisit)
+        ValueBag::from_sval2(&"some borrowed string")
+            .visit(TestVisit::default())
             .expect("failed to visit value");
         ValueBag::from_sval2(&'n')
-            .visit(TestVisit)
+            .visit(TestVisit {
+                str: "n",
+                ..Default::default()
+            })
             .expect("failed to visit value");
     }
 

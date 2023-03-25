@@ -359,28 +359,28 @@ mod tests {
     #[test]
     fn visit_structured() {
         ValueBag::from(42u64)
-            .visit(TestVisit)
+            .visit(TestVisit::default())
             .expect("failed to visit value");
         ValueBag::from(-42i64)
-            .visit(TestVisit)
+            .visit(TestVisit::default())
             .expect("failed to visit value");
         ValueBag::from(&42u128)
-            .visit(TestVisit)
+            .visit(TestVisit::default())
             .expect("failed to visit value");
         ValueBag::from(&-42i128)
-            .visit(TestVisit)
+            .visit(TestVisit::default())
             .expect("failed to visit value");
         ValueBag::from(11f64)
-            .visit(TestVisit)
+            .visit(TestVisit::default())
             .expect("failed to visit value");
         ValueBag::from(true)
-            .visit(TestVisit)
+            .visit(TestVisit::default())
             .expect("failed to visit value");
-        ValueBag::from("some string")
-            .visit(TestVisit)
+        ValueBag::from("some borrowed string")
+            .visit(TestVisit::default())
             .expect("failed to visit value");
         ValueBag::from('n')
-            .visit(TestVisit)
+            .visit(TestVisit::default())
             .expect("failed to visit value");
     }
 }
