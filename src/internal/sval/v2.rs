@@ -325,6 +325,30 @@ mod tests {
 
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn sval2_capture_cast_borrowed_str() {
+        struct Number<'a>(&'a str);
+
+        impl<'a> value_bag_sval2::lib::Value for Number<'a> {
+            fn stream<'sval, S: value_bag_sval2::lib::Stream<'sval> + ?Sized>(
+                &'sval self,
+                stream: &mut S,
+            ) -> value_bag_sval2::lib::Result {
+                stream.tagged_begin(Some(&value_bag_sval2::lib::tags::NUMBER), None, None)?;
+                stream.value(self.0)?;
+                stream.tagged_end(Some(&value_bag_sval2::lib::tags::NUMBER), None, None)
+            }
+        }
+
+        assert_eq!(
+            "123.456e789",
+            ValueBag::capture_sval2(&Number("123.456e789"))
+                .to_borrowed_str()
+                .expect("invalid value")
+        );
+    }
+
+    #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn sval2_from_cast() {
         assert_eq!(
             42u64,
