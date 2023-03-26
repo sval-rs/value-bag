@@ -33,6 +33,14 @@ impl<'v> ValueBag<'v> {
             inner: Internal::AnonSval2(value),
         }
     }
+
+    /// Get a value from a structured type without capturing support.
+    #[inline]
+    pub fn from_dyn_sval2(value: &'v dyn Value) -> Self {
+        ValueBag {
+            inner: Internal::AnonSval2(value),
+        }
+    }
 }
 
 pub(crate) trait DowncastValue {
@@ -294,7 +302,10 @@ mod tests {
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn sval2_capture() {
-        assert_eq!(ValueBag::capture_sval2(&42u64).to_token(), Token::U64(42));
+        assert_eq!(
+            ValueBag::capture_sval2(&42u64).to_test_token(),
+            TestToken::U64(42)
+        );
     }
 
     #[test]

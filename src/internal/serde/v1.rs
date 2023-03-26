@@ -35,6 +35,8 @@ impl<'v> ValueBag<'v> {
             inner: Internal::AnonSerde1(value),
         }
     }
+
+    // NOTE: no `from_dyn_serde1` until `erased-serde` stabilizes
 }
 
 pub(crate) trait DowncastSerialize {
@@ -442,7 +444,10 @@ mod tests {
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn serde1_capture() {
-        assert_eq!(ValueBag::capture_serde1(&42u64).to_token(), Token::U64(42));
+        assert_eq!(
+            ValueBag::capture_serde1(&42u64).to_test_token(),
+            TestToken::U64(42)
+        );
     }
 
     #[test]

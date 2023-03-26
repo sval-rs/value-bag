@@ -27,7 +27,7 @@ impl<'v> ValueBag<'v> {
 
     /// Try get an error from this value.
     #[inline]
-    pub fn to_borrowed_error(&self) -> Option<&(dyn Error + 'static)> {
+    pub fn to_borrowed_error(&self) -> Option<&'v (dyn Error + 'static)> {
         match self.inner {
             Internal::Error(value) => Some(value.as_super()),
             Internal::AnonError(value) => Some(value),

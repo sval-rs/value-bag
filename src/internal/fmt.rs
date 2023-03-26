@@ -331,18 +331,24 @@ mod tests {
     use super::*;
     use crate::{
         std::string::ToString,
-        test::{IntoValueBag, Token},
+        test::{IntoValueBag, TestToken},
     };
 
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn fmt_capture() {
-        assert_eq!(ValueBag::capture_debug(&1u16).to_token(), Token::U64(1));
-        assert_eq!(ValueBag::capture_display(&1u16).to_token(), Token::U64(1));
+        assert_eq!(
+            ValueBag::capture_debug(&1u16).to_test_token(),
+            TestToken::U64(1)
+        );
+        assert_eq!(
+            ValueBag::capture_display(&1u16).to_test_token(),
+            TestToken::U64(1)
+        );
 
         assert_eq!(
-            ValueBag::capture_debug(&Some(1u16)).to_token(),
-            Token::U64(1)
+            ValueBag::capture_debug(&Some(1u16)).to_test_token(),
+            TestToken::U64(1)
         );
     }
 

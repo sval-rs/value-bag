@@ -5,8 +5,8 @@
 //! More complex datatypes can then be handled using `std::fmt`, `sval`, or `serde`.
 //!
 //! ```
-//! #[cfg(not(feature = "std"))] fn main() {}
-//! #[cfg(feature = "std")]
+//! # #[cfg(not(feature = "std"))] fn main() {}
+//! # #[cfg(feature = "std")]
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! # fn escape(buf: &[u8]) -> &[u8] { buf }
 //! # fn itoa_fmt<T>(num: T) -> Vec<u8> { vec![] }

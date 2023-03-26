@@ -223,8 +223,8 @@ pub use self::error::Error;
 /// Then stream the contents of the `ValueBag` using `sval`.
 ///
 /// ```
-/// #[cfg(not(all(feature = "std", feature = "sval2")))] fn main() {}
-/// #[cfg(all(feature = "std", feature = "sval2"))]
+/// # #[cfg(not(all(feature = "std", feature = "sval2")))] fn main() {}
+/// # #[cfg(all(feature = "std", feature = "sval2"))]
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// # use value_bag_sval2::json as sval_json;
 /// use value_bag::ValueBag;
@@ -253,8 +253,8 @@ pub use self::error::Error;
 /// Then stream the contents of the `ValueBag` using `serde`.
 ///
 /// ```
-/// #[cfg(not(all(feature = "std", feature = "serde1")))] fn main() {}
-/// #[cfg(all(feature = "std", feature = "serde1"))]
+/// # #[cfg(not(all(feature = "std", feature = "serde1")))] fn main() {}
+/// # #[cfg(all(feature = "std", feature = "serde1"))]
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// # use value_bag_serde1::json as serde_json;
 /// use value_bag::ValueBag;

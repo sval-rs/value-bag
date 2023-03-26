@@ -21,11 +21,11 @@ where
 }
 
 /**
-A tokenized representation of the captured value.
+A tokenized representation of the captured value for testing.
 */
 #[derive(Debug, PartialEq)]
 #[non_exhaustive]
-pub enum Token {
+pub enum TestToken {
     U64(u64),
     I64(i64),
     F64(f64),
@@ -40,28 +40,14 @@ pub enum Token {
     Error,
 
     #[cfg(feature = "sval2")]
-    Sval(Sval),
+    Sval {
+        version: u32,
+    },
 
     #[cfg(feature = "serde1")]
-    Serde(Serde),
-}
-
-/**
-A value that was captured using `sval`.
-*/
-#[derive(Debug, PartialEq)]
-#[non_exhaustive]
-pub struct Sval {
-    pub version: u32,
-}
-
-/**
-A value that was captured using `serde`.
-*/
-#[derive(Debug, PartialEq)]
-#[non_exhaustive]
-pub struct Serde {
-    pub version: u32,
+    Serde {
+        version: u32,
+    },
 }
 
 impl<'v> ValueBag<'v> {
@@ -70,80 +56,80 @@ impl<'v> ValueBag<'v> {
 
     This _isn't_ a general-purpose API for working with values outside of testing.
     */
-    pub fn to_token(&self) -> Token {
-        struct TestVisitor(Option<Token>);
+    pub fn to_test_token(&self) -> TestToken {
+        struct TestVisitor(Option<TestToken>);
 
         impl<'v> internal::InternalVisitor<'v> for TestVisitor {
             fn debug(&mut self, v: &dyn fmt::Debug) -> Result<(), Error> {
-                self.0 = Some(Token::Str(format!("{:?}", v)));
+                self.0 = Some(TestToken::Str(format!("{:?}", v)));
                 Ok(())
             }
 
             fn display(&mut self, v: &dyn fmt::Display) -> Result<(), Error> {
-                self.0 = Some(Token::Str(format!("{}", v)));
+                self.0 = Some(TestToken::Str(format!("{}", v)));
                 Ok(())
             }
 
             fn u64(&mut self, v: u64) -> Result<(), Error> {
-                self.0 = Some(Token::U64(v));
+                self.0 = Some(TestToken::U64(v));
                 Ok(())
             }
 
             fn i64(&mut self, v: i64) -> Result<(), Error> {
-                self.0 = Some(Token::I64(v));
+                self.0 = Some(TestToken::I64(v));
                 Ok(())
             }
 
             fn u128(&mut self, v: &u128) -> Result<(), Error> {
-                self.0 = Some(Token::U128(*v));
+                self.0 = Some(TestToken::U128(*v));
                 Ok(())
             }
 
             fn i128(&mut self, v: &i128) -> Result<(), Error> {
-                self.0 = Some(Token::I128(*v));
+                self.0 = Some(TestToken::I128(*v));
                 Ok(())
             }
 
             fn f64(&mut self, v: f64) -> Result<(), Error> {
-                self.0 = Some(Token::F64(v));
+                self.0 = Some(TestToken::F64(v));
                 Ok(())
             }
 
             fn bool(&mut self, v: bool) -> Result<(), Error> {
-                self.0 = Some(Token::Bool(v));
+                self.0 = Some(TestToken::Bool(v));
                 Ok(())
             }
 
             fn char(&mut self, v: char) -> Result<(), Error> {
-                self.0 = Some(Token::Char(v));
+                self.0 = Some(TestToken::Char(v));
                 Ok(())
             }
 
             fn str(&mut self, v: &str) -> Result<(), Error> {
-                self.0 = Some(Token::Str(v.into()));
+                self.0 = Some(TestToken::Str(v.into()));
                 Ok(())
             }
 
             fn none(&mut self) -> Result<(), Error> {
-                self.0 = Some(Token::None);
+                self.0 = Some(TestToken::None);
                 Ok(())
             }
 
             #[cfg(feature = "error")]
             fn error(&mut self, _: &dyn internal::error::Error) -> Result<(), Error> {
-                self.0 = Some(Token::Error);
+                self.0 = Some(TestToken::Error);
                 Ok(())
             }
 
             #[cfg(feature = "sval2")]
             fn sval2(&mut self, _: &dyn internal::sval::v2::Value) -> Result<(), Error> {
-                self.0 = Some(Token::Sval(Sval { version: 2 }));
+                self.0 = Some(TestToken::Sval { version: 2 });
                 Ok(())
             }
 
             #[cfg(feature = "serde1")]
             fn serde1(&mut self, _: &dyn internal::serde::v1::Serialize) -> Result<(), Error> {
-                self.0 = Some(Token::Serde(Serde { version: 1 }));
+                self.0 = Some(TestToken::Serde { version: 1 });
                 Ok(())
             }
         }
