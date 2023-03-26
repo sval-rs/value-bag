@@ -3,10 +3,77 @@
 //! This crate contains the [`ValueBag`] type, a container for an anonymous structured value.
 //! `ValueBag`s can be captured in various ways and then formatted, inspected, and serialized
 //! without losing their original structure.
+//!
+//! The producer of a [`ValueBag`] may use a different strategy for capturing than the eventual
+//! consumer. They don't need to coordinate directly.
 
 #![cfg_attr(value_bag_capture_const_type_id, feature(const_type_id))]
 #![doc(html_root_url = "https://docs.rs/value-bag/1.0.0-alpha.9")]
 #![no_std]
+
+/*
+# Crate design
+
+This library internally ties several frameworks together. The details of how
+this is done are hidden from end-users. It looks roughly like this:
+
+            ┌─────┐     ┌──────┐
+            │sval2│     │serde1│  1. libs on crates.io
+            └──┬──┘     └─┬─┬──┘
+               ├──────────┘ │
+       ┌───────▼──┐     ┌───▼───────┐
+       │meta/sval2│     │meta/serde1│  2. meta crates with features
+       └───────┬──┘     └───┬───────┘
+               │            │
+ ┌─────────────▼──┐     ┌───▼─────────────┐
+ │internal/sval/v2◄─────┤internal/serde/v1│  3. internal modules with `InternalVisitor`
+ └─────────────┬──┘     └───┬─────────────┘
+               │            │
+        ┌──────▼────────┬───▼────────────┐
+        │Internal::Sval2│Internal::Serde1│  4. variants in `Internal` enum
+        └───────────────┼────────────────┘
+                        │
+┌───────────────────────▼────────────────────────┐
+│ValueBag::capture_sval2│ValueBag::capture_serde1│  5. ctors on `ValueBag`
+└───────────────────────┼────────────────────────┘
+                        │
+┌───────────────────────▼───────────────────────────┐
+│impl Value for ValueBag│impl Serialize for ValueBag│  6. trait impls on `ValueBag`
+└───────────────────────┴───────────────────────────┘
+
+## 1. libs on crates.io
+
+These are the frameworks like `serde` or `sval`.
+
+## 2. meta crates with features
+
+These are crates that are internal to `value-bag`. They depend on the public
+framework and any utility crates that come along with it. They also expose
+features for any other framework. This is done this way so `value-bag` can use
+Cargo's `crate?/feature` syntax to conditionally add framework support.
+
+## 3. internal modules with `InternalVisitor`
+
+These are modules in `value-bag` that integrate the framework using the
+`InternalVisitor` trait. This makes it possible for that framework to cast
+primitive values and pass-through any other framework.
+
+## 4. variants in `Internal` enum
+
+These are individual variants on the `Internal` enum that the `ValueBag`
+type wraps. Each framework has one or more variants in this enum.
+
+## 5. ctors on `ValueBag`
+
+These are constructors for producers of `ValueBag`s that accept a value
+implementing a serialization trait from a specific framework, like
+`serde::Serialize` or `sval::Value`.
+
+## 7. trait impls on `ValueBag`
+
+These are trait impls for consumers of `ValueBag`s that serialize the
+underlying value, bridging it if it was produced for a different framework.
+*/
 
 #[cfg(any(feature = "std", test))]
 #[macro_use]
