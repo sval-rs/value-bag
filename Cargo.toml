@@ -1,6 +1,6 @@
 [package]
 name = "value-bag"
-version = "1.0.0-alpha.9"
+version = "1.0.0"
 authors = ["Ashley Mannix <ashleymannix@live.com.au>"]
 edition = "2021"
 license = "Apache-2.0 OR MIT"
@@ -60,12 +60,12 @@ error = [
 test = ["std"]
 
 [dependencies.value-bag-sval2]
-version = "1.0.0-alpha.9"
+version = "1.0.0"
 path = "meta/sval2"
 optional = true
 
 [dependencies.value-bag-serde1]
-version = "1.0.0-alpha.9"
+version = "1.0.0"
 path = "meta/serde1"
 optional = true
 
