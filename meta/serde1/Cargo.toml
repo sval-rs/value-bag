@@ -1,0 +1,42 @@
+[package]
+name = "value-bag-serde1"
+version = "1.0.0-alpha.9"
+edition = "2021"
+
+[features]
+std = [
+    "serde/std",
+    "erased-serde/std",
+]
+
+alloc = []
+
+json = [
+    "serde_json",
+]
+
+test = [
+    "serde_test",
+]
+
+[dependencies.serde]
+version = "1"
+features = ["alloc"]
+default-features = false
+
+[dependencies.erased-serde]
+version = "0.3"
+features = ["alloc"]
+default-features = false
+
+[dependencies.serde_fmt]
+version = "1"
+default-features = false
+
+[dependencies.serde_json]
+version = "1"
+optional = true
+
+[dependencies.serde_test]
+version = "1"
+optional = true

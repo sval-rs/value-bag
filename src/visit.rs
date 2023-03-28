@@ -5,8 +5,8 @@
 //! More complex datatypes can then be handled using `std::fmt`, `sval`, or `serde`.
 //!
 //! ```
-//! #[cfg(not(feature = "std"))] fn main() {}
-//! #[cfg(feature = "std")]
+//! # #[cfg(not(feature = "std"))] fn main() {}
+//! # #[cfg(feature = "std")]
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! # fn escape(buf: &[u8]) -> &[u8] { buf }
 //! # fn itoa_fmt<T>(num: T) -> Vec<u8> { vec![] }
@@ -328,9 +328,17 @@ impl<'v> ValueBag<'v> {
                 self.0.visit_borrowed_error(v)
             }
 
-            #[cfg(feature = "sval1")]
-            fn sval1(&mut self, v: &dyn internal::sval::v1::Value) -> Result<(), Error> {
-                internal::sval::v1::internal_visit(v, self)
+            #[cfg(feature = "sval2")]
+            fn sval2(&mut self, v: &dyn internal::sval::v2::Value) -> Result<(), Error> {
+                internal::sval::v2::internal_visit(v, self)
+            }
+
+            #[cfg(feature = "sval2")]
+            fn borrowed_sval2(
+                &mut self,
+                v: &'v dyn internal::sval::v2::Value,
+            ) -> Result<(), Error> {
+                internal::sval::v2::borrowed_internal_visit(v, self)
             }
 
             #[cfg(feature = "serde1")]
@@ -351,28 +359,28 @@ mod tests {
     #[test]
     fn visit_structured() {
         ValueBag::from(42u64)
-            .visit(TestVisit)
+            .visit(TestVisit::default())
             .expect("failed to visit value");
         ValueBag::from(-42i64)
-            .visit(TestVisit)
+            .visit(TestVisit::default())
             .expect("failed to visit value");
         ValueBag::from(&42u128)
-            .visit(TestVisit)
+            .visit(TestVisit::default())
             .expect("failed to visit value");
         ValueBag::from(&-42i128)
-            .visit(TestVisit)
+            .visit(TestVisit::default())
             .expect("failed to visit value");
         ValueBag::from(11f64)
-            .visit(TestVisit)
+            .visit(TestVisit::default())
             .expect("failed to visit value");
         ValueBag::from(true)
-            .visit(TestVisit)
+            .visit(TestVisit::default())
             .expect("failed to visit value");
-        ValueBag::from("some string")
-            .visit(TestVisit)
+        ValueBag::from("some borrowed string")
+            .visit(TestVisit::default())
             .expect("failed to visit value");
         ValueBag::from('n')
-            .visit(TestVisit)
+            .visit(TestVisit::default())
             .expect("failed to visit value");
     }
 }

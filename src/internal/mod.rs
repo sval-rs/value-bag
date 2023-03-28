@@ -15,7 +15,7 @@ pub(super) mod fill;
 pub(super) mod fmt;
 #[cfg(feature = "serde1")]
 pub(super) mod serde;
-#[cfg(feature = "sval1")]
+#[cfg(feature = "sval2")]
 pub(super) mod sval;
 
 // NOTE: It takes less space to have separate variants for the presence
@@ -63,12 +63,12 @@ pub(super) enum Internal<'v> {
     /// An error.
     Error(&'v dyn error::DowncastError),
 
-    #[cfg(feature = "sval1")]
+    #[cfg(feature = "sval2")]
     /// A structured value from `sval`.
-    AnonSval1(&'v dyn sval::v1::Value),
-    #[cfg(feature = "sval1")]
+    AnonSval2(&'v dyn sval::v2::Value),
+    #[cfg(feature = "sval2")]
     /// A structured value from `sval`.
-    Sval1(&'v dyn sval::v1::DowncastValue),
+    Sval2(&'v dyn sval::v2::DowncastValue),
 
     #[cfg(feature = "serde1")]
     /// A structured value from `serde`.
@@ -76,6 +76,50 @@ pub(super) enum Internal<'v> {
     #[cfg(feature = "serde1")]
     /// A structured value from `serde`.
     Serde1(&'v dyn serde::v1::DowncastSerialize),
+}
+
+/// The internal serialization contract.
+pub(super) trait InternalVisitor<'v> {
+    fn debug(&mut self, v: &dyn fmt::Debug) -> Result<(), Error>;
+    fn display(&mut self, v: &dyn fmt::Display) -> Result<(), Error>;
+
+    fn u64(&mut self, v: u64) -> Result<(), Error>;
+    fn i64(&mut self, v: i64) -> Result<(), Error>;
+    fn u128(&mut self, v: &u128) -> Result<(), Error>;
+    fn borrowed_u128(&mut self, v: &'v u128) -> Result<(), Error> {
+        self.u128(v)
+    }
+    fn i128(&mut self, v: &i128) -> Result<(), Error>;
+    fn borrowed_i128(&mut self, v: &'v i128) -> Result<(), Error> {
+        self.i128(v)
+    }
+    fn f64(&mut self, v: f64) -> Result<(), Error>;
+    fn bool(&mut self, v: bool) -> Result<(), Error>;
+    fn char(&mut self, v: char) -> Result<(), Error>;
+
+    fn str(&mut self, v: &str) -> Result<(), Error>;
+    fn borrowed_str(&mut self, v: &'v str) -> Result<(), Error> {
+        self.str(v)
+    }
+
+    fn none(&mut self) -> Result<(), Error>;
+
+    #[cfg(feature = "error")]
+    fn error(&mut self, v: &(dyn error::Error + 'static)) -> Result<(), Error>;
+    #[cfg(feature = "error")]
+    fn borrowed_error(&mut self, v: &'v (dyn error::Error + 'static)) -> Result<(), Error> {
+        self.error(v)
+    }
+
+    #[cfg(feature = "sval2")]
+    fn sval2(&mut self, v: &dyn sval::v2::Value) -> Result<(), Error>;
+    #[cfg(feature = "sval2")]
+    fn borrowed_sval2(&mut self, v: &'v dyn sval::v2::Value) -> Result<(), Error> {
+        self.sval2(v)
+    }
+
+    #[cfg(feature = "serde1")]
+    fn serde1(&mut self, v: &dyn serde::v1::Serialize) -> Result<(), Error>;
 }
 
 impl<'v> ValueBag<'v> {
@@ -126,10 +170,10 @@ impl<'v> Internal<'v> {
             #[cfg(feature = "error")]
             Internal::Error(value) => visitor.borrowed_error(value.as_super()),
 
-            #[cfg(feature = "sval1")]
-            Internal::AnonSval1(value) => visitor.sval1(value),
-            #[cfg(feature = "sval1")]
-            Internal::Sval1(value) => visitor.sval1(value.as_super()),
+            #[cfg(feature = "sval2")]
+            Internal::AnonSval2(value) => visitor.borrowed_sval2(value),
+            #[cfg(feature = "sval2")]
+            Internal::Sval2(value) => visitor.borrowed_sval2(value.as_super()),
 
             #[cfg(feature = "serde1")]
             Internal::AnonSerde1(value) => visitor.serde1(value),
@@ -137,46 +181,6 @@ impl<'v> Internal<'v> {
             Internal::Serde1(value) => visitor.serde1(value.as_super()),
         }
     }
-}
-
-/// The internal serialization contract.
-pub(super) trait InternalVisitor<'v> {
-    fn debug(&mut self, v: &dyn fmt::Debug) -> Result<(), Error>;
-    fn display(&mut self, v: &dyn fmt::Display) -> Result<(), Error>;
-
-    fn u64(&mut self, v: u64) -> Result<(), Error>;
-    fn i64(&mut self, v: i64) -> Result<(), Error>;
-    fn u128(&mut self, v: &u128) -> Result<(), Error>;
-    fn borrowed_u128(&mut self, v: &'v u128) -> Result<(), Error> {
-        self.u128(v)
-    }
-    fn i128(&mut self, v: &i128) -> Result<(), Error>;
-    fn borrowed_i128(&mut self, v: &'v i128) -> Result<(), Error> {
-        self.i128(v)
-    }
-    fn f64(&mut self, v: f64) -> Result<(), Error>;
-    fn bool(&mut self, v: bool) -> Result<(), Error>;
-    fn char(&mut self, v: char) -> Result<(), Error>;
-
-    fn str(&mut self, v: &str) -> Result<(), Error>;
-    fn borrowed_str(&mut self, v: &'v str) -> Result<(), Error> {
-        self.str(v)
-    }
-
-    fn none(&mut self) -> Result<(), Error>;
-
-    #[cfg(feature = "error")]
-    fn error(&mut self, v: &(dyn error::Error + 'static)) -> Result<(), Error>;
-    #[cfg(feature = "error")]
-    fn borrowed_error(&mut self, v: &'v (dyn error::Error + 'static)) -> Result<(), Error> {
-        self.error(v)
-    }
-
-    #[cfg(feature = "sval1")]
-    fn sval1(&mut self, v: &dyn sval::v1::Value) -> Result<(), Error>;
-
-    #[cfg(feature = "serde1")]
-    fn serde1(&mut self, v: &dyn serde::v1::Serialize) -> Result<(), Error>;
 }
 
 impl<'v> From<()> for Internal<'v> {

@@ -18,7 +18,7 @@ You'll probably also want to add a feature for either `sval` (if you're in a no-
 ```rust
 [dependencies.value-bag]
 version = "1.0.0-alpha.9"
-features = ["sval1"]
+features = ["sval2"]
 ```
 
 ```rust
@@ -50,8 +50,8 @@ The `value-bag` crate is no-std by default, and offers the following Cargo featu
 
 - `std`: Enable support for the standard library. This allows more types to be captured in a `ValueBag`.
 - `error`: Enable support for capturing `std::error::Error`s. Implies `std`.
-- `sval`: Enable support for using the [`sval`](https://github.com/sval-rs/sval) serialization framework for inspecting `ValueBag`s by implementing `sval::value::Value`. Implies `sval1`.
-    - `sval1`: Enable support for the stable `1.x.x` version of `sval`.
+- `sval`: Enable support for using the [`sval`](https://github.com/sval-rs/sval) serialization framework for inspecting `ValueBag`s by implementing `sval::value::Value`. Implies `sval2`.
+    - `sval2`: Enable support for the stable `1.x.x` version of `sval`.
 - `serde`: Enable support for using the [`serde`](https://github.com/serde-rs/serde) serialization framework for inspecting `ValueBag`s by implementing `serde::Serialize`. Implies `std` and `serde1`.
     - `serde1`: Enable support for the stable `1.x.x` version of `serde`.
 - `test`: Add test helpers for inspecting the shape of the value inside a `ValueBag`.
@@ -96,7 +96,7 @@ let work = Work {
     description: String::from("do the work"),
 }
 
-let bag = ValueBag::capture_sval1(&work);
+let bag = ValueBag::capture_sval2(&work);
 ```
 
 It could then be formatted using `Display`, even though `Work` never implemented that trait:
@@ -107,4 +107,4 @@ assert_eq!("Work { id: 123, description: \"do the work\" }", bag.to_string());
 
 Or serialized using `serde` and retain its nested structure.
 
-The tradeoff in all this is that `ValueBag` needs to depend on the serialization frameworks (`sval`, `serde`, and `std::fmt`) that it supports, instead of just providing an API of its own for others to plug into. Doing this lets `ValueBag` guarantee everything will always line up, and keep its own public API narrow. Each of these frameworks are stable though (except `sval` which is `1.0.0-alpha`).
+The tradeoff in all this is that `ValueBag` needs to depend on the serialization frameworks (`sval`, `serde`, and `std::fmt`) that it supports, instead of just providing an API of its own for others to plug into. Doing this lets `ValueBag` guarantee everything will always line up, and keep its own public API narrow. Each of these frameworks are stable though.

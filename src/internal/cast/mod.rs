@@ -106,8 +106,8 @@ impl<'v> ValueBag<'v> {
             Internal::Display(value) => value.as_any().downcast_ref(),
             #[cfg(feature = "error")]
             Internal::Error(value) => value.as_any().downcast_ref(),
-            #[cfg(feature = "sval1")]
-            Internal::Sval1(value) => value.as_any().downcast_ref(),
+            #[cfg(feature = "sval2")]
+            Internal::Sval2(value) => value.as_any().downcast_ref(),
             #[cfg(feature = "serde1")]
             Internal::Serde1(value) => value.as_any().downcast_ref(),
             _ => None,
@@ -205,10 +205,15 @@ impl<'v> Internal<'v> {
                 Ok(())
             }
 
-            #[cfg(feature = "sval1")]
+            #[cfg(feature = "sval2")]
             #[inline]
-            fn sval1(&mut self, v: &dyn super::sval::v1::Value) -> Result<(), Error> {
-                super::sval::v1::internal_visit(v, self)
+            fn sval2(&mut self, v: &dyn super::sval::v2::Value) -> Result<(), Error> {
+                super::sval::v2::internal_visit(v, self)
+            }
+
+            #[cfg(feature = "sval2")]
+            fn borrowed_sval2(&mut self, v: &'v dyn super::sval::v2::Value) -> Result<(), Error> {
+                super::sval::v2::borrowed_internal_visit(v, self)
             }
 
             #[cfg(feature = "serde1")]

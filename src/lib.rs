@@ -3,10 +3,77 @@
 //! This crate contains the [`ValueBag`] type, a container for an anonymous structured value.
 //! `ValueBag`s can be captured in various ways and then formatted, inspected, and serialized
 //! without losing their original structure.
+//!
+//! The producer of a [`ValueBag`] may use a different strategy for capturing than the eventual
+//! consumer. They don't need to coordinate directly.
 
 #![cfg_attr(value_bag_capture_const_type_id, feature(const_type_id))]
 #![doc(html_root_url = "https://docs.rs/value-bag/1.0.0-alpha.9")]
 #![no_std]
+
+/*
+# Crate design
+
+This library internally ties several frameworks together. The details of how
+this is done are hidden from end-users. It looks roughly like this:
+
+            ┌─────┐     ┌──────┐
+            │sval2│     │serde1│  1. libs on crates.io
+            └──┬──┘     └─┬─┬──┘
+               ├──────────┘ │
+       ┌───────▼──┐     ┌───▼───────┐
+       │meta/sval2│     │meta/serde1│  2. meta crates with features
+       └───────┬──┘     └───┬───────┘
+               │            │
+ ┌─────────────▼──┐     ┌───▼─────────────┐
+ │internal/sval/v2◄─────┤internal/serde/v1│  3. internal modules with `InternalVisitor`
+ └─────────────┬──┘     └───┬─────────────┘
+               │            │
+        ┌──────▼────────┬───▼────────────┐
+        │Internal::Sval2│Internal::Serde1│  4. variants in `Internal` enum
+        └───────────────┼────────────────┘
+                        │
+┌───────────────────────▼────────────────────────┐
+│ValueBag::capture_sval2│ValueBag::capture_serde1│  5. ctors on `ValueBag`
+└───────────────────────┼────────────────────────┘
+                        │
+┌───────────────────────▼───────────────────────────┐
+│impl Value for ValueBag│impl Serialize for ValueBag│  6. trait impls on `ValueBag`
+└───────────────────────┴───────────────────────────┘
+
+## 1. libs on crates.io
+
+These are the frameworks like `serde` or `sval`.
+
+## 2. meta crates with features
+
+These are crates that are internal to `value-bag`. They depend on the public
+framework and any utility crates that come along with it. They also expose
+features for any other framework. This is done this way so `value-bag` can use
+Cargo's `crate?/feature` syntax to conditionally add framework support.
+
+## 3. internal modules with `InternalVisitor`
+
+These are modules in `value-bag` that integrate the framework using the
+`InternalVisitor` trait. This makes it possible for that framework to cast
+primitive values and pass-through any other framework.
+
+## 4. variants in `Internal` enum
+
+These are individual variants on the `Internal` enum that the `ValueBag`
+type wraps. Each framework has one or more variants in this enum.
+
+## 5. ctors on `ValueBag`
+
+These are constructors for producers of `ValueBag`s that accept a value
+implementing a serialization trait from a specific framework, like
+`serde::Serialize` or `sval::Value`.
+
+## 7. trait impls on `ValueBag`
+
+These are trait impls for consumers of `ValueBag`s that serialize the
+underlying value, bridging it if it was produced for a different framework.
+*/
 
 #[cfg(any(feature = "std", test))]
 #[macro_use]
@@ -207,80 +274,30 @@ pub use self::error::Error;
 ///
 /// ## Using `sval`
 ///
-/// When the `sval1` feature is enabled, any `ValueBag` can be serialized using `sval`.
+/// When the `sval2` feature is enabled, any `ValueBag` can be serialized using `sval`.
 /// This makes it possible to visit any typed structure captured in the `ValueBag`,
 /// including complex datatypes like maps and sequences.
 ///
 /// `sval` doesn't need to allocate so can be used in no-std environments.
 ///
-/// First, enable the `sval1` feature in your `Cargo.toml`:
+/// First, enable the `sval2` feature in your `Cargo.toml`:
 ///
 /// ```toml
 /// [dependencies.value-bag]
-/// features = ["sval1"]
+/// features = ["sval2"]
 /// ```
 ///
 /// Then stream the contents of the `ValueBag` using `sval`.
 ///
 /// ```
-/// #[cfg(not(all(feature = "std", feature = "sval1")))] fn main() {}
-/// #[cfg(all(feature = "std", feature = "sval1"))]
+/// # #[cfg(not(all(feature = "std", feature = "sval2")))] fn main() {}
+/// # #[cfg(all(feature = "std", feature = "sval2"))]
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// # extern crate sval1_json as sval_json;
+/// # use value_bag_sval2::json as sval_json;
 /// use value_bag::ValueBag;
 ///
 /// let value = ValueBag::from(42i64);
-/// let json = sval_json::to_string(value)?;
-/// # Ok(())
-/// # }
-/// ```
-///
-/// ```
-/// #[cfg(not(all(feature = "std", feature = "sval1")))] fn main() {}
-/// #[cfg(all(feature = "std", feature = "sval1"))]
-/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// # extern crate sval1_lib as sval;
-/// # fn escape(buf: &[u8]) -> &[u8] { buf }
-/// # fn itoa_fmt<T>(num: T) -> Vec<u8> { vec![] }
-/// # fn ryu_fmt<T>(num: T) -> Vec<u8> { vec![] }
-/// use value_bag::ValueBag;
-/// use sval::stream::{self, Stream};
-///
-/// // Implement some simple custom serialization
-/// struct MyStream(Vec<u8>);
-/// impl Stream for MyStream {
-///     fn u64(&mut self, v: u64) -> stream::Result {
-///         self.0.extend_from_slice(itoa_fmt(v).as_slice());
-///         Ok(())
-///     }
-///
-///     fn i64(&mut self, v: i64) -> stream::Result {
-///         self.0.extend_from_slice(itoa_fmt(v).as_slice());
-///         Ok(())
-///     }
-///
-///     fn f64(&mut self, v: f64) -> stream::Result {
-///         self.0.extend_from_slice(ryu_fmt(v).as_slice());
-///         Ok(())
-///     }
-///
-///     fn str(&mut self, v: &str) -> stream::Result {
-///         self.0.push(b'\"');
-///         self.0.extend_from_slice(escape(v.as_bytes()));
-///         self.0.push(b'\"');
-///         Ok(())
-///     }
-///
-///     fn bool(&mut self, v: bool) -> stream::Result {
-///         self.0.extend_from_slice(if v { b"true" } else { b"false" });
-///         Ok(())
-///     }
-/// }
-///
-/// let value = ValueBag::from(42i64);
-///
-/// let mut stream = MyStream(vec![]);
-/// sval::stream(&mut stream, &value)?;
+/// let json = sval_json::stream_to_string(value)?;
 /// # Ok(())
 /// # }
 /// ```
@@ -303,10 +320,10 @@ pub use self::error::Error;
 /// Then stream the contents of the `ValueBag` using `serde`.
 ///
 /// ```
-/// #[cfg(not(all(feature = "std", feature = "serde1")))] fn main() {}
-/// #[cfg(all(feature = "std", feature = "serde1"))]
+/// # #[cfg(not(all(feature = "std", feature = "serde1")))] fn main() {}
+/// # #[cfg(all(feature = "std", feature = "serde1"))]
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// # extern crate serde1_json as serde_json;
+/// # use value_bag_serde1::json as serde_json;
 /// use value_bag::ValueBag;
 ///
 /// let value = ValueBag::from(42i64);

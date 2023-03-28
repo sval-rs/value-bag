@@ -10,7 +10,7 @@ use crate::{
     Error, ValueBag,
 };
 
-use serde1_lib::ser::{Error as SerdeError, Impossible};
+use value_bag_serde1::lib::ser::{Error as SerdeError, Impossible};
 
 impl<'v> ValueBag<'v> {
     /// Get a value from a structured type.
@@ -19,7 +19,7 @@ impl<'v> ValueBag<'v> {
     /// before resorting to using its `Value` implementation.
     pub fn capture_serde1<T>(value: &'v T) -> Self
     where
-        T: serde1_lib::Serialize + 'static,
+        T: value_bag_serde1::lib::Serialize + 'static,
     {
         Self::try_capture(value).unwrap_or(ValueBag {
             inner: Internal::Serde1(value),
@@ -29,12 +29,14 @@ impl<'v> ValueBag<'v> {
     /// Get a value from a structured type without capturing support.
     pub fn from_serde1<T>(value: &'v T) -> Self
     where
-        T: serde1_lib::Serialize,
+        T: value_bag_serde1::lib::Serialize,
     {
         ValueBag {
             inner: Internal::AnonSerde1(value),
         }
     }
+
+    // NOTE: no `from_dyn_serde1` until `erased-serde` stabilizes
 }
 
 pub(crate) trait DowncastSerialize {
@@ -42,7 +44,7 @@ pub(crate) trait DowncastSerialize {
     fn as_super(&self) -> &dyn Serialize;
 }
 
-impl<T: serde1_lib::Serialize + 'static> DowncastSerialize for T {
+impl<T: value_bag_serde1::lib::Serialize + 'static> DowncastSerialize for T {
     fn as_any(&self) -> &dyn Any {
         self
     }
@@ -58,20 +60,20 @@ impl<'s, 'f> Slot<'s, 'f> {
     /// The given value doesn't need to satisfy any particular lifetime constraints.
     pub fn fill_serde1<T>(self, value: T) -> Result<(), Error>
     where
-        T: serde1_lib::Serialize,
+        T: value_bag_serde1::lib::Serialize,
     {
         self.fill(|visitor| visitor.serde1(&value))
     }
 }
 
-impl<'v> serde1_lib::Serialize for ValueBag<'v> {
+impl<'v> value_bag_serde1::lib::Serialize for ValueBag<'v> {
     fn serialize<S>(&self, s: S) -> Result<S::Ok, S::Error>
     where
-        S: serde1_lib::Serializer,
+        S: value_bag_serde1::lib::Serializer,
     {
         struct Serde1Visitor<S>
         where
-            S: serde1_lib::Serializer,
+            S: value_bag_serde1::lib::Serializer,
         {
             inner: Option<S>,
             result: Option<Result<S::Ok, S::Error>>,
@@ -79,7 +81,7 @@ impl<'v> serde1_lib::Serialize for ValueBag<'v> {
 
         impl<S> Serde1Visitor<S>
         where
-            S: serde1_lib::Serializer,
+            S: value_bag_serde1::lib::Serializer,
         {
             fn result(&self) -> Result<(), Error> {
                 match self.result {
@@ -100,7 +102,7 @@ impl<'v> serde1_lib::Serialize for ValueBag<'v> {
 
         impl<'v, S> InternalVisitor<'v> for Serde1Visitor<S>
         where
-            S: serde1_lib::Serializer,
+            S: value_bag_serde1::lib::Serializer,
         {
             fn debug(&mut self, v: &dyn fmt::Debug) -> Result<(), Error> {
                 struct DebugToDisplay<T>(T);
@@ -174,14 +176,14 @@ impl<'v> serde1_lib::Serialize for ValueBag<'v> {
                 self.result()
             }
 
-            #[cfg(feature = "sval1")]
-            fn sval1(&mut self, v: &dyn crate::internal::sval::v1::Value) -> Result<(), Error> {
-                self.result = Some(crate::internal::sval::v1::serde(self.serializer()?, v));
+            #[cfg(feature = "sval2")]
+            fn sval2(&mut self, v: &dyn crate::internal::sval::v2::Value) -> Result<(), Error> {
+                self.result = Some(crate::internal::sval::v2::serde1(self.serializer()?, v));
                 self.result()
             }
 
             fn serde1(&mut self, v: &dyn Serialize) -> Result<(), Error> {
-                self.result = Some(erased_serde1_lib::serialize(v, self.serializer()?));
+                self.result = Some(value_bag_serde1::erased::serialize(v, self.serializer()?));
                 self.result()
             }
         }
@@ -198,20 +200,19 @@ impl<'v> serde1_lib::Serialize for ValueBag<'v> {
     }
 }
 
-pub use erased_serde1_lib::Serialize;
+pub use value_bag_serde1::erased::Serialize;
 
 pub(in crate::internal) fn fmt(f: &mut fmt::Formatter, v: &dyn Serialize) -> Result<(), Error> {
-    fmt::Debug::fmt(&serde1_fmt_lib::to_debug(v), f)?;
+    fmt::Debug::fmt(&value_bag_serde1::fmt::to_debug(v), f)?;
     Ok(())
 }
 
-#[cfg(feature = "sval1")]
-pub(in crate::internal) fn sval1(
-    s: &mut sval1_lib::value::Stream,
+#[cfg(feature = "sval2")]
+pub(in crate::internal) fn sval2<'sval, S: value_bag_sval2::lib::Stream<'sval> + ?Sized>(
+    s: &mut S,
     v: &dyn Serialize,
 ) -> Result<(), Error> {
-    sval1_lib::serde::v1::stream(s, v).map_err(Error::from_sval1)?;
-    Ok(())
+    value_bag_sval2::serde1::stream(s, v).map_err(Error::from_sval2)
 }
 
 pub(crate) fn internal_visit<'v>(
@@ -220,7 +221,7 @@ pub(crate) fn internal_visit<'v>(
 ) -> Result<(), Error> {
     struct VisitorSerializer<'a, 'v>(&'a mut dyn InternalVisitor<'v>);
 
-    impl<'a, 'v> serde1_lib::Serializer for VisitorSerializer<'a, 'v> {
+    impl<'a, 'v> value_bag_serde1::lib::Serializer for VisitorSerializer<'a, 'v> {
         type Ok = ();
         type Error = Unsupported;
 
@@ -290,7 +291,7 @@ pub(crate) fn internal_visit<'v>(
 
         fn serialize_some<T>(self, v: &T) -> Result<Self::Ok, Self::Error>
         where
-            T: serde1_lib::Serialize + ?Sized,
+            T: value_bag_serde1::lib::Serialize + ?Sized,
         {
             v.serialize(self)
         }
@@ -330,7 +331,7 @@ pub(crate) fn internal_visit<'v>(
             _: &T,
         ) -> Result<Self::Ok, Self::Error>
         where
-            T: serde1_lib::Serialize + ?Sized,
+            T: value_bag_serde1::lib::Serialize + ?Sized,
         {
             Err(Unsupported)
         }
@@ -343,7 +344,7 @@ pub(crate) fn internal_visit<'v>(
             _: &T,
         ) -> Result<Self::Ok, Self::Error>
         where
-            T: serde1_lib::Serialize + ?Sized,
+            T: value_bag_serde1::lib::Serialize + ?Sized,
         {
             Err(Unsupported)
         }
@@ -403,7 +404,7 @@ pub(crate) fn internal_visit<'v>(
         }
     }
 
-    erased_serde1_lib::serialize(v, VisitorSerializer(visitor)).map_err(|_| Error::serde())
+    value_bag_serde1::erased::serialize(v, VisitorSerializer(visitor)).map_err(|_| Error::serde())
 }
 
 impl Error {
@@ -421,7 +422,7 @@ impl fmt::Display for Unsupported {
     }
 }
 
-impl serde1_lib::ser::Error for Unsupported {
+impl value_bag_serde1::lib::ser::Error for Unsupported {
     fn custom<T>(_: T) -> Self
     where
         T: fmt::Display,
@@ -430,7 +431,7 @@ impl serde1_lib::ser::Error for Unsupported {
     }
 }
 
-impl serde1_lib::ser::StdError for Unsupported {}
+impl value_bag_serde1::lib::ser::StdError for Unsupported {}
 
 #[cfg(test)]
 mod tests {
@@ -443,7 +444,10 @@ mod tests {
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn serde1_capture() {
-        assert_eq!(ValueBag::capture_serde1(&42u64).to_token(), Token::U64(42));
+        assert_eq!(
+            ValueBag::capture_serde1(&42u64).to_test_token(),
+            TestToken::U64(42)
+        );
     }
 
     #[test]
@@ -497,10 +501,10 @@ mod tests {
         #[derive(Debug, PartialEq, Eq)]
         struct Timestamp(usize);
 
-        impl serde1_lib::Serialize for Timestamp {
+        impl value_bag_serde1::lib::Serialize for Timestamp {
             fn serialize<S>(&self, s: S) -> Result<S::Ok, S::Error>
             where
-                S: serde1_lib::Serializer,
+                S: value_bag_serde1::lib::Serializer,
             {
                 s.serialize_u64(self.0 as u64)
             }
@@ -519,7 +523,7 @@ mod tests {
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn serde1_structured() {
-        use serde1_test::{assert_ser_tokens, Token};
+        use value_bag_serde1::test::{assert_ser_tokens, Token};
 
         assert_ser_tokens(&ValueBag::from(42u64), &[Token::U64(42)]);
     }
@@ -529,10 +533,10 @@ mod tests {
     fn serde1_debug() {
         struct TestSerde;
 
-        impl serde1_lib::Serialize for TestSerde {
+        impl value_bag_serde1::lib::Serialize for TestSerde {
             fn serialize<S>(&self, s: S) -> Result<S::Ok, S::Error>
             where
-                S: serde1_lib::Serializer,
+                S: value_bag_serde1::lib::Serializer,
             {
                 s.serialize_u64(42)
             }
@@ -548,46 +552,45 @@ mod tests {
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn serde1_visit() {
         ValueBag::from_serde1(&42u64)
-            .visit(TestVisit)
+            .visit(TestVisit::default())
             .expect("failed to visit value");
         ValueBag::from_serde1(&-42i64)
-            .visit(TestVisit)
+            .visit(TestVisit::default())
             .expect("failed to visit value");
         ValueBag::from_serde1(&11f64)
-            .visit(TestVisit)
+            .visit(TestVisit::default())
             .expect("failed to visit value");
         ValueBag::from_serde1(&true)
-            .visit(TestVisit)
+            .visit(TestVisit::default())
             .expect("failed to visit value");
         ValueBag::from_serde1(&"some string")
-            .visit(TestVisit)
+            .visit(TestVisit::default())
             .expect("failed to visit value");
         ValueBag::from_serde1(&'n')
-            .visit(TestVisit)
+            .visit(TestVisit::default())
             .expect("failed to visit value");
     }
 
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-    #[cfg(feature = "sval1")]
-    fn serde1_sval() {
-        use sval1_lib::test::Token;
+    #[cfg(feature = "sval2")]
+    fn serde1_sval2() {
+        use value_bag_sval2::test::Token;
 
         struct TestSerde;
 
-        impl serde1_lib::Serialize for TestSerde {
+        impl value_bag_serde1::lib::Serialize for TestSerde {
             fn serialize<S>(&self, s: S) -> Result<S::Ok, S::Error>
             where
-                S: serde1_lib::Serializer,
+                S: value_bag_serde1::lib::Serializer,
             {
                 s.serialize_u64(42)
             }
         }
 
-        assert_eq!(
-            vec![Token::Unsigned(42)],
-            sval1_lib::test::tokens(ValueBag::capture_serde1(&TestSerde))
-        );
+        let value = ValueBag::from_serde1(&TestSerde);
+
+        value_bag_sval2::test::assert_tokens(&value, &[Token::U64(42)]);
     }
 
     #[cfg(feature = "std")]
