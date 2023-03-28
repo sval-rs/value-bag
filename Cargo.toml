@@ -71,7 +71,7 @@ optional = true
 
 # Only needed on non-nightly compilers
 [dependencies.ctor]
-version = "0.1"
+version = "0.2"
 
 [dev-dependencies.value-bag-sval2]
 path = "meta/sval2"
@@ -81,10 +81,10 @@ features = ["test", "json"]
 path = "meta/serde1"
 features = ["test", "json"]
 
-[dev-dependencies.wasm-bindgen]
+[target.'cfg(target_arch = "wasm32")'.dev-dependencies.wasm-bindgen]
 version = "0.2"
 
-[dev-dependencies.wasm-bindgen-test]
+[target.'cfg(target_arch = "wasm32")'.dev-dependencies.wasm-bindgen-test]
 version = "0.3"
 
 [build-dependencies.rustc]
