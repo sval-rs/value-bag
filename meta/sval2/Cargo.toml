@@ -1,7 +1,10 @@
 [package]
 name = "value-bag-sval2"
-version = "1.0.0"
+version = "1.0.1"
 edition = "2021"
+authors = ["Ashley Mannix <ashleymannix@live.com.au>"]
+license = "Apache-2.0 OR MIT"
+description = "Implementation detail for value-bag"
 
 [features]
 std = [

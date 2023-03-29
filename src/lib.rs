@@ -8,7 +8,7 @@
 //! consumer. They don't need to coordinate directly.
 
 #![cfg_attr(value_bag_capture_const_type_id, feature(const_type_id))]
-#![doc(html_root_url = "https://docs.rs/value-bag/1.0.0")]
+#![doc(html_root_url = "https://docs.rs/value-bag/1.0.1")]
 #![no_std]
 
 /*
