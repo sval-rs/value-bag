@@ -6,7 +6,7 @@
 
 ## What is a value bag?
 
-A `ValueBag` is an anonymous structured value that supports casting, downcasting, formatting, and serializing. The producer of a `ValueBag` and its eventual consumer of it don't need to agree on a serialization contract. Any translation is handled internally.
+A `ValueBag` is an anonymous structured value that supports casting, downcasting, formatting, and serializing. The producer of a `ValueBag` and its eventual consumer don't need to agree on a serialization contract. Any translation is handled internally by `ValueBag`.
 
 Say we capture an `i32` using its `Display` implementation as a `ValueBag`:
 
