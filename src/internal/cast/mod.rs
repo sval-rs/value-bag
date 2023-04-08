@@ -363,7 +363,7 @@ mod std_support {
         /// serialization implementations for complex ones. If the serialization
         /// implementation produces a short lived string it will be allocated.
         #[inline]
-        pub fn to_str(&self) -> Option<Cow<str>> {
+        pub fn to_str(&self) -> Option<Cow<'v, str>> {
             self.inner.cast().into_str()
         }
     }
