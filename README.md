@@ -4,26 +4,85 @@
 [![Latest version](https://img.shields.io/crates/v/value-bag.svg)](https://crates.io/crates/value-bag)
 [![Documentation Latest](https://docs.rs/value-bag/badge.svg)](https://docs.rs/value-bag)
 
+## What is a value bag?
+
+A `ValueBag` is an anonymous structured value that supports casting, downcasting, formatting, and serializing. The producer of a `ValueBag` and its eventual consumer of it don't need to agree on a serialization contract. Any translation is handled internally.
+
+Say we capture an `i32` using its `Display` implementation as a `ValueBag`:
+
+```rust
+let bag = ValueBag::capture_display(42);
+```
+
+That value can then be cast to a concrete integer type, like `u64`:
+
+```rust
+let num = bag.as_u64().unwrap();
+
+assert_eq!(42, num);
+```
+
+It could also be serialized as a number using `serde`:
+
+```rust
+let num = serde_json::to_value(&bag).unwrap();
+
+assert!(num.is_number());
+```
+
+It works for more complex types too. Say we derive `sval::Value` on a type and capture it as a `ValueBag`:
+
+```rust
+#[derive(Value)]
+struct Work {
+    id: u64,
+    description: String,
+}
+
+let work = Work {
+    id: 123,
+    description: String::from("do the work"),
+}
+
+let bag = ValueBag::capture_sval2(&work);
+```
+
+We could still serialize that value using `serde` without losing structure:
+
+```rust
+let obj = serde_json::to_value(&bag).unwrap();
+
+assert!(obj.is_object());
+```
+
+It could also be formatted using `Display`:
+
+```rust
+assert_eq!("Work { id: 123, description: \"do the work\" }", bag.to_string());
+```
+
+The tradeoff in all this is that `ValueBag` needs to depend on the serialization frameworks (`sval`, `serde`, and `std::fmt`) that it supports, instead of just providing an API of its own for others to plug into. Doing this lets `ValueBag` guarantee everything will always line up, and keep its own public API narrow.
+
 ## Getting started
 
 Add the `value-bag` crate to your `Cargo.toml`:
 
 ```rust
 [dependencies.value-bag]
-version = "1.0.1"
+version = "1.0.2"
 ```
 
 You'll probably also want to add a feature for either `sval` (if you're in a no-std environment) or `serde` (if you need to integrate with other code that uses `serde`):
 
 ```rust
 [dependencies.value-bag]
-version = "1.0.1"
+version = "1.0.2"
 features = ["sval2"]
 ```
 
 ```rust
 [dependencies.value-bag]
-version = "1.0.1"
+version = "1.0.2"
 features = ["serde1"]
 ```
 
@@ -55,56 +114,3 @@ The `value-bag` crate is no-std by default, and offers the following Cargo featu
 - `serde`: Enable support for using the [`serde`](https://github.com/serde-rs/serde) serialization framework for inspecting `ValueBag`s by implementing `serde::Serialize`. Implies `std` and `serde1`.
     - `serde1`: Enable support for the stable `1.x.x` version of `serde`.
 - `test`: Add test helpers for inspecting the shape of the value inside a `ValueBag`.
-
-## What is a value bag?
-
-A `ValueBag` is an anonymous structured bag that supports casting, downcasting, formatting, and serializing. The goal of a `ValueBag` is to decouple the producers of structured data from its consumers. A `ValueBag` can _always_ be interrogated using the consumers serialization API of choice, even if that wasn't the one the producer used to capture the data in the first place.
-
-Say we capture an `i32` using its `Display` implementation as a `ValueBag`:
-
-```rust
-let bag = ValueBag::capture_display(42);
-```
-
-That value can then be cast to a `u64`:
-
-```rust
-let num = bag.as_u64().unwrap();
-
-assert_eq!(42, num);
-```
-
-It could also be serialized as a number using `serde`:
-
-```rust
-let num = serde_json::to_value(bag).unwrap();
-
-assert!(num.is_number());
-```
-
-Say we derive `sval::Value` on a type and capture it as a `ValueBag`:
-
-```rust
-#[derive(Value)]
-struct Work {
-    id: u64,
-    description: String,
-}
-
-let work = Work {
-    id: 123,
-    description: String::from("do the work"),
-}
-
-let bag = ValueBag::capture_sval2(&work);
-```
-
-It could then be formatted using `Display`, even though `Work` never implemented that trait:
-
-```rust
-assert_eq!("Work { id: 123, description: \"do the work\" }", bag.to_string());
-```
-
-Or serialized using `serde` and retain its nested structure.
-
-The tradeoff in all this is that `ValueBag` needs to depend on the serialization frameworks (`sval`, `serde`, and `std::fmt`) that it supports, instead of just providing an API of its own for others to plug into. Doing this lets `ValueBag` guarantee everything will always line up, and keep its own public API narrow. Each of these frameworks are stable though.
