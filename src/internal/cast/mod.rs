@@ -90,7 +90,7 @@ impl<'v> ValueBag<'v> {
     ///
     /// This method is cheap for primitive types. It won't allocate an owned
     /// `String` if the value is a complex type.
-    pub fn to_borrowed_str(&self) -> Option<&str> {
+    pub fn to_borrowed_str(&self) -> Option<&'v str> {
         self.inner.cast().into_borrowed_str()
     }
 
