@@ -75,6 +75,17 @@ impl<'v> value_bag_sval2::lib::Value for ValueBag<'v> {
         &'sval self,
         s: &mut S,
     ) -> value_bag_sval2::lib::Result {
+        use value_bag_sval2::lib_ref::ValueRef as _;
+
+        self.stream_ref(s)
+    }
+}
+
+impl<'sval> value_bag_sval2::lib_ref::ValueRef<'sval> for ValueBag<'sval> {
+    fn stream_ref<S: value_bag_sval2::lib::Stream<'sval> + ?Sized>(
+        &self,
+        s: &mut S,
+    ) -> value_bag_sval2::lib::Result {
         struct Sval2Visitor<'a, S: ?Sized>(&'a mut S);
 
         impl<'a, 'v, S: value_bag_sval2::lib::Stream<'v> + ?Sized> InternalVisitor<'v>

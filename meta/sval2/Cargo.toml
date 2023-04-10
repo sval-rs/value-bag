@@ -9,6 +9,7 @@ description = "Implementation detail for value-bag"
 [features]
 std = [
     "sval/std",
+    "sval_ref/std",
     "sval_buffer/std",
     "sval_serde?/std",
     "sval_json?/std",
@@ -16,6 +17,7 @@ std = [
 
 alloc = [
     "sval/alloc",
+    "sval_ref/alloc",
     "sval_buffer/alloc",
     "sval_serde?/alloc",
     "sval_json?/alloc",
@@ -35,30 +37,34 @@ test = [
 ]
 
 [dependencies.sval]
-version = "2"
+version = "2.1"
+default-features = false
+
+[dependencies.sval_ref]
+version = "2.1"
 default-features = false
 
 [dependencies.sval_dynamic]
-version = "2"
+version = "2.1"
 default-features = false
 
 [dependencies.sval_buffer]
-version = "2"
+version = "2.1"
 default-features = false
 
 [dependencies.sval_fmt]
-version = "2"
+version = "2.1"
 default-features = false
 
 [dependencies.sval_serde]
-version = "2"
+version = "2.1"
 default-features = false
 optional = true
 
 [dependencies.sval_json]
-version = "2"
+version = "2.1"
 optional = true
 
 [dependencies.sval_test]
-version = "2"
+version = "2.1"
 optional = true
