@@ -16,7 +16,14 @@ fn u8_capture_debug(b: &mut test::Bencher) {
 
 #[bench]
 fn str_capture_debug(b: &mut test::Bencher) {
+    // Currently at the top of the linear list of types in `cast::primitive`
     b.iter(|| ValueBag::capture_debug(&"a string"))
+}
+
+#[bench]
+fn bool_capture_debug(b: &mut test::Bencher) {
+    // Currently at the bottom of the linear list of types in `cast::primitive`
+    b.iter(|| ValueBag::capture_debug(&true))
 }
 
 #[bench]
