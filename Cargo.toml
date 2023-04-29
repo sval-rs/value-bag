@@ -13,7 +13,6 @@ categories = ["encoding", "no-std"]
 exclude = [
     ".github/*",
 ]
-build = "build.rs"
 
 [package.metadata.docs.rs]
 features = ["std", "error", "sval", "serde", "test"]
@@ -69,10 +68,6 @@ version = "1.1.0"
 path = "meta/serde1"
 optional = true
 
-# Only needed on non-nightly compilers
-[dependencies.ctor]
-version = "0.2"
-
 [dev-dependencies.value-bag-sval2]
 path = "meta/sval2"
 features = ["test", "json"]
@@ -86,7 +81,3 @@ version = "0.2"
 
 [target.'cfg(target_arch = "wasm32")'.dev-dependencies.wasm-bindgen-test]
 version = "0.3"
-
-[build-dependencies.rustc]
-version = "0.9"
-package = "version_check"
