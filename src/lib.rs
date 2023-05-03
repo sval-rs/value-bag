@@ -374,7 +374,9 @@ impl<'v> ValueBag<'v> {
     /// Get a `ValueBag` from a reference to a `ValueBag`.
     #[inline]
     pub fn by_ref<'u>(&'u self) -> ValueBag<'u> {
-        ValueBag { inner: self.inner }
+        ValueBag {
+            inner: self.inner.by_ref(),
+        }
     }
 }
 

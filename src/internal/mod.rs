@@ -22,7 +22,7 @@ pub(super) mod sval;
 // of a `TypeId` instead of using `Option<T>`, because `TypeId` doesn't
 // have a niche value
 /// A container for a structured value for a specific kind of visitor.
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub(super) enum Internal<'v> {
     /// A signed integer.
     Signed(i64),
@@ -81,7 +81,13 @@ pub(super) enum Internal<'v> {
 /// The internal serialization contract.
 pub(super) trait InternalVisitor<'v> {
     fn debug(&mut self, v: &dyn fmt::Debug) -> Result<(), Error>;
+    fn borrowed_debug(&mut self, v: &'v dyn fmt::Debug) -> Result<(), Error> {
+        self.debug(v)
+    }
     fn display(&mut self, v: &dyn fmt::Display) -> Result<(), Error>;
+    fn borrowed_display(&mut self, v: &'v dyn fmt::Display) -> Result<(), Error> {
+        self.display(v)
+    }
 
     fn u64(&mut self, v: u64) -> Result<(), Error>;
     fn i64(&mut self, v: i64) -> Result<(), Error>;
@@ -120,6 +126,106 @@ pub(super) trait InternalVisitor<'v> {
 
     #[cfg(feature = "serde1")]
     fn serde1(&mut self, v: &dyn serde::v1::Serialize) -> Result<(), Error>;
+    #[cfg(feature = "serde1")]
+    fn borrowed_serde1(&mut self, v: &'v dyn serde::v1::Serialize) -> Result<(), Error> {
+        self.serde1(v)
+    }
+}
+
+impl<'a, 'v, V: InternalVisitor<'v> + ?Sized> InternalVisitor<'v> for &'a mut V {
+    fn debug(&mut self, v: &dyn fmt::Debug) -> Result<(), Error> {
+        (**self).debug(v)
+    }
+
+    fn borrowed_debug(&mut self, v: &'v dyn fmt::Debug) -> Result<(), Error> {
+        (**self).borrowed_debug(v)
+    }
+
+    fn display(&mut self, v: &dyn fmt::Display) -> Result<(), Error> {
+        (**self).display(v)
+    }
+
+    fn borrowed_display(&mut self, v: &'v dyn fmt::Display) -> Result<(), Error> {
+        (**self).borrowed_display(v)
+    }
+
+    fn u64(&mut self, v: u64) -> Result<(), Error> {
+        (**self).u64(v)
+    }
+
+    fn i64(&mut self, v: i64) -> Result<(), Error> {
+        (**self).i64(v)
+    }
+
+    fn u128(&mut self, v: &u128) -> Result<(), Error> {
+        (**self).u128(v)
+    }
+
+    fn borrowed_u128(&mut self, v: &'v u128) -> Result<(), Error> {
+        (**self).borrowed_u128(v)
+    }
+
+    fn i128(&mut self, v: &i128) -> Result<(), Error> {
+        (**self).i128(v)
+    }
+
+    fn borrowed_i128(&mut self, v: &'v i128) -> Result<(), Error> {
+        (**self).borrowed_i128(v)
+    }
+
+    fn f64(&mut self, v: f64) -> Result<(), Error> {
+        (**self).f64(v)
+    }
+
+    fn bool(&mut self, v: bool) -> Result<(), Error> {
+        (**self).bool(v)
+    }
+
+    fn char(&mut self, v: char) -> Result<(), Error> {
+        (**self).char(v)
+    }
+
+    fn str(&mut self, v: &str) -> Result<(), Error> {
+        (**self).str(v)
+    }
+
+    fn borrowed_str(&mut self, v: &'v str) -> Result<(), Error> {
+        (**self).borrowed_str(v)
+    }
+
+    fn none(&mut self) -> Result<(), Error> {
+        (**self).none()
+    }
+
+    #[cfg(feature = "error")]
+    fn error(&mut self, v: &(dyn error::Error + 'static)) -> Result<(), Error> {
+        (**self).error(v)
+    }
+
+    #[cfg(feature = "error")]
+    fn borrowed_error(&mut self, v: &'v (dyn error::Error + 'static)) -> Result<(), Error> {
+        (**self).borrowed_error(v)
+    }
+
+    #[cfg(feature = "sval2")]
+    fn sval2(&mut self, v: &dyn sval::v2::Value) -> Result<(), Error> {
+        (**self).sval2(v)
+    }
+
+    #[cfg(feature = "sval2")]
+    fn borrowed_sval2(&mut self, v: &'v dyn sval::v2::Value) -> Result<(), Error> {
+        (**self).borrowed_sval2(v)
+    }
+
+    #[cfg(feature = "serde1")]
+    fn serde1(&mut self, v: &dyn serde::v1::Serialize) -> Result<(), Error> {
+        (**self).serde1(v)
+    }
+
+    #[cfg(feature = "serde1")]
+    fn borrowed_serde1(&mut self, v: &'v dyn serde::v1::Serialize) -> Result<(), Error> {
+        (**self).borrowed_serde1(v)
+    }
 }
 
 impl<'v> ValueBag<'v> {
@@ -135,29 +241,67 @@ impl<'v> ValueBag<'v> {
 
     /// Visit the value using an internal visitor.
     #[inline]
-    pub(super) fn internal_visit(
-        &self,
-        visitor: &mut dyn InternalVisitor<'v>,
-    ) -> Result<(), Error> {
+    pub(super) fn internal_visit(&self, visitor: impl InternalVisitor<'v>) -> Result<(), Error> {
         self.inner.internal_visit(visitor)
     }
 }
 
 impl<'v> Internal<'v> {
     #[inline]
-    pub(super) fn internal_visit(self, visitor: &mut dyn InternalVisitor<'v>) -> Result<(), Error> {
+    pub(super) fn by_ref<'u>(&'u self) -> Internal<'u> {
         match self {
-            Internal::Signed(value) => visitor.i64(value),
-            Internal::Unsigned(value) => visitor.u64(value),
+            Internal::Signed(value) => Internal::Signed(*value),
+            Internal::Unsigned(value) => Internal::Unsigned(*value),
+            Internal::BigSigned(value) => Internal::BigSigned(*value),
+            Internal::BigUnsigned(value) => Internal::BigUnsigned(*value),
+            Internal::Float(value) => Internal::Float(*value),
+            Internal::Bool(value) => Internal::Bool(*value),
+            Internal::Char(value) => Internal::Char(*value),
+            Internal::Str(value) => Internal::Str(*value),
+            Internal::None => Internal::None,
+
+            Internal::Fill(value) => Internal::Fill(*value),
+
+            Internal::AnonDebug(value) => Internal::AnonDebug(*value),
+            Internal::Debug(value) => Internal::Debug(*value),
+
+            Internal::AnonDisplay(value) => Internal::AnonDisplay(*value),
+            Internal::Display(value) => Internal::Display(*value),
+
+            #[cfg(feature = "error")]
+            Internal::AnonError(value) => Internal::AnonError(*value),
+            #[cfg(feature = "error")]
+            Internal::Error(value) => Internal::Error(*value),
+
+            #[cfg(feature = "sval2")]
+            Internal::AnonSval2(value) => Internal::AnonSval2(*value),
+            #[cfg(feature = "sval2")]
+            Internal::Sval2(value) => Internal::Sval2(*value),
+
+            #[cfg(feature = "serde1")]
+            Internal::AnonSerde1(value) => Internal::AnonSerde1(*value),
+            #[cfg(feature = "serde1")]
+            Internal::Serde1(value) => Internal::Serde1(*value),
+        }
+    }
+
+    #[inline]
+    pub(super) fn internal_visit(
+        &self,
+        mut visitor: impl InternalVisitor<'v>,
+    ) -> Result<(), Error> {
+        match self {
+            Internal::Signed(value) => visitor.i64(*value),
+            Internal::Unsigned(value) => visitor.u64(*value),
             Internal::BigSigned(value) => visitor.i128(value),
             Internal::BigUnsigned(value) => visitor.u128(value),
-            Internal::Float(value) => visitor.f64(value),
-            Internal::Bool(value) => visitor.bool(value),
-            Internal::Char(value) => visitor.char(value),
+            Internal::Float(value) => visitor.f64(*value),
+            Internal::Bool(value) => visitor.bool(*value),
+            Internal::Char(value) => visitor.char(*value),
             Internal::Str(value) => visitor.borrowed_str(value),
             Internal::None => visitor.none(),
 
-            Internal::Fill(value) => value.fill(Slot::new(visitor)),
+            Internal::Fill(value) => value.fill(Slot::new(&mut visitor)),
 
             Internal::AnonDebug(value) => visitor.debug(value),
             Internal::Debug(value) => visitor.debug(value.as_super()),
@@ -166,19 +310,19 @@ impl<'v> Internal<'v> {
             Internal::Display(value) => visitor.display(value.as_super()),
 
             #[cfg(feature = "error")]
-            Internal::AnonError(value) => visitor.borrowed_error(value),
+            Internal::AnonError(value) => visitor.borrowed_error(*value),
             #[cfg(feature = "error")]
             Internal::Error(value) => visitor.borrowed_error(value.as_super()),
 
             #[cfg(feature = "sval2")]
-            Internal::AnonSval2(value) => visitor.borrowed_sval2(value),
+            Internal::AnonSval2(value) => visitor.borrowed_sval2(*value),
             #[cfg(feature = "sval2")]
             Internal::Sval2(value) => visitor.borrowed_sval2(value.as_super()),
 
             #[cfg(feature = "serde1")]
-            Internal::AnonSerde1(value) => visitor.serde1(value),
+            Internal::AnonSerde1(value) => visitor.borrowed_serde1(*value),
             #[cfg(feature = "serde1")]
-            Internal::Serde1(value) => visitor.serde1(value.as_super()),
+            Internal::Serde1(value) => visitor.borrowed_serde1(value.as_super()),
         }
     }
 }

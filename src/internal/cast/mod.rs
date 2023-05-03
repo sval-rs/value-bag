@@ -118,7 +118,7 @@ impl<'v> ValueBag<'v> {
 impl<'v> Internal<'v> {
     /// Cast the inner value to another type.
     #[inline]
-    fn cast(self) -> Cast<'v> {
+    fn cast(&self) -> Cast<'v> {
         struct CastVisitor<'v>(Cast<'v>);
 
         impl<'v> InternalVisitor<'v> for CastVisitor<'v> {
@@ -450,71 +450,134 @@ mod tests {
             "a string",
             "a string"
                 .into_value_bag()
+                .by_ref()
                 .to_borrowed_str()
                 .expect("invalid value")
         );
 
-        assert_eq!(1u64, 1u8.into_value_bag().to_u64().expect("invalid value"));
-        assert_eq!(1u64, 1u16.into_value_bag().to_u64().expect("invalid value"));
-        assert_eq!(1u64, 1u32.into_value_bag().to_u64().expect("invalid value"));
-        assert_eq!(1u64, 1u64.into_value_bag().to_u64().expect("invalid value"));
         assert_eq!(
             1u64,
-            1usize.into_value_bag().to_u64().expect("invalid value")
+            1u8.into_value_bag()
+                .by_ref()
+                .to_u64()
+                .expect("invalid value")
+        );
+        assert_eq!(
+            1u64,
+            1u16.into_value_bag()
+                .by_ref()
+                .to_u64()
+                .expect("invalid value")
+        );
+        assert_eq!(
+            1u64,
+            1u32.into_value_bag()
+                .by_ref()
+                .to_u64()
+                .expect("invalid value")
+        );
+        assert_eq!(
+            1u64,
+            1u64.into_value_bag()
+                .by_ref()
+                .to_u64()
+                .expect("invalid value")
+        );
+        assert_eq!(
+            1u64,
+            1usize
+                .into_value_bag()
+                .by_ref()
+                .to_u64()
+                .expect("invalid value")
         );
         assert_eq!(
             1u128,
-            1u128.into_value_bag().to_u128().expect("invalid value")
+            1u128
+                .into_value_bag()
+                .by_ref()
+                .to_u128()
+                .expect("invalid value")
         );
 
         assert_eq!(
             -1i64,
-            -1i8.into_value_bag().to_i64().expect("invalid value")
+            -1i8.into_value_bag()
+                .by_ref()
+                .to_i64()
+                .expect("invalid value")
         );
         assert_eq!(
             -1i64,
-            -1i8.into_value_bag().to_i64().expect("invalid value")
+            -1i8.into_value_bag()
+                .by_ref()
+                .to_i64()
+                .expect("invalid value")
         );
         assert_eq!(
             -1i64,
-            -1i8.into_value_bag().to_i64().expect("invalid value")
+            -1i8.into_value_bag()
+                .by_ref()
+                .to_i64()
+                .expect("invalid value")
         );
         assert_eq!(
             -1i64,
-            -1i64.into_value_bag().to_i64().expect("invalid value")
+            -1i64
+                .into_value_bag()
+                .by_ref()
+                .to_i64()
+                .expect("invalid value")
         );
         assert_eq!(
             -1i64,
-            -1isize.into_value_bag().to_i64().expect("invalid value")
+            -1isize
+                .into_value_bag()
+                .by_ref()
+                .to_i64()
+                .expect("invalid value")
         );
         assert_eq!(
             -1i128,
-            -1i128.into_value_bag().to_i128().expect("invalid value")
+            -1i128
+                .into_value_bag()
+                .by_ref()
+                .to_i128()
+                .expect("invalid value")
         );
 
-        assert!(1f64.into_value_bag().to_f64().is_some());
-        assert!(1u64.into_value_bag().to_f64().is_some());
-        assert!((-1i64).into_value_bag().to_f64().is_some());
-        assert!(1u128.into_value_bag().to_f64().is_some());
-        assert!((-1i128).into_value_bag().to_f64().is_some());
+        assert!(1f64.into_value_bag().by_ref().to_f64().is_some());
+        assert!(1u64.into_value_bag().by_ref().to_f64().is_some());
+        assert!((-1i64).into_value_bag().by_ref().to_f64().is_some());
+        assert!(1u128.into_value_bag().by_ref().to_f64().is_some());
+        assert!((-1i128).into_value_bag().by_ref().to_f64().is_some());
 
-        assert!(u64::MAX.into_value_bag().to_u128().is_some());
-        assert!(i64::MIN.into_value_bag().to_i128().is_some());
-        assert!(i64::MAX.into_value_bag().to_u64().is_some());
+        assert!(u64::MAX.into_value_bag().by_ref().to_u128().is_some());
+        assert!(i64::MIN.into_value_bag().by_ref().to_i128().is_some());
+        assert!(i64::MAX.into_value_bag().by_ref().to_u64().is_some());
 
-        assert!((-1i64).into_value_bag().to_u64().is_none());
-        assert!(u64::MAX.into_value_bag().to_i64().is_none());
-        assert!(u64::MAX.into_value_bag().to_f64().is_none());
+        assert!((-1i64).into_value_bag().by_ref().to_u64().is_none());
+        assert!(u64::MAX.into_value_bag().by_ref().to_i64().is_none());
+        assert!(u64::MAX.into_value_bag().by_ref().to_f64().is_none());
 
-        assert!(i128::MAX.into_value_bag().to_i64().is_none());
-        assert!(u128::MAX.into_value_bag().to_u64().is_none());
+        assert!(i128::MAX.into_value_bag().by_ref().to_i64().is_none());
+        assert!(u128::MAX.into_value_bag().by_ref().to_u64().is_none());
 
-        assert!(1f64.into_value_bag().to_u64().is_none());
+        assert!(1f64.into_value_bag().by_ref().to_u64().is_none());
 
-        assert_eq!('a', 'a'.into_value_bag().to_char().expect("invalid value"));
+        assert_eq!(
+            'a',
+            'a'.into_value_bag()
+                .by_ref()
+                .to_char()
+                .expect("invalid value")
+        );
         assert_eq!(
             true,
-            true.into_value_bag().to_bool().expect("invalid value")
+            true.into_value_bag()
+                .by_ref()
+                .to_bool()
+                .expect("invalid value")
         );
     }
 }
