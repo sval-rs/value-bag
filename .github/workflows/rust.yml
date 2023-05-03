@@ -16,20 +16,9 @@ jobs:
           - ubuntu-latest
           - macos-latest
           - windows-latest
-        rust:
-          - stable
-          - beta
-          - nightly
     steps:
       - name: Checkout sources
-        uses: actions/checkout@v2
-
-      - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: ${{ matrix.rust }}
-          override: true
+        uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab
 
       - name: Install cargo-hack
         run: cargo install cargo-hack
@@ -42,15 +31,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
-        uses: actions/checkout@v2
+        uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab
 
       - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: nightly
-          target: thumbv6m-none-eabi
-          override: true
+        run: |
+          rustup default nightly
+          rustup target add thumbv6m-none-eabi
 
       - name: Install cargo-hack
         run: cargo install cargo-hack
@@ -63,34 +49,26 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
-        uses: actions/checkout@v2
+        uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab
 
       - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: nightly
-          override: true
+        run: rustup default nightly
 
       - name: Install cargo-hack
         run: cargo install cargo-hack
 
       - name: Powerset
         run: cargo hack check --feature-powerset -Z avoid-dev-deps
-  
+
   benches:
     name: Build (benches)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
-        uses: actions/checkout@v2
+        uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab
 
       - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: nightly
-          override: true
+        run: rustup default nightly
 
       - name: Benches
         run: cargo bench --no-run --features "error sval2 serde1"
@@ -100,17 +78,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
-        uses: actions/checkout@v2
-      
-      - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
+        uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab
 
       - name: Install
         run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
-      
+
       - name: All features
         run: wasm-pack test --node -- --all-features
 
@@ -121,7 +93,7 @@ jobs:
       MIRI_TOOLCHAIN: nightly-2023-03-26
     steps:
       - name: Checkout sources
-        uses: actions/checkout@v2
+        uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab
 
       - name: Install miri
         run: rustup +$MIRI_TOOLCHAIN component add miri
