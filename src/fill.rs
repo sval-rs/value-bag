@@ -74,11 +74,11 @@ impl<'s, 'f> fmt::Debug for Slot<'s, 'f> {
 }
 
 impl<'s, 'f> Slot<'s, 'f> {
-    pub(super) fn new(visitor: &'s mut dyn InternalVisitor<'f>) -> Self {
+    pub(crate) fn new(visitor: &'s mut dyn InternalVisitor<'f>) -> Self {
         Slot { visitor }
     }
 
-    pub(super) fn fill<F>(self, f: F) -> Result<(), Error>
+    pub(crate) fn fill<F>(self, f: F) -> Result<(), Error>
     where
         F: FnOnce(&mut dyn InternalVisitor<'f>) -> Result<(), Error>,
     {

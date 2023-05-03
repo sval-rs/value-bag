@@ -370,7 +370,7 @@ mod std_support {
 
     impl<'v> Cast<'v> {
         #[inline]
-        pub(super) fn into_str(self) -> Option<Cow<'v, str>> {
+        pub(in crate::internal) fn into_str(self) -> Option<Cow<'v, str>> {
             match self {
                 Cast::Str(value) => Some(value.into()),
                 Cast::String(value) => Some(value.into()),

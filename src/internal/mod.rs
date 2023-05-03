@@ -8,22 +8,22 @@ use crate::{
     Error, ValueBag,
 };
 
-pub(super) mod cast;
+pub(crate) mod cast;
 #[cfg(feature = "error")]
-pub(super) mod error;
-pub(super) mod fill;
-pub(super) mod fmt;
+pub(crate) mod error;
+pub(crate) mod fill;
+pub(crate) mod fmt;
 #[cfg(feature = "serde1")]
-pub(super) mod serde;
+pub(crate) mod serde;
 #[cfg(feature = "sval2")]
-pub(super) mod sval;
+pub(crate) mod sval;
 
 // NOTE: It takes less space to have separate variants for the presence
 // of a `TypeId` instead of using `Option<T>`, because `TypeId` doesn't
 // have a niche value
 /// A container for a structured value for a specific kind of visitor.
 #[derive(Clone)]
-pub(super) enum Internal<'v> {
+pub(crate) enum Internal<'v> {
     /// A signed integer.
     Signed(i64),
     /// An unsigned integer.
@@ -79,7 +79,7 @@ pub(super) enum Internal<'v> {
 }
 
 /// The internal serialization contract.
-pub(super) trait InternalVisitor<'v> {
+pub(crate) trait InternalVisitor<'v> {
     fn debug(&mut self, v: &dyn fmt::Debug) -> Result<(), Error>;
     fn borrowed_debug(&mut self, v: &'v dyn fmt::Debug) -> Result<(), Error> {
         self.debug(v)
@@ -230,7 +230,7 @@ impl<'a, 'v, V: InternalVisitor<'v> + ?Sized> InternalVisitor<'v> for &'a mut V 
 
 impl<'v> ValueBag<'v> {
     /// Get a value from an internal primitive.
-    pub(super) fn from_internal<T>(value: T) -> Self
+    pub(crate) fn from_internal<T>(value: T) -> Self
     where
         T: Into<Internal<'v>>,
     {
@@ -241,14 +241,14 @@ impl<'v> ValueBag<'v> {
 
     /// Visit the value using an internal visitor.
     #[inline]
-    pub(super) fn internal_visit(&self, visitor: impl InternalVisitor<'v>) -> Result<(), Error> {
+    pub(crate) fn internal_visit(&self, visitor: impl InternalVisitor<'v>) -> Result<(), Error> {
         self.inner.internal_visit(visitor)
     }
 }
 
 impl<'v> Internal<'v> {
     #[inline]
-    pub(super) fn by_ref<'u>(&'u self) -> Internal<'u> {
+    pub(crate) fn by_ref<'u>(&'u self) -> Internal<'u> {
         match self {
             Internal::Signed(value) => Internal::Signed(*value),
             Internal::Unsigned(value) => Internal::Unsigned(*value),
@@ -286,7 +286,7 @@ impl<'v> Internal<'v> {
     }
 
     #[inline]
-    pub(super) fn internal_visit(
+    pub(crate) fn internal_visit(
         &self,
         mut visitor: impl InternalVisitor<'v>,
     ) -> Result<(), Error> {

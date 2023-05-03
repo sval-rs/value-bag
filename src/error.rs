@@ -46,7 +46,7 @@ mod std_support {
     use super::*;
     use crate::std::{boxed::Box, error, io};
 
-    pub(super) type BoxedError = Box<dyn error::Error + Send + Sync>;
+    pub(crate) type BoxedError = Box<dyn error::Error + Send + Sync>;
 
     impl Error {
         /// Create an error from a standard error type.
