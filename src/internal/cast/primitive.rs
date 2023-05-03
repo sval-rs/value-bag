@@ -8,7 +8,7 @@ use crate::std::string::String;
 
 use crate::internal::Internal;
 
-pub(super) fn from_any<'v, T: ?Sized + 'static>(value: &'v T) -> Option<Internal<'v>> {
+pub(in crate::internal) fn from_any<'v, T: ?Sized + 'static>(value: &'v T) -> Option<Internal<'v>> {
     // NOTE: The casts for unsized values (str) are dubious here. To really do this properly
     // we need https://github.com/rust-lang/rust/issues/81513
     // NOTE: With some kind of const `Any::is<T>` we could do all this at compile-time

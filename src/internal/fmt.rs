@@ -413,12 +413,12 @@ mod tests {
     fn fmt_debug() {
         assert_eq!(
             format!("{:?}", "a string"),
-            format!("{:?}", "a string".into_value_bag()),
+            format!("{:?}", "a string".into_value_bag().by_ref()),
         );
 
         assert_eq!(
             format!("{:04?}", 42u64),
-            format!("{:04?}", 42u64.into_value_bag()),
+            format!("{:04?}", 42u64.into_value_bag().by_ref()),
         );
     }
 
@@ -427,12 +427,12 @@ mod tests {
     fn fmt_display() {
         assert_eq!(
             format!("{}", "a string"),
-            format!("{}", "a string".into_value_bag()),
+            format!("{}", "a string".into_value_bag().by_ref()),
         );
 
         assert_eq!(
             format!("{:04}", 42u64),
-            format!("{:04}", 42u64.into_value_bag()),
+            format!("{:04}", 42u64.into_value_bag().by_ref()),
         );
     }
 }

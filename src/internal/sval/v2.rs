@@ -499,6 +499,7 @@ mod tests {
             assert_eq!(
                 "a string",
                 ValueBag::capture_sval2(&"a string".to_owned())
+                    .by_ref()
                     .to_str()
                     .expect("invalid value")
             );

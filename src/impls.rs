@@ -88,33 +88,48 @@ mod tests {
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn test_into_display() {
-        assert_eq!(42u64.into_value_bag().to_string(), "42");
-        assert_eq!(42i64.into_value_bag().to_string(), "42");
-        assert_eq!(42.01f64.into_value_bag().to_string(), "42.01");
-        assert_eq!(true.into_value_bag().to_string(), "true");
-        assert_eq!('a'.into_value_bag().to_string(), "a");
+        assert_eq!(42u64.into_value_bag().by_ref().to_string(), "42");
+        assert_eq!(42i64.into_value_bag().by_ref().to_string(), "42");
+        assert_eq!(42.01f64.into_value_bag().by_ref().to_string(), "42.01");
+        assert_eq!(true.into_value_bag().by_ref().to_string(), "true");
+        assert_eq!('a'.into_value_bag().by_ref().to_string(), "a");
         assert_eq!(
-            "a loong string".into_value_bag().to_string(),
+            "a loong string".into_value_bag().by_ref().to_string(),
             "a loong string"
         );
-        assert_eq!(().into_value_bag().to_string(), "None");
+        assert_eq!(().into_value_bag().by_ref().to_string(), "None");
     }
 
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn test_into_structured() {
-        assert_eq!(42u64.into_value_bag().to_test_token(), TestToken::U64(42));
-        assert_eq!(42i64.into_value_bag().to_test_token(), TestToken::I64(42));
         assert_eq!(
-            42.01f64.into_value_bag().to_test_token(),
+            42u64.into_value_bag().by_ref().to_test_token(),
+            TestToken::U64(42)
+        );
+        assert_eq!(
+            42i64.into_value_bag().by_ref().to_test_token(),
+            TestToken::I64(42)
+        );
+        assert_eq!(
+            42.01f64.into_value_bag().by_ref().to_test_token(),
             TestToken::F64(42.01)
         );
-        assert_eq!(true.into_value_bag().to_test_token(), TestToken::Bool(true));
-        assert_eq!('a'.into_value_bag().to_test_token(), TestToken::Char('a'));
         assert_eq!(
-            "a loong string".into_value_bag().to_test_token(),
+            true.into_value_bag().by_ref().to_test_token(),
+            TestToken::Bool(true)
+        );
+        assert_eq!(
+            'a'.into_value_bag().by_ref().to_test_token(),
+            TestToken::Char('a')
+        );
+        assert_eq!(
+            "a loong string".into_value_bag().by_ref().to_test_token(),
             TestToken::Str("a loong string".to_owned())
         );
-        assert_eq!(().into_value_bag().to_test_token(), TestToken::None);
+        assert_eq!(
+            ().into_value_bag().by_ref().to_test_token(),
+            TestToken::None
+        );
     }
 }
