@@ -7,7 +7,6 @@
 //! The producer of a [`ValueBag`] may use a different strategy for capturing than the eventual
 //! consumer. They don't need to coordinate directly.
 
-#![cfg_attr(value_bag_capture_const_type_id, feature(const_type_id))]
 #![doc(html_root_url = "https://docs.rs/value-bag/1.2.0")]
 #![no_std]
 
