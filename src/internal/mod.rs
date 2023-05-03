@@ -29,9 +29,15 @@ pub(crate) enum Internal<'v> {
     /// An unsigned integer.
     Unsigned(u64),
     /// An extra large signed integer.
+    #[cfg(not(feature = "inline-i128"))]
     BigSigned(&'v i128),
+    #[cfg(feature = "inline-i128")]
+    BigSigned(i128),
     /// An extra large unsigned integer.
+    #[cfg(not(feature = "inline-i128"))]
     BigUnsigned(&'v u128),
+    #[cfg(feature = "inline-i128")]
+    BigUnsigned(u128),
     /// A floating point number.
     Float(f64),
     /// A boolean value.
@@ -477,6 +483,21 @@ impl<'v> From<&'v u64> for Internal<'v> {
 impl<'v> From<&'v u128> for Internal<'v> {
     #[inline]
     fn from(v: &'v u128) -> Self {
+        #[cfg(feature = "inline-i128")]
+        {
+            Internal::BigUnsigned(*v)
+        }
+        #[cfg(not(feature = "inline-i128"))]
+        {
+            Internal::BigUnsigned(v)
+        }
+    }
+}
+
+#[cfg(feature = "inline-i128")]
+impl<'v> From<u128> for Internal<'v> {
+    #[inline]
+    fn from(v: u128) -> Self {
         Internal::BigUnsigned(v)
     }
 }
@@ -519,6 +540,21 @@ impl<'v> From<&'v i64> for Internal<'v> {
 impl<'v> From<&'v i128> for Internal<'v> {
     #[inline]
     fn from(v: &'v i128) -> Self {
+        #[cfg(feature = "inline-i128")]
+        {
+            Internal::BigSigned(*v)
+        }
+        #[cfg(not(feature = "inline-i128"))]
+        {
+            Internal::BigSigned(v)
+        }
+    }
+}
+
+#[cfg(feature = "inline-i128")]
+impl<'v> From<i128> for Internal<'v> {
+    #[inline]
+    fn from(v: i128) -> Self {
         Internal::BigSigned(v)
     }
 }
