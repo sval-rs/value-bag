@@ -226,7 +226,13 @@ impl<'v> Internal<'v> {
         match &self {
             Internal::Signed(value) => Cast::Signed(*value),
             Internal::Unsigned(value) => Cast::Unsigned(*value),
+            #[cfg(feature = "inline-i128")]
+            Internal::BigSigned(value) => Cast::BigSigned(*value),
+            #[cfg(not(feature = "inline-i128"))]
             Internal::BigSigned(value) => Cast::BigSigned(**value),
+            #[cfg(feature = "inline-i128")]
+            Internal::BigUnsigned(value) => Cast::BigUnsigned(*value),
+            #[cfg(not(feature = "inline-i128"))]
             Internal::BigUnsigned(value) => Cast::BigUnsigned(**value),
             Internal::Float(value) => Cast::Float(*value),
             Internal::Bool(value) => Cast::Bool(*value),

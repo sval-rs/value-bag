@@ -61,6 +61,22 @@ impl<'v> From<&'v i128> for ValueBag<'v> {
     }
 }
 
+#[cfg(feature = "inline-i128")]
+impl<'v> From<u128> for ValueBag<'v> {
+    #[inline]
+    fn from(value: u128) -> Self {
+        ValueBag::from_internal(value)
+    }
+}
+
+#[cfg(feature = "inline-i128")]
+impl<'v> From<i128> for ValueBag<'v> {
+    #[inline]
+    fn from(value: i128) -> Self {
+        ValueBag::from_internal(value)
+    }
+}
+
 #[cfg(feature = "std")]
 mod std_support {
     use super::*;
@@ -131,5 +147,17 @@ mod tests {
             ().into_value_bag().by_ref().to_test_token(),
             TestToken::None
         );
+
+        #[cfg(feature = "inline-i128")]
+        {
+            assert_eq!(
+                42u128.into_value_bag().by_ref().to_test_token(),
+                TestToken::U128(42)
+            );
+            assert_eq!(
+                42i128.into_value_bag().by_ref().to_test_token(),
+                TestToken::I128(42)
+            );
+        }
     }
 }

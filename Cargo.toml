@@ -24,6 +24,10 @@ members = [
 ]
 
 [features]
+# Store 128bit numbers inline instead of as references
+# This may increase the size of `ValueBag` on some platforms
+inline-i128 = []
+
 # Use the standard library
 std = [
     "value-bag-sval2?/std",
