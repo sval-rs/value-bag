@@ -323,6 +323,20 @@ impl<'v> Display for ValueBag<'v> {
     }
 }
 
+#[cfg(feature = "alloc")]
+impl fmt::Debug for crate::OwnedValueBag {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        fmt::Debug::fmt(&self.to_value(), f)
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl fmt::Display for crate::OwnedValueBag {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        fmt::Display::fmt(&self.to_value(), f)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     #[cfg(target_arch = "wasm32")]

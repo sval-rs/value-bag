@@ -200,6 +200,16 @@ impl<'v> value_bag_serde1::lib::Serialize for ValueBag<'v> {
     }
 }
 
+#[cfg(feature = "alloc")]
+impl value_bag_serde1::lib::Serialize for crate::OwnedValueBag {
+     fn serialize<S>(&self, s: S) -> Result<S::Ok, S::Error>
+     where
+        S: value_bag_serde1::lib::Serializer,
+    {
+        value_bag_serde1::lib::Serialize::serialize(&self.to_value(), s)
+    }
+}
+
 pub use value_bag_serde1::erased::Serialize;
 
 pub(in crate::internal) fn fmt(f: &mut fmt::Formatter, v: &dyn Serialize) -> Result<(), Error> {

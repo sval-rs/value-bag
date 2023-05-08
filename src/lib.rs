@@ -79,7 +79,21 @@ underlying value, bridging it if it was produced for a different framework.
 #[allow(unused_imports)]
 extern crate std;
 
-#[cfg(not(any(feature = "std", test)))]
+#[cfg(all(not(test), feature = "alloc", not(feature = "std")))]
+extern crate core;
+
+#[cfg(all(not(test), feature = "alloc", not(feature = "std")))]
+extern crate alloc;
+
+#[cfg(all(not(test), feature = "alloc", not(feature = "std")))]
+mod std {
+   pub use crate::{
+      alloc::{boxed},
+      core::*,
+   };
+}
+
+#[cfg(not(any(feature = "alloc", feature = "std", test)))]
 #[macro_use]
 #[allow(unused_imports)]
 extern crate core as std;
@@ -92,6 +106,11 @@ pub mod visit;
 
 #[cfg(any(test, feature = "test"))]
 pub mod test;
+
+#[cfg(feature = "alloc")]
+mod owned;
+#[cfg(feature = "alloc")]
+pub use self::owned::*;
 
 pub use self::error::Error;
 

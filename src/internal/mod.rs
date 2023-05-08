@@ -604,6 +604,31 @@ where
     }
 }
 
+#[cfg(feature = "alloc")]
+mod alloc_support {
+    use crate::std::boxed::Box;
+
+    pub(crate) enum OwnedInternal {
+        /// An extra large signed integer.
+        BigSigned(i128),
+        /// An extra large unsigned integer.
+        BigUnsigned(u128),
+        /// A floating point number.
+        Float(f64),
+        /// A boolean value.
+        Bool(bool),
+        /// A UTF8 codepoint.
+        Char(char),
+        /// A UTF8 string.
+        Str(Box<str>),
+        /// An empty value.
+        None,
+    }
+}
+
+#[cfg(feature = "alloc")]
+pub(crate) use alloc_support::*;
+
 #[cfg(feature = "std")]
 mod std_support {
     use super::*;
