@@ -87,7 +87,7 @@ impl value_bag_sval2::lib::Value for crate::OwnedValueBag {
         &'sval self,
         s: &mut S,
     ) -> value_bag_sval2::lib::Result {
-        value_bag_sval2::lib_ref::ValueRef::stream_ref(&self.to_value(), s)
+        value_bag_sval2::lib_ref::ValueRef::stream_ref(&self.by_ref(), s)
     }
 }
 
@@ -309,6 +309,17 @@ impl Error {
 
     pub(in crate::internal) fn into_sval2(self) -> value_bag_sval2::lib::Error {
         value_bag_sval2::lib::Error::new()
+    }
+}
+
+#[cfg(feature = "alloc")]
+pub(crate) mod owned {
+    use super::*;
+
+    pub(crate) type OwnedValue = value_bag_sval2::buffer::Value<'static>;
+
+    pub(crate) fn buffer(v: impl value_bag_sval2::lib::Value) -> OwnedValue {
+        OwnedValue::collect_owned(v).unwrap()
     }
 }
 

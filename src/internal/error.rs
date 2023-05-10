@@ -94,7 +94,7 @@ impl Error for OwnedError {
     }
 }
 
-pub(crate) fn buffer_error(err: &(dyn error::Error + 'static)) -> OwnedError {
+pub(crate) fn buffer(err: &(dyn error::Error + 'static)) -> OwnedError {
     OwnedError {
         display: err.to_string().into(),
         source: err.source().map(buffer_error).map(Box::new),

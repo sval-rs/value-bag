@@ -36,6 +36,10 @@ default-features = false
 version = "1"
 default-features = false
 
+[dependencies.serde_buf]
+version = "0.1"
+default-features = false
+
 [dependencies.serde_json]
 version = "1"
 optional = true

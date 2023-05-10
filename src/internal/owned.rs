@@ -28,6 +28,12 @@ pub(crate) enum OwnedInternal {
 
     #[cfg(feature = "error")]
     Error(internal::error::OwnedError),
+
+    #[cfg(feature = "serde1")]
+    Serde1(internal::serde::v1::OwnedSerialize),
+
+    #[cfg(feature = "sval2")]
+    Sval2(internal::sval::v2::owned::OwnedValue),
 }
 
 impl OwnedInternal {
@@ -52,6 +58,12 @@ impl OwnedInternal {
 
             #[cfg(feature = "error")]
             OwnedInternal::Error(v) => Internal::Error(v),
+
+            #[cfg(feature = "serde1")]
+            OwnedInternal::Serde1(v) => Internal::Serde1(v),
+
+            #[cfg(feature = "sval2")]
+            OwnedInternal::Sval2(v) => Internal::Sval2(v),
         }
     }
 }
@@ -118,18 +130,20 @@ impl<'v> Internal<'v> {
 
             #[cfg(feature = "error")]
             fn error(&mut self, v: &(dyn internal::error::Error + 'static)) -> Result<(), Error> {
-                self.0 = OwnedInternal::Error(internal::error::buffer_error(v));
+                self.0 = OwnedInternal::Error(internal::error::buffer(v));
                 Ok(())
             }
 
             #[cfg(feature = "sval2")]
             fn sval2(&mut self, v: &dyn internal::sval::v2::Value) -> Result<(), Error> {
-                todo!()
+                self.0 = OwnedInternal::Sval2(internal::sval::v2::owned::buffer(v));
+                Ok(())
             }
 
             #[cfg(feature = "serde1")]
             fn serde1(&mut self, v: &dyn internal::serde::v1::Serialize) -> Result<(), Error> {
-                todo!()
+                self.0 = OwnedInternal::Serde1(internal::serde::v1::buffer(v));
+                Ok(())
             }
         }
 

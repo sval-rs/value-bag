@@ -6,6 +6,7 @@ Implementation detail for `value-bag`; it should not be depended on directly.
 
 pub use erased_serde as erased;
 pub use serde as lib;
+pub use serde_buf as buf;
 pub use serde_fmt as fmt;
 
 #[cfg(feature = "json")]
