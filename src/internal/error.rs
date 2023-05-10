@@ -97,7 +97,7 @@ impl Error for OwnedError {
 pub(crate) fn buffer(err: &(dyn error::Error + 'static)) -> OwnedError {
     OwnedError {
         display: err.to_string().into(),
-        source: err.source().map(buffer_error).map(Box::new),
+        source: err.source().map(buffer).map(Box::new),
     }
 }
 

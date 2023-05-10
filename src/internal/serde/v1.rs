@@ -6,7 +6,7 @@
 use crate::{
     fill::Slot,
     internal::{Internal, InternalVisitor},
-    std::{any::Any, fmt},
+    std::{any::Any, boxed::Box, fmt},
     Error, ValueBag,
 };
 
@@ -443,10 +443,10 @@ impl value_bag_serde1::lib::ser::Error for Unsupported {
 
 impl value_bag_serde1::lib::ser::StdError for Unsupported {}
 
-pub(crate) use value_bag_serde1::buf::Owned as OwnedSerialize;
+pub(crate) type OwnedSerialize = Box<value_bag_serde1::buf::Owned>;
 
 pub(crate) fn buffer(v: impl value_bag_serde1::lib::Serialize) -> OwnedSerialize {
-    OwnedSerialize::buffer(v).unwrap()
+    Box::new(value_bag_serde1::buf::Owned::buffer(v).unwrap())
 }
 
 #[cfg(test)]
