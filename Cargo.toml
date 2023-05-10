@@ -30,6 +30,7 @@ inline-i128 = []
 
 # Use the standard library
 std = [
+    "alloc",
     "value-bag-sval2?/std",
     "value-bag-serde1?/std",
 ]

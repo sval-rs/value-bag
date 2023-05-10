@@ -18,6 +18,9 @@ pub(crate) mod serde;
 #[cfg(feature = "sval2")]
 pub(crate) mod sval;
 
+#[cfg(feature = "alloc")]
+pub(crate) mod owned;
+
 // NOTE: It takes less space to have separate variants for the presence
 // of a `TypeId` instead of using `Option<T>`, because `TypeId` doesn't
 // have a niche value
@@ -603,31 +606,6 @@ where
         Internal::Str(*v)
     }
 }
-
-#[cfg(feature = "alloc")]
-mod alloc_support {
-    use crate::std::boxed::Box;
-
-    pub(crate) enum OwnedInternal {
-        /// An extra large signed integer.
-        BigSigned(i128),
-        /// An extra large unsigned integer.
-        BigUnsigned(u128),
-        /// A floating point number.
-        Float(f64),
-        /// A boolean value.
-        Bool(bool),
-        /// A UTF8 codepoint.
-        Char(char),
-        /// A UTF8 string.
-        Str(Box<str>),
-        /// An empty value.
-        None,
-    }
-}
-
-#[cfg(feature = "alloc")]
-pub(crate) use alloc_support::*;
 
 #[cfg(feature = "std")]
 mod std_support {

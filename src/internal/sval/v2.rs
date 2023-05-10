@@ -83,7 +83,10 @@ impl<'v> value_bag_sval2::lib::Value for ValueBag<'v> {
 
 #[cfg(feature = "alloc")]
 impl value_bag_sval2::lib::Value for crate::OwnedValueBag {
-    fn stream<'sval, S: value_bag_sval2::lib::Stream<'sval> + ?Sized>(&'sval self, s: &mut S) -> value_bag_sval2::lib::Result {
+    fn stream<'sval, S: value_bag_sval2::lib::Stream<'sval> + ?Sized>(
+        &'sval self,
+        s: &mut S,
+    ) -> value_bag_sval2::lib::Result {
         value_bag_sval2::lib_ref::ValueRef::stream_ref(&self.to_value(), s)
     }
 }

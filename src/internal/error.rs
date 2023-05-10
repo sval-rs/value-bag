@@ -1,6 +1,6 @@
 use crate::{
     fill::Slot,
-    std::{any::Any, error},
+    std::{any::Any, boxed::Box, error, fmt, string::ToString},
     ValueBag,
 };
 
@@ -71,6 +71,35 @@ impl<'s, 'f> Slot<'s, 'f> {
 }
 
 pub use self::error::Error;
+
+#[derive(Clone, Debug)]
+pub(crate) struct OwnedError {
+    display: Box<str>,
+    source: Option<Box<OwnedError>>,
+}
+
+impl fmt::Display for OwnedError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        fmt::Display::fmt(&self.display, f)
+    }
+}
+
+impl Error for OwnedError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        if let Some(ref source) = self.source {
+            Some(&**source)
+        } else {
+            None
+        }
+    }
+}
+
+pub(crate) fn buffer_error(err: &(dyn error::Error + 'static)) -> OwnedError {
+    OwnedError {
+        display: err.to_string().into(),
+        source: err.source().map(buffer_error).map(Box::new),
+    }
+}
 
 #[cfg(test)]
 mod tests {
