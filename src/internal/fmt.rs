@@ -323,25 +323,24 @@ impl<'v> Display for ValueBag<'v> {
     }
 }
 
-#[cfg(feature = "alloc")]
-impl fmt::Debug for crate::OwnedValueBag {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        fmt::Debug::fmt(&self.by_ref(), f)
-    }
-}
-
-#[cfg(feature = "alloc")]
-impl fmt::Display for crate::OwnedValueBag {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        fmt::Display::fmt(&self.by_ref(), f)
-    }
-}
-
-#[cfg(feature = "alloc")]
+#[cfg(feature = "owned")]
 pub(crate) mod owned {
-    use super::*;
+    use crate::std::{boxed::Box, fmt, string::ToString};
 
-    use crate::std::{boxed::Box, string::ToString};
+    impl fmt::Debug for crate::OwnedValueBag {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            fmt::Debug::fmt(&self.by_ref(), f)
+        }
+    }
+
+    impl fmt::Display for crate::OwnedValueBag {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            fmt::Display::fmt(&self.by_ref(), f)
+        }
+    }
+
+    #[derive(Clone)]
+    pub(crate) struct OwnedFmt(Box<str>);
 
     pub(crate) fn buffer_debug(v: impl fmt::Debug) -> OwnedFmt {
         OwnedFmt(format!("{:?}", v).into())
@@ -350,9 +349,6 @@ pub(crate) mod owned {
     pub(crate) fn buffer_display(v: impl fmt::Display) -> OwnedFmt {
         OwnedFmt(v.to_string().into())
     }
-
-    #[derive(Clone)]
-    pub(crate) struct OwnedFmt(Box<str>);
 
     impl fmt::Debug for OwnedFmt {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -478,5 +474,12 @@ mod tests {
             format!("{:04}", 42u64),
             format!("{:04}", 42u64.into_value_bag().by_ref()),
         );
+    }
+
+    #[test]
+    #[cfg(feature = "owned")]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn fmt_to_owned() {
+        todo!()
     }
 }

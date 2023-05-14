@@ -41,6 +41,12 @@ alloc = [
     "value-bag-serde1?/alloc",
 ]
 
+# Support owned values
+owned = [
+    "alloc",
+    "value-bag-serde1?/owned",
+]
+
 # Add support for `sval`
 sval = ["sval2"]
 sval2 = [

@@ -113,4 +113,5 @@ The `value-bag` crate is no-std by default, and offers the following Cargo featu
     - `sval2`: Enable support for the stable `2.x.x` version of `sval`.
 - `serde`: Enable support for using the [`serde`](https://github.com/serde-rs/serde) serialization framework for inspecting `ValueBag`s by implementing `serde::Serialize`. Implies `std` and `serde1`.
     - `serde1`: Enable support for the stable `1.x.x` version of `serde`.
+- `owned`: Add support for buffering `ValueBag`s into an owned `Send + Sync` variant.
 - `test`: Add test helpers for inspecting the shape of the value inside a `ValueBag`.

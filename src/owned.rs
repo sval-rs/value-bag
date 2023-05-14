@@ -1,11 +1,20 @@
 use crate::{internal, ValueBag};
 
+/// A dynamic structured value.
+///
+/// This type is an owned variant of [`ValueBag`] that can be
+/// constructed using its [`to_owned`](struct.ValueBag.html#method.to_owned) method.
+/// `OwnedValueBag`s are suitable for storing and sharing across threads.
+///
+/// `OwnedValueBag`s can be inspected by converting back into a regular `ValueBag`
+/// using the [`by_ref`](#method.by_ref) method.
 #[derive(Clone)]
 pub struct OwnedValueBag {
     inner: internal::owned::OwnedInternal,
 }
 
 impl<'v> ValueBag<'v> {
+    /// Buffer this value into an [`OwnedValueBag`].
     pub fn to_owned(&self) -> OwnedValueBag {
         OwnedValueBag {
             inner: self.inner.to_owned(),
@@ -14,6 +23,14 @@ impl<'v> ValueBag<'v> {
 }
 
 impl OwnedValueBag {
+    /// Get a regular [`ValueBag`] from this type.
+    ///
+    /// Once a `ValueBag` has been buffered, it will behave
+    /// slightly differently when converted back:
+    ///
+    /// - `fmt::Debug` won't use formatting flags.
+    /// - `serde::Serialize` will use the text-based representation.
+    /// - The original type will change, so downcasting won't work.
     pub fn by_ref<'v>(&'v self) -> ValueBag<'v> {
         ValueBag {
             inner: self.inner.by_ref(),

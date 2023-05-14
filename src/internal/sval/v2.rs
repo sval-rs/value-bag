@@ -81,16 +81,6 @@ impl<'v> value_bag_sval2::lib::Value for ValueBag<'v> {
     }
 }
 
-#[cfg(feature = "alloc")]
-impl value_bag_sval2::lib::Value for crate::OwnedValueBag {
-    fn stream<'sval, S: value_bag_sval2::lib::Stream<'sval> + ?Sized>(
-        &'sval self,
-        s: &mut S,
-    ) -> value_bag_sval2::lib::Result {
-        value_bag_sval2::lib_ref::ValueRef::stream_ref(&self.by_ref(), s)
-    }
-}
-
 impl<'sval> value_bag_sval2::lib_ref::ValueRef<'sval> for ValueBag<'sval> {
     fn stream_ref<S: value_bag_sval2::lib::Stream<'sval> + ?Sized>(
         &self,
@@ -312,9 +302,16 @@ impl Error {
     }
 }
 
-#[cfg(feature = "alloc")]
+#[cfg(feature = "owned")]
 pub(crate) mod owned {
-    use super::*;
+    impl value_bag_sval2::lib::Value for crate::OwnedValueBag {
+        fn stream<'sval, S: value_bag_sval2::lib::Stream<'sval> + ?Sized>(
+            &'sval self,
+            s: &mut S,
+        ) -> value_bag_sval2::lib::Result {
+            value_bag_sval2::lib_ref::ValueRef::stream_ref(&self.by_ref(), s)
+        }
+    }
 
     pub(crate) type OwnedValue = value_bag_sval2::buffer::Value<'static>;
 
@@ -506,6 +503,13 @@ mod tests {
         }
 
         assert_ser_tokens(&ValueBag::capture_sval2(&TestSval), &[Token::U64(42)]);
+    }
+
+    #[test]
+    #[cfg(feature = "owned")]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn sval2_to_owned() {
+        todo!()
     }
 
     #[cfg(feature = "std")]

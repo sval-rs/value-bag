@@ -1,4 +1,4 @@
-#![cfg(feature = "alloc")]
+#![cfg(feature = "owned")]
 #![feature(test)]
 
 extern crate test;

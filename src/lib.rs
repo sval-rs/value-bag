@@ -111,9 +111,9 @@ pub mod visit;
 #[cfg(any(test, feature = "test"))]
 pub mod test;
 
-#[cfg(feature = "alloc")]
+#[cfg(feature = "owned")]
 mod owned;
-#[cfg(feature = "alloc")]
+#[cfg(feature = "owned")]
 pub use self::owned::*;
 
 pub use self::error::Error;

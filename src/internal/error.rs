@@ -1,6 +1,6 @@
 use crate::{
     fill::Slot,
-    std::{any::Any, boxed::Box, error, fmt, string::ToString},
+    std::{any::Any, error},
     ValueBag,
 };
 
@@ -72,32 +72,37 @@ impl<'s, 'f> Slot<'s, 'f> {
 
 pub use self::error::Error;
 
-#[derive(Clone, Debug)]
-pub(crate) struct OwnedError {
-    display: Box<str>,
-    source: Option<Box<OwnedError>>,
-}
+#[cfg(feature = "owned")]
+pub(crate) mod owned {
+    use crate::std::{boxed::Box, error, fmt, string::ToString};
 
-impl fmt::Display for OwnedError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        fmt::Display::fmt(&self.display, f)
+    #[derive(Clone, Debug)]
+    pub(crate) struct OwnedError {
+        display: Box<str>,
+        source: Option<Box<OwnedError>>,
     }
-}
 
-impl Error for OwnedError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        if let Some(ref source) = self.source {
-            Some(&**source)
-        } else {
-            None
+    impl fmt::Display for OwnedError {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            fmt::Display::fmt(&self.display, f)
         }
     }
-}
 
-pub(crate) fn buffer(err: &(dyn error::Error + 'static)) -> OwnedError {
-    OwnedError {
-        display: err.to_string().into(),
-        source: err.source().map(buffer).map(Box::new),
+    impl error::Error for OwnedError {
+        fn source(&self) -> Option<&(dyn error::Error + 'static)> {
+            if let Some(ref source) = self.source {
+                Some(&**source)
+            } else {
+                None
+            }
+        }
+    }
+
+    pub(crate) fn buffer(err: &(dyn error::Error + 'static)) -> OwnedError {
+        OwnedError {
+            display: err.to_string().into(),
+            source: err.source().map(buffer).map(Box::new),
+        }
     }
 }
 
@@ -153,5 +158,12 @@ mod tests {
         ValueBag::from_dyn_error(&err)
             .visit(TestVisit::default())
             .expect("failed to visit value");
+    }
+
+    #[test]
+    #[cfg(feature = "owned")]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn error_to_owned() {
+        todo!()
     }
 }

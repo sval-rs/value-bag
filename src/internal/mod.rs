@@ -18,7 +18,7 @@ pub(crate) mod serde;
 #[cfg(feature = "sval2")]
 pub(crate) mod sval;
 
-#[cfg(feature = "alloc")]
+#[cfg(feature = "owned")]
 pub(crate) mod owned;
 
 // NOTE: It takes less space to have separate variants for the presence

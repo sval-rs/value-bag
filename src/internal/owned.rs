@@ -27,10 +27,10 @@ pub(crate) enum OwnedInternal {
     Display(internal::fmt::owned::OwnedFmt),
 
     #[cfg(feature = "error")]
-    Error(internal::error::OwnedError),
+    Error(internal::error::owned::OwnedError),
 
     #[cfg(feature = "serde1")]
-    Serde1(internal::serde::v1::OwnedSerialize),
+    Serde1(internal::serde::v1::owned::OwnedSerialize),
 
     #[cfg(feature = "sval2")]
     Sval2(internal::sval::v2::owned::OwnedValue),
@@ -53,17 +53,17 @@ impl OwnedInternal {
             OwnedInternal::Str(v) => Internal::Str(v),
             OwnedInternal::None => Internal::None,
 
-            OwnedInternal::Debug(v) => Internal::Debug(v),
-            OwnedInternal::Display(v) => Internal::Display(v),
+            OwnedInternal::Debug(v) => Internal::AnonDebug(v),
+            OwnedInternal::Display(v) => Internal::AnonDisplay(v),
 
             #[cfg(feature = "error")]
-            OwnedInternal::Error(v) => Internal::Error(v),
+            OwnedInternal::Error(v) => Internal::AnonError(v),
 
             #[cfg(feature = "serde1")]
-            OwnedInternal::Serde1(v) => Internal::Serde1(v),
+            OwnedInternal::Serde1(v) => Internal::AnonSerde1(v),
 
             #[cfg(feature = "sval2")]
-            OwnedInternal::Sval2(v) => Internal::Sval2(v),
+            OwnedInternal::Sval2(v) => Internal::AnonSval2(v),
         }
     }
 }
@@ -130,7 +130,7 @@ impl<'v> Internal<'v> {
 
             #[cfg(feature = "error")]
             fn error(&mut self, v: &(dyn internal::error::Error + 'static)) -> Result<(), Error> {
-                self.0 = OwnedInternal::Error(internal::error::buffer(v));
+                self.0 = OwnedInternal::Error(internal::error::owned::buffer(v));
                 Ok(())
             }
 
@@ -142,7 +142,7 @@ impl<'v> Internal<'v> {
 
             #[cfg(feature = "serde1")]
             fn serde1(&mut self, v: &dyn internal::serde::v1::Serialize) -> Result<(), Error> {
-                self.0 = OwnedInternal::Serde1(internal::serde::v1::buffer(v));
+                self.0 = OwnedInternal::Serde1(internal::serde::v1::owned::buffer(v));
                 Ok(())
             }
         }

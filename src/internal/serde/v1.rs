@@ -6,7 +6,7 @@
 use crate::{
     fill::Slot,
     internal::{Internal, InternalVisitor},
-    std::{any::Any, boxed::Box, fmt},
+    std::{any::Any, fmt},
     Error, ValueBag,
 };
 
@@ -197,16 +197,6 @@ impl<'v> value_bag_serde1::lib::Serialize for ValueBag<'v> {
             .map_err(|e| S::Error::custom(e))?;
 
         visitor.into_result()
-    }
-}
-
-#[cfg(feature = "alloc")]
-impl value_bag_serde1::lib::Serialize for crate::OwnedValueBag {
-    fn serialize<S>(&self, s: S) -> Result<S::Ok, S::Error>
-    where
-        S: value_bag_serde1::lib::Serializer,
-    {
-        value_bag_serde1::lib::Serialize::serialize(&self.by_ref(), s)
     }
 }
 
@@ -443,10 +433,24 @@ impl value_bag_serde1::lib::ser::Error for Unsupported {
 
 impl value_bag_serde1::lib::ser::StdError for Unsupported {}
 
-pub(crate) type OwnedSerialize = Box<value_bag_serde1::buf::Owned>;
+#[cfg(feature = "owned")]
+pub(crate) mod owned {
+    use crate::std::boxed::Box;
 
-pub(crate) fn buffer(v: impl value_bag_serde1::lib::Serialize) -> OwnedSerialize {
-    Box::new(value_bag_serde1::buf::Owned::buffer(v).unwrap())
+    impl value_bag_serde1::lib::Serialize for crate::OwnedValueBag {
+        fn serialize<S>(&self, s: S) -> Result<S::Ok, S::Error>
+        where
+            S: value_bag_serde1::lib::Serializer,
+        {
+            value_bag_serde1::lib::Serialize::serialize(&self.by_ref(), s)
+        }
+    }
+
+    pub(crate) type OwnedSerialize = Box<value_bag_serde1::buf::Owned>;
+
+    pub(crate) fn buffer(v: impl value_bag_serde1::lib::Serialize) -> OwnedSerialize {
+        Box::new(value_bag_serde1::buf::Owned::buffer(v).unwrap())
+    }
 }
 
 #[cfg(test)]
@@ -607,6 +611,13 @@ mod tests {
         let value = ValueBag::from_serde1(&TestSerde);
 
         value_bag_sval2::test::assert_tokens(&value, &[Token::U64(42)]);
+    }
+
+    #[test]
+    #[cfg(feature = "owned")]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn serde1_to_owned() {
+        todo!()
     }
 
     #[cfg(feature = "std")]
