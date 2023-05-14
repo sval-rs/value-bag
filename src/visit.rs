@@ -75,100 +75,68 @@ pub trait Visit<'v> {
 
     /// Visit an unsigned integer.
     #[inline]
-    #[cfg(not(test))]
     fn visit_u64(&mut self, value: u64) -> Result<(), Error> {
         self.visit_any(value.into())
     }
-    #[cfg(test)]
-    fn visit_u64(&mut self, value: u64) -> Result<(), Error>;
 
     /// Visit a signed integer.
     #[inline]
-    #[cfg(not(test))]
     fn visit_i64(&mut self, value: i64) -> Result<(), Error> {
         self.visit_any(value.into())
     }
-    #[cfg(test)]
-    fn visit_i64(&mut self, value: i64) -> Result<(), Error>;
 
     /// Visit a big unsigned integer.
     #[inline]
-    #[cfg(not(test))]
     fn visit_u128(&mut self, value: u128) -> Result<(), Error> {
         self.visit_any((&value).into())
     }
-    #[cfg(test)]
-    fn visit_u128(&mut self, value: u128) -> Result<(), Error>;
 
     /// Visit a big signed integer.
     #[inline]
-    #[cfg(not(test))]
     fn visit_i128(&mut self, value: i128) -> Result<(), Error> {
         self.visit_any((&value).into())
     }
-    #[cfg(test)]
-    fn visit_i128(&mut self, value: i128) -> Result<(), Error>;
 
     /// Visit a floating point.
     #[inline]
-    #[cfg(not(test))]
     fn visit_f64(&mut self, value: f64) -> Result<(), Error> {
         self.visit_any(value.into())
     }
-    #[cfg(test)]
-    fn visit_f64(&mut self, value: f64) -> Result<(), Error>;
 
     /// Visit a boolean.
     #[inline]
-    #[cfg(not(test))]
     fn visit_bool(&mut self, value: bool) -> Result<(), Error> {
         self.visit_any(value.into())
     }
-    #[cfg(test)]
-    fn visit_bool(&mut self, value: bool) -> Result<(), Error>;
 
     /// Visit a string.
     #[inline]
-    #[cfg(not(test))]
     fn visit_str(&mut self, value: &str) -> Result<(), Error> {
         self.visit_any(value.into())
     }
-    #[cfg(test)]
-    fn visit_str(&mut self, value: &str) -> Result<(), Error>;
 
     /// Visit a string.
     #[inline]
-    #[cfg(not(test))]
     fn visit_borrowed_str(&mut self, value: &'v str) -> Result<(), Error> {
         self.visit_str(value)
     }
-    #[cfg(test)]
-    fn visit_borrowed_str(&mut self, value: &'v str) -> Result<(), Error>;
 
     /// Visit a Unicode character.
     #[inline]
-    #[cfg(not(test))]
     fn visit_char(&mut self, value: char) -> Result<(), Error> {
         let mut b = [0; 4];
         self.visit_str(&*value.encode_utf8(&mut b))
     }
-    #[cfg(test)]
-    fn visit_char(&mut self, value: char) -> Result<(), Error>;
 
     /// Visit an error.
     #[inline]
-    #[cfg(not(test))]
     #[cfg(feature = "error")]
     fn visit_error(&mut self, err: &(dyn crate::std::error::Error + 'static)) -> Result<(), Error> {
         self.visit_any(ValueBag::from_dyn_error(err))
     }
-    #[cfg(test)]
-    #[cfg(feature = "error")]
-    fn visit_error(&mut self, err: &(dyn crate::std::error::Error + 'static)) -> Result<(), Error>;
 
     /// Visit an error.
     #[inline]
-    #[cfg(not(test))]
     #[cfg(feature = "error")]
     fn visit_borrowed_error(
         &mut self,
@@ -176,12 +144,6 @@ pub trait Visit<'v> {
     ) -> Result<(), Error> {
         self.visit_any(ValueBag::from_dyn_error(err))
     }
-    #[cfg(test)]
-    #[cfg(feature = "error")]
-    fn visit_borrowed_error(
-        &mut self,
-        err: &'v (dyn crate::std::error::Error + 'static),
-    ) -> Result<(), Error>;
 }
 
 impl<'a, 'v, T: ?Sized> Visit<'v> for &'a mut T
