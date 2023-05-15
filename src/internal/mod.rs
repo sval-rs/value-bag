@@ -18,6 +18,9 @@ pub(crate) mod serde;
 #[cfg(feature = "sval2")]
 pub(crate) mod sval;
 
+#[cfg(feature = "owned")]
+pub(crate) mod owned;
+
 // NOTE: It takes less space to have separate variants for the presence
 // of a `TypeId` instead of using `Option<T>`, because `TypeId` doesn't
 // have a niche value

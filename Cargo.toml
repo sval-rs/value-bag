@@ -15,7 +15,7 @@ exclude = [
 ]
 
 [package.metadata.docs.rs]
-features = ["std", "error", "sval", "serde", "test"]
+features = ["std", "error", "sval", "serde", "test", "owned"]
 
 [workspace]
 members = [
@@ -30,6 +30,7 @@ inline-i128 = []
 
 # Use the standard library
 std = [
+    "alloc",
     "value-bag-sval2?/std",
     "value-bag-serde1?/std",
 ]
@@ -38,6 +39,12 @@ std = [
 alloc = [
     "value-bag-sval2?/alloc",
     "value-bag-serde1?/alloc",
+]
+
+# Support owned values
+owned = [
+    "alloc",
+    "value-bag-serde1?/owned",
 ]
 
 # Add support for `sval`

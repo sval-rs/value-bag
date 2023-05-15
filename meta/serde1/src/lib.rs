@@ -8,6 +8,9 @@ pub use erased_serde as erased;
 pub use serde as lib;
 pub use serde_fmt as fmt;
 
+#[cfg(feature = "owned")]
+pub use serde_buf as buf;
+
 #[cfg(feature = "json")]
 pub use serde_json as json;
 
