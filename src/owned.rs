@@ -94,6 +94,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "error")]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn error_to_owned() {
         let value = ValueBag::from_dyn_error(&io::Error::new(io::ErrorKind::Other, "something failed!")).to_owned();
