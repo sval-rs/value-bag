@@ -40,6 +40,9 @@ impl OwnedValueBag {
 
 #[cfg(test)]
 mod tests {
+    #[cfg(target_arch = "wasm32")]
+    use wasm_bindgen_test::*;
+    
     use super::*;
 
     use crate::{fill, std::{mem, string::ToString, io}};
