@@ -475,11 +475,4 @@ mod tests {
             format!("{:04}", 42u64.into_value_bag().by_ref()),
         );
     }
-
-    #[test]
-    #[cfg(feature = "owned")]
-    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-    fn fmt_to_owned() {
-        todo!()
-    }
 }

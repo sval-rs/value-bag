@@ -613,13 +613,6 @@ mod tests {
         value_bag_sval2::test::assert_tokens(&value, &[Token::U64(42)]);
     }
 
-    #[test]
-    #[cfg(feature = "owned")]
-    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-    fn serde1_to_owned() {
-        todo!()
-    }
-
     #[cfg(feature = "std")]
     mod std_support {
         use super::*;

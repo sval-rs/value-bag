@@ -159,11 +159,4 @@ mod tests {
             .visit(TestVisit::default())
             .expect("failed to visit value");
     }
-
-    #[test]
-    #[cfg(feature = "owned")]
-    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-    fn error_to_owned() {
-        todo!()
-    }
 }

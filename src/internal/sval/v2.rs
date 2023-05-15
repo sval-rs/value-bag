@@ -505,13 +505,6 @@ mod tests {
         assert_ser_tokens(&ValueBag::capture_sval2(&TestSval), &[Token::U64(42)]);
     }
 
-    #[test]
-    #[cfg(feature = "owned")]
-    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-    fn sval2_to_owned() {
-        todo!()
-    }
-
     #[cfg(feature = "std")]
     mod std_support {
         use super::*;
