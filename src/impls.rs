@@ -91,6 +91,20 @@ mod std_support {
     }
 }
 
+#[cfg(feature = "owned")]
+mod owned_support {
+    use super::*;
+
+    use crate::OwnedValueBag;
+
+    impl<'v> From<&'v OwnedValueBag> for ValueBag<'v> {
+        #[inline]
+        fn from(v: &'v OwnedValueBag) -> ValueBag<'v> {
+            v.by_ref()
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     #[cfg(target_arch = "wasm32")]
