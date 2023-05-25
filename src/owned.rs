@@ -45,7 +45,7 @@ mod tests {
     
     use super::*;
 
-    use crate::{fill, std::{mem, string::ToString, io}};
+    use crate::{fill, std::{mem, string::ToString}};
 
     const SIZE_LIMIT_U64: usize = 4;
 
@@ -100,6 +100,8 @@ mod tests {
     #[cfg(feature = "error")]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn error_to_owned() {
+        use crate::std::io;
+
         let value = ValueBag::from_dyn_error(&io::Error::new(io::ErrorKind::Other, "something failed!")).to_owned();
 
         assert!(matches!(value.inner, internal::owned::OwnedInternal::Error(_)));
