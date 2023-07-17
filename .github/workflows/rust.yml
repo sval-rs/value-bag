@@ -19,11 +19,17 @@ jobs:
       - name: Checkout sources
         uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab
 
+      - name: Install Rust toolchain
+        run: rustup default nightly
+
       - name: Install cargo-hack
         run: cargo install cargo-hack
 
       - name: Powerset
         run: cargo hack test --feature-powerset
+
+      - name: Minimal versions
+        run: cargo hack test --feature-powerset -Z minimal-versions
 
   embedded:
     name: Build (embedded)
