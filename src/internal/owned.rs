@@ -34,6 +34,9 @@ pub(crate) enum OwnedInternal {
 
     #[cfg(feature = "sval2")]
     Sval2(internal::sval::v2::owned::OwnedValue),
+
+    /// A poisoned value.
+    Poisoned(&'static str),
 }
 
 impl OwnedInternal {
@@ -64,6 +67,8 @@ impl OwnedInternal {
 
             #[cfg(feature = "sval2")]
             OwnedInternal::Sval2(v) => Internal::AnonSval2(v),
+
+            OwnedInternal::Poisoned(msg) => Internal::Poisoned(msg),
         }
     }
 }
@@ -136,13 +141,22 @@ impl<'v> Internal<'v> {
 
             #[cfg(feature = "sval2")]
             fn sval2(&mut self, v: &dyn internal::sval::v2::Value) -> Result<(), Error> {
-                self.0 = OwnedInternal::Sval2(internal::sval::v2::owned::buffer(v));
+                self.0 = internal::sval::v2::owned::buffer(v)
+                    .map(OwnedInternal::Sval2)
+                    .unwrap_or(OwnedInternal::Poisoned("failed to buffer the value"));
                 Ok(())
             }
 
             #[cfg(feature = "serde1")]
             fn serde1(&mut self, v: &dyn internal::serde::v1::Serialize) -> Result<(), Error> {
-                self.0 = OwnedInternal::Serde1(internal::serde::v1::owned::buffer(v));
+                self.0 = internal::serde::v1::owned::buffer(v)
+                    .map(OwnedInternal::Serde1)
+                    .unwrap_or(OwnedInternal::Poisoned("failed to buffer the value"));
+                Ok(())
+            }
+
+            fn poisoned(&mut self, msg: &'static str) -> Result<(), Error> {
+                self.0 = OwnedInternal::Poisoned(msg);
                 Ok(())
             }
         }

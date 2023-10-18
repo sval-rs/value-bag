@@ -221,6 +221,11 @@ impl<'v> Internal<'v> {
             fn serde1(&mut self, v: &dyn super::serde::v1::Serialize) -> Result<(), Error> {
                 super::serde::v1::internal_visit(v, self)
             }
+
+            fn poisoned(&mut self, _: &'static str) -> Result<(), Error> {
+                self.0 = Cast::None;
+                Ok(())
+            }
         }
 
         match &self {

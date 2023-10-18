@@ -217,6 +217,12 @@ impl<'v> Debug for ValueBag<'v> {
             ) -> Result<(), Error> {
                 crate::internal::serde::v1::fmt(self.0, v)
             }
+
+            fn poisoned(&mut self, msg: &'static str) -> Result<(), Error> {
+                write!(self.0, "<{msg}>")?;
+
+                Ok(())
+            }
         }
 
         self.internal_visit(&mut DebugVisitor(f))
@@ -313,6 +319,12 @@ impl<'v> Display for ValueBag<'v> {
                 v: &dyn crate::internal::serde::v1::Serialize,
             ) -> Result<(), Error> {
                 crate::internal::serde::v1::fmt(self.0, v)
+            }
+
+            fn poisoned(&mut self, msg: &'static str) -> Result<(), Error> {
+                write!(self.0, "<{msg}>")?;
+
+                Ok(())
             }
         }
 

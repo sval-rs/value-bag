@@ -48,6 +48,8 @@ pub enum TestToken {
     Serde {
         version: u32,
     },
+
+    Poisoned(String),
 }
 
 impl<'v> ValueBag<'v> {
@@ -130,6 +132,11 @@ impl<'v> ValueBag<'v> {
             #[cfg(feature = "serde1")]
             fn serde1(&mut self, _: &dyn internal::serde::v1::Serialize) -> Result<(), Error> {
                 self.0 = Some(TestToken::Serde { version: 1 });
+                Ok(())
+            }
+
+            fn poisoned(&mut self, msg: &'static str) -> Result<(), Error> {
+                self.0 = Some(TestToken::Poisoned(msg.into()));
                 Ok(())
             }
         }

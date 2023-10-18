@@ -162,6 +162,10 @@ impl<'sval> value_bag_sval2::lib_ref::ValueRef<'sval> for ValueBag<'sval> {
             ) -> Result<(), Error> {
                 crate::internal::serde::v1::sval2(self.0, v)
             }
+
+            fn poisoned(&mut self, msg: &'static str) -> Result<(), Error> {
+                Err(Error::msg(msg))
+            }
         }
 
         self.internal_visit(&mut Sval2Visitor(s))
@@ -315,8 +319,10 @@ pub(crate) mod owned {
 
     pub(crate) type OwnedValue = value_bag_sval2::buffer::Value<'static>;
 
-    pub(crate) fn buffer(v: impl value_bag_sval2::lib::Value) -> OwnedValue {
-        OwnedValue::collect_owned(v).unwrap()
+    pub(crate) fn buffer(
+        v: impl value_bag_sval2::lib::Value,
+    ) -> Result<OwnedValue, value_bag_sval2::buffer::Error> {
+        OwnedValue::collect_owned(v)
     }
 }
 
@@ -520,6 +526,36 @@ mod tests {
                     .by_ref()
                     .to_str()
                     .expect("invalid value")
+            );
+        }
+    }
+
+    #[cfg(feature = "owned")]
+    mod owned_support {
+        use super::*;
+
+        #[test]
+        #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+        fn sval2_to_owned_poison() {
+            struct Kaboom;
+
+            impl value_bag_sval2::lib::Value for Kaboom {
+                fn stream<'sval, S: value_bag_sval2::lib::Stream<'sval> + ?Sized>(
+                    &'sval self,
+                    _: &mut S,
+                ) -> value_bag_sval2::lib::Result {
+                    value_bag_sval2::lib::error()
+                }
+            }
+
+            let value = ValueBag::capture_sval2(&Kaboom)
+                .to_owned()
+                .by_ref()
+                .to_test_token();
+
+            assert_eq!(
+                TestToken::Poisoned("failed to buffer the value".into()),
+                value
             );
         }
     }

@@ -85,6 +85,9 @@ pub(crate) enum Internal<'v> {
     #[cfg(feature = "serde1")]
     /// A structured value from `serde`.
     Serde1(&'v dyn serde::v1::DowncastSerialize),
+
+    /// A poisoned value.
+    Poisoned(&'static str),
 }
 
 /// The internal serialization contract.
@@ -139,6 +142,8 @@ pub(crate) trait InternalVisitor<'v> {
     fn borrowed_serde1(&mut self, v: &'v dyn serde::v1::Serialize) -> Result<(), Error> {
         self.serde1(v)
     }
+
+    fn poisoned(&mut self, msg: &'static str) -> Result<(), Error>;
 }
 
 impl<'a, 'v, V: InternalVisitor<'v> + ?Sized> InternalVisitor<'v> for &'a mut V {
@@ -235,6 +240,10 @@ impl<'a, 'v, V: InternalVisitor<'v> + ?Sized> InternalVisitor<'v> for &'a mut V 
     fn borrowed_serde1(&mut self, v: &'v dyn serde::v1::Serialize) -> Result<(), Error> {
         (**self).borrowed_serde1(v)
     }
+
+    fn poisoned(&mut self, msg: &'static str) -> Result<(), Error> {
+        (**self).poisoned(msg)
+    }
 }
 
 impl<'v> ValueBag<'v> {
@@ -291,6 +300,8 @@ impl<'v> Internal<'v> {
             Internal::AnonSerde1(value) => Internal::AnonSerde1(*value),
             #[cfg(feature = "serde1")]
             Internal::Serde1(value) => Internal::Serde1(*value),
+
+            Internal::Poisoned(msg) => Internal::Poisoned(msg),
         }
     }
 
@@ -332,6 +343,8 @@ impl<'v> Internal<'v> {
             Internal::AnonSerde1(value) => visitor.borrowed_serde1(*value),
             #[cfg(feature = "serde1")]
             Internal::Serde1(value) => visitor.borrowed_serde1(value.as_super()),
+
+            Internal::Poisoned(msg) => visitor.poisoned(*msg),
         }
     }
 }
