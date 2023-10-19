@@ -87,6 +87,7 @@ pub(crate) enum Internal<'v> {
     Serde1(&'v dyn serde::v1::DowncastSerialize),
 
     /// A poisoned value.
+    #[cfg_attr(not(feature = "owned"), allow(dead_code))]
     Poisoned(&'static str),
 }
 
