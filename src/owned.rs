@@ -42,10 +42,13 @@ impl OwnedValueBag {
 mod tests {
     #[cfg(target_arch = "wasm32")]
     use wasm_bindgen_test::*;
-    
+
     use super::*;
 
-    use crate::{fill, std::{mem, string::ToString}};
+    use crate::{
+        fill,
+        std::{mem, string::ToString},
+    };
 
     const SIZE_LIMIT_U64: usize = 4;
 
@@ -74,7 +77,10 @@ mod tests {
     fn fill_to_owned() {
         let value = ValueBag::from_fill(&|slot: fill::Slot| slot.fill_any(42u64)).to_owned();
 
-        assert!(matches!(value.inner, internal::owned::OwnedInternal::BigUnsigned(42)));
+        assert!(matches!(
+            value.inner,
+            internal::owned::OwnedInternal::BigUnsigned(42)
+        ));
     }
 
     #[test]
@@ -83,8 +89,14 @@ mod tests {
         let debug = ValueBag::from_debug(&"a value").to_owned();
         let display = ValueBag::from_display(&"a value").to_owned();
 
-        assert!(matches!(debug.inner, internal::owned::OwnedInternal::Debug(_)));
-        assert!(matches!(display.inner, internal::owned::OwnedInternal::Display(_)));
+        assert!(matches!(
+            debug.inner,
+            internal::owned::OwnedInternal::Debug(_)
+        ));
+        assert!(matches!(
+            display.inner,
+            internal::owned::OwnedInternal::Display(_)
+        ));
 
         assert_eq!("\"a value\"", debug.to_string());
         assert_eq!("a value", display.to_string());
@@ -102,9 +114,14 @@ mod tests {
     fn error_to_owned() {
         use crate::std::io;
 
-        let value = ValueBag::from_dyn_error(&io::Error::new(io::ErrorKind::Other, "something failed!")).to_owned();
+        let value =
+            ValueBag::from_dyn_error(&io::Error::new(io::ErrorKind::Other, "something failed!"))
+                .to_owned();
 
-        assert!(matches!(value.inner, internal::owned::OwnedInternal::Error(_)));
+        assert!(matches!(
+            value.inner,
+            internal::owned::OwnedInternal::Error(_)
+        ));
 
         let value = value.by_ref();
 
@@ -119,7 +136,10 @@ mod tests {
     fn serde1_to_owned() {
         let value = ValueBag::from_serde1(&42u64).to_owned();
 
-        assert!(matches!(value.inner, internal::owned::OwnedInternal::Serde1(_)));
+        assert!(matches!(
+            value.inner,
+            internal::owned::OwnedInternal::Serde1(_)
+        ));
 
         let value = value.by_ref();
 
@@ -132,7 +152,10 @@ mod tests {
     fn sval2_to_owned() {
         let value = ValueBag::from_sval2(&42u64).to_owned();
 
-        assert!(matches!(value.inner, internal::owned::OwnedInternal::Sval2(_)));
+        assert!(matches!(
+            value.inner,
+            internal::owned::OwnedInternal::Sval2(_)
+        ));
 
         let value = value.by_ref();
 

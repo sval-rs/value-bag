@@ -186,6 +186,11 @@ impl<'v> value_bag_serde1::lib::Serialize for ValueBag<'v> {
                 self.result = Some(value_bag_serde1::erased::serialize(v, self.serializer()?));
                 self.result()
             }
+
+            fn poisoned(&mut self, msg: &'static str) -> Result<(), Error> {
+                self.result = Some(Err(S::Error::custom(msg)));
+                self.result()
+            }
         }
 
         let mut visitor = Serde1Visitor {
@@ -448,8 +453,10 @@ pub(crate) mod owned {
 
     pub(crate) type OwnedSerialize = Box<value_bag_serde1::buf::Owned>;
 
-    pub(crate) fn buffer(v: impl value_bag_serde1::lib::Serialize) -> OwnedSerialize {
-        Box::new(value_bag_serde1::buf::Owned::buffer(v).unwrap())
+    pub(crate) fn buffer(
+        v: impl value_bag_serde1::lib::Serialize,
+    ) -> Result<OwnedSerialize, value_bag_serde1::buf::Error> {
+        value_bag_serde1::buf::Owned::buffer(v).map(Box::new)
     }
 }
 
@@ -628,6 +635,36 @@ mod tests {
                     .by_ref()
                     .to_str()
                     .expect("invalid value")
+            );
+        }
+    }
+
+    #[cfg(feature = "owned")]
+    mod owned_support {
+        use super::*;
+
+        #[test]
+        #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+        fn serde1_to_owned_poison() {
+            struct Kaboom;
+
+            impl value_bag_serde1::lib::Serialize for Kaboom {
+                fn serialize<S>(&self, _: S) -> Result<S::Ok, S::Error>
+                where
+                    S: value_bag_serde1::lib::Serializer,
+                {
+                    Err(S::Error::custom("kaboom"))
+                }
+            }
+
+            let value = ValueBag::capture_serde1(&Kaboom)
+                .to_owned()
+                .by_ref()
+                .to_test_token();
+
+            assert_eq!(
+                TestToken::Poisoned("failed to buffer the value".into()),
+                value
             );
         }
     }

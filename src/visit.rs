@@ -307,6 +307,10 @@ impl<'v> ValueBag<'v> {
             fn serde1(&mut self, v: &dyn internal::serde::v1::Serialize) -> Result<(), Error> {
                 internal::serde::v1::internal_visit(v, self)
             }
+
+            fn poisoned(&mut self, msg: &'static str) -> Result<(), Error> {
+                Err(Error::msg(msg))
+            }
         }
 
         self.internal_visit(&mut Visitor(visitor))
