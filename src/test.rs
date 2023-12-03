@@ -139,6 +139,10 @@ impl<'v> ValueBag<'v> {
                 self.0 = Some(TestToken::Poisoned(msg.into()));
                 Ok(())
             }
+
+            fn seq_elem(&mut self, _: ValueBag) -> Result<(), Error> {
+                Err(Error::msg("sequences are unsupported"))
+            }
         }
 
         let mut visitor = TestVisitor(None);

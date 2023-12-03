@@ -99,6 +99,16 @@ impl<'sval> value_bag_sval2::lib_ref::ValueRef<'sval> for ValueBag<'sval> {
                 value_bag_sval2::fmt::stream_display(self.0, v).map_err(Error::from_sval2)
             }
 
+            fn seq_elem(&mut self, v: ValueBag) -> Result<(), Error> {
+                self.0.value_computed(&v).map_err(Error::from_sval2)
+            }
+
+            fn borrowed_seq_elem(&mut self, v: ValueBag<'v>) -> Result<(), Error> {
+                use value_bag_sval2::lib_ref::ValueRef as _;
+
+                v.stream_ref(self.0).map_err(Error::from_sval2)
+            }
+
             fn u64(&mut self, v: u64) -> Result<(), Error> {
                 self.0.u64(v).map_err(Error::from_sval2)
             }
@@ -195,7 +205,11 @@ pub(crate) fn internal_visit<'v>(
     visitor: &mut dyn InternalVisitor<'v>,
 ) -> Result<(), Error> {
     let mut visitor = VisitorStream {
-        visitor,
+        internal: VisitorInternal {
+            visitor,
+            depth: 0,
+            position: Position::Root,
+        },
         text_buf: Default::default(),
     };
 
@@ -209,7 +223,11 @@ pub(crate) fn borrowed_internal_visit<'v>(
     visitor: &mut dyn InternalVisitor<'v>,
 ) -> Result<(), Error> {
     let mut visitor = VisitorStream {
-        visitor,
+        internal: VisitorInternal {
+            visitor,
+            depth: 0,
+            position: Position::Root,
+        },
         text_buf: Default::default(),
     };
 
@@ -218,52 +236,115 @@ pub(crate) fn borrowed_internal_visit<'v>(
     Ok(())
 }
 
+enum Position {
+    Root,
+    MapKey,
+    MapValue,
+    SeqElem,
+}
+
 struct VisitorStream<'a, 'v> {
-    visitor: &'a mut dyn InternalVisitor<'v>,
+    internal: VisitorInternal<'a, 'v>,
     text_buf: value_bag_sval2::buffer::TextBuf<'v>,
+}
+
+struct VisitorInternal<'a, 'v> {
+    visitor: &'a mut dyn InternalVisitor<'v>,
+    position: Position,
+    depth: usize,
+}
+
+impl<'a, 'v> VisitorInternal<'a, 'v> {
+    fn visit<'b>(
+        &mut self,
+        root: impl FnOnce(&mut dyn InternalVisitor<'v>) -> Result<(), Error>,
+        value: impl Into<ValueBag<'b>>,
+    ) -> value_bag_sval2::lib::Result {
+        if self.depth > 1 {
+            return Ok(());
+        }
+
+        match self.position {
+            Position::Root => root(self.visitor),
+            Position::SeqElem => self.visitor.seq_elem(value.into()),
+            Position::MapKey => Err(Error::msg("maps are not supported")),
+            Position::MapValue => Err(Error::msg("maps are not supported")),
+        }
+        .map_err(Error::into_sval2)
+    }
+
+    fn borrowed_visit(
+        &mut self,
+        root: impl FnOnce(&mut dyn InternalVisitor<'v>) -> Result<(), Error>,
+        value: impl Into<ValueBag<'v>>,
+    ) -> value_bag_sval2::lib::Result {
+        if self.depth > 1 {
+            return Ok(());
+        }
+
+        match self.position {
+            Position::Root => root(self.visitor),
+            Position::SeqElem => self.visitor.borrowed_seq_elem(value.into()),
+            Position::MapKey => Err(Error::msg("maps are not supported")),
+            Position::MapValue => Err(Error::msg("maps are not supported")),
+        }
+        .map_err(Error::into_sval2)
+    }
 }
 
 impl<'a, 'v> value_bag_sval2::lib::Stream<'v> for VisitorStream<'a, 'v> {
     fn null(&mut self) -> value_bag_sval2::lib::Result {
-        self.visitor.none().map_err(Error::into_sval2)
+        self.internal.visit(|visitor| visitor.none(), ())
     }
 
     fn bool(&mut self, v: bool) -> value_bag_sval2::lib::Result {
-        self.visitor.bool(v).map_err(Error::into_sval2)
+        self.internal.visit(|visitor| visitor.bool(v), v)
     }
 
     fn i64(&mut self, v: i64) -> value_bag_sval2::lib::Result {
-        self.visitor.i64(v).map_err(Error::into_sval2)
+        self.internal.visit(|visitor| visitor.i64(v), v)
     }
 
     fn u64(&mut self, v: u64) -> value_bag_sval2::lib::Result {
-        self.visitor.u64(v).map_err(Error::into_sval2)
+        self.internal.visit(|visitor| visitor.u64(v), v)
     }
 
     fn i128(&mut self, v: i128) -> value_bag_sval2::lib::Result {
-        self.visitor.i128(&v).map_err(Error::into_sval2)
+        self.internal.visit(|visitor| visitor.i128(&v), &v)
     }
 
     fn u128(&mut self, v: u128) -> value_bag_sval2::lib::Result {
-        self.visitor.u128(&v).map_err(Error::into_sval2)
+        self.internal.visit(|visitor| visitor.u128(&v), &v)
     }
 
     fn f64(&mut self, v: f64) -> value_bag_sval2::lib::Result {
-        self.visitor.f64(v).map_err(Error::into_sval2)
+        self.internal.visit(|visitor| visitor.f64(v), v)
     }
 
     fn text_begin(&mut self, _: Option<usize>) -> value_bag_sval2::lib::Result {
+        if self.internal.depth > 1 {
+            return Ok(());
+        }
+
         self.text_buf.clear();
         Ok(())
     }
 
     fn text_fragment_computed(&mut self, f: &str) -> value_bag_sval2::lib::Result {
+        if self.internal.depth > 1 {
+            return Ok(());
+        }
+
         self.text_buf
             .push_fragment_computed(f)
             .map_err(|_| value_bag_sval2::lib::Error::new())
     }
 
     fn text_fragment(&mut self, f: &'v str) -> value_bag_sval2::lib::Result {
+        if self.internal.depth > 1 {
+            return Ok(());
+        }
+
         self.text_buf
             .push_fragment(f)
             .map_err(|_| value_bag_sval2::lib::Error::new())
@@ -271,28 +352,66 @@ impl<'a, 'v> value_bag_sval2::lib::Stream<'v> for VisitorStream<'a, 'v> {
 
     fn text_end(&mut self) -> value_bag_sval2::lib::Result {
         if let Some(v) = self.text_buf.as_borrowed_str() {
-            self.visitor.borrowed_str(v).map_err(Error::into_sval2)
+            self.internal
+                .borrowed_visit(|visitor| visitor.borrowed_str(v), v)
         } else {
-            self.visitor
-                .str(self.text_buf.as_str())
-                .map_err(Error::into_sval2)
+            self.internal.visit(
+                |visitor| visitor.str(self.text_buf.as_str()),
+                self.text_buf.as_str(),
+            )
         }
     }
 
     fn seq_begin(&mut self, _: Option<usize>) -> value_bag_sval2::lib::Result {
-        value_bag_sval2::lib::error()
-    }
+        self.internal.depth += 1;
 
-    fn seq_value_begin(&mut self) -> value_bag_sval2::lib::Result {
-        value_bag_sval2::lib::error()
-    }
+        if self.internal.depth != 1 {
+            self.internal.visit(|visitor| visitor.none(), ())?;
+        }
 
-    fn seq_value_end(&mut self) -> value_bag_sval2::lib::Result {
-        value_bag_sval2::lib::error()
+        Ok(())
     }
 
     fn seq_end(&mut self) -> value_bag_sval2::lib::Result {
-        value_bag_sval2::lib::error()
+        self.internal.depth -= 1;
+        Ok(())
+    }
+
+    fn map_begin(&mut self, _: Option<usize>) -> value_bag_sval2::lib::Result {
+        self.internal.depth += 1;
+        self.internal.visit(|visitor| visitor.none(), ())
+    }
+
+    fn map_end(&mut self) -> value_bag_sval2::lib::Result {
+        self.internal.depth -= 1;
+        Ok(())
+    }
+
+    fn seq_value_begin(&mut self) -> value_bag_sval2::lib::Result {
+        self.internal.position = Position::SeqElem;
+        Ok(())
+    }
+
+    fn seq_value_end(&mut self) -> value_bag_sval2::lib::Result {
+        Ok(())
+    }
+
+    fn map_key_begin(&mut self) -> value_bag_sval2::lib::Result {
+        self.internal.position = Position::MapKey;
+        Ok(())
+    }
+
+    fn map_key_end(&mut self) -> value_bag_sval2::lib::Result {
+        Ok(())
+    }
+
+    fn map_value_begin(&mut self) -> value_bag_sval2::lib::Result {
+        self.internal.position = Position::MapValue;
+        Ok(())
+    }
+
+    fn map_value_end(&mut self) -> value_bag_sval2::lib::Result {
+        Ok(())
     }
 }
 

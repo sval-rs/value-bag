@@ -119,7 +119,16 @@ impl<'v> Internal<'v> {
     /// Cast the inner value to another type.
     #[inline]
     fn cast(&self) -> Cast<'v> {
-        struct CastVisitor<'v>(Cast<'v>);
+        struct CastVisitor<'v> {
+            cast: Cast<'v>,
+        }
+
+        impl<'v> CastVisitor<'v> {
+            fn set(&mut self, cast: Cast<'v>) -> Result<(), Error> {
+                self.cast = cast;
+                Ok(())
+            }
+        }
 
         impl<'v> InternalVisitor<'v> for CastVisitor<'v> {
             #[inline]
@@ -133,52 +142,50 @@ impl<'v> Internal<'v> {
             }
 
             #[inline]
+            fn seq_elem(&mut self, _: ValueBag) -> Result<(), Error> {
+                self.cast = Cast::None;
+                Err(Error::msg("cannot cast complex values"))
+            }
+
+            #[inline]
             fn u64(&mut self, v: u64) -> Result<(), Error> {
-                self.0 = Cast::Unsigned(v);
-                Ok(())
+                self.set(Cast::Unsigned(v))
             }
 
             #[inline]
             fn i64(&mut self, v: i64) -> Result<(), Error> {
-                self.0 = Cast::Signed(v);
-                Ok(())
+                self.set(Cast::Signed(v))
             }
 
             #[inline]
             fn u128(&mut self, v: &u128) -> Result<(), Error> {
-                self.0 = Cast::BigUnsigned(*v);
-                Ok(())
+                self.set(Cast::BigUnsigned(*v))
             }
 
             #[inline]
             fn i128(&mut self, v: &i128) -> Result<(), Error> {
-                self.0 = Cast::BigSigned(*v);
-                Ok(())
+                self.set(Cast::BigSigned(*v))
             }
 
             #[inline]
             fn f64(&mut self, v: f64) -> Result<(), Error> {
-                self.0 = Cast::Float(v);
-                Ok(())
+                self.set(Cast::Float(v))
             }
 
             #[inline]
             fn bool(&mut self, v: bool) -> Result<(), Error> {
-                self.0 = Cast::Bool(v);
-                Ok(())
+                self.set(Cast::Bool(v))
             }
 
             #[inline]
             fn char(&mut self, v: char) -> Result<(), Error> {
-                self.0 = Cast::Char(v);
-                Ok(())
+                self.set(Cast::Char(v))
             }
 
             #[cfg(feature = "std")]
             #[inline]
             fn str(&mut self, s: &str) -> Result<(), Error> {
-                self.0 = Cast::String(s.to_owned());
-                Ok(())
+                self.set(Cast::String(s.to_owned()))
             }
 
             #[cfg(not(feature = "std"))]
@@ -189,14 +196,12 @@ impl<'v> Internal<'v> {
 
             #[inline]
             fn borrowed_str(&mut self, v: &'v str) -> Result<(), Error> {
-                self.0 = Cast::Str(v);
-                Ok(())
+                self.set(Cast::Str(v))
             }
 
             #[inline]
             fn none(&mut self) -> Result<(), Error> {
-                self.0 = Cast::None;
-                Ok(())
+                self.set(Cast::None)
             }
 
             #[cfg(feature = "error")]
@@ -223,7 +228,7 @@ impl<'v> Internal<'v> {
             }
 
             fn poisoned(&mut self, _: &'static str) -> Result<(), Error> {
-                self.0 = Cast::None;
+                self.cast = Cast::None;
                 Ok(())
             }
         }
@@ -246,9 +251,9 @@ impl<'v> Internal<'v> {
             Internal::None => Cast::None,
             other => {
                 // If the erased value isn't a primitive then we visit it
-                let mut cast = CastVisitor(Cast::None);
-                let _ = other.internal_visit(&mut cast);
-                cast.0
+                let mut visitor = CastVisitor { cast: Cast::None };
+                let _ = other.internal_visit(&mut visitor);
+                visitor.cast
             }
         }
     }

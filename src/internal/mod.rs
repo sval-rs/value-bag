@@ -145,6 +145,11 @@ pub(crate) trait InternalVisitor<'v> {
     }
 
     fn poisoned(&mut self, msg: &'static str) -> Result<(), Error>;
+
+    fn seq_elem(&mut self, elem: ValueBag) -> Result<(), Error>;
+    fn borrowed_seq_elem(&mut self, elem: ValueBag<'v>) -> Result<(), Error> {
+        self.seq_elem(elem)
+    }
 }
 
 impl<'a, 'v, V: InternalVisitor<'v> + ?Sized> InternalVisitor<'v> for &'a mut V {
@@ -244,6 +249,14 @@ impl<'a, 'v, V: InternalVisitor<'v> + ?Sized> InternalVisitor<'v> for &'a mut V 
 
     fn poisoned(&mut self, msg: &'static str) -> Result<(), Error> {
         (**self).poisoned(msg)
+    }
+
+    fn seq_elem(&mut self, elem: ValueBag) -> Result<(), Error> {
+        (**self).seq_elem(elem)
+    }
+
+    fn borrowed_seq_elem(&mut self, elem: ValueBag<'v>) -> Result<(), Error> {
+        (**self).borrowed_seq_elem(elem)
     }
 }
 

@@ -146,6 +146,12 @@ impl<'v> Debug for ValueBag<'v> {
                 Ok(())
             }
 
+            fn seq_elem(&mut self, elem: ValueBag) -> Result<(), Error> {
+                Debug::fmt(&elem, self.0)?;
+
+                Ok(())
+            }
+
             fn u64(&mut self, v: u64) -> Result<(), Error> {
                 Debug::fmt(&v, self.0)?;
 
@@ -245,6 +251,12 @@ impl<'v> Display for ValueBag<'v> {
 
             fn display(&mut self, v: &dyn Display) -> Result<(), Error> {
                 Display::fmt(v, self.0)?;
+
+                Ok(())
+            }
+
+            fn seq_elem(&mut self, elem: ValueBag) -> Result<(), Error> {
+                Display::fmt(&elem, self.0)?;
 
                 Ok(())
             }

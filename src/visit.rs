@@ -237,6 +237,10 @@ impl<'v> ValueBag<'v> {
                 self.0.visit_any(ValueBag::from_dyn_display(v))
             }
 
+            fn seq_elem(&mut self, _: ValueBag) -> Result<(), Error> {
+                Err(Error::msg("sequences are not supported"))
+            }
+
             fn u64(&mut self, v: u64) -> Result<(), Error> {
                 self.0.visit_u64(v)
             }
