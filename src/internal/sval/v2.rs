@@ -479,7 +479,7 @@ mod tests {
                 .expect("invalid value")
         );
 
-        #[cfg(feature = "std")]
+        #[cfg(feature = "alloc")]
         assert_eq!(
             "a string",
             ValueBag::capture_sval2(&"a string")
@@ -522,7 +522,7 @@ mod tests {
                 .expect("invalid value")
         );
 
-        #[cfg(feature = "std")]
+        #[cfg(feature = "alloc")]
         assert_eq!(
             "a string",
             ValueBag::from_sval2(&"a string")
@@ -630,8 +630,31 @@ mod tests {
         assert_ser_tokens(&ValueBag::capture_sval2(&TestSval), &[Token::U64(42)]);
     }
 
-    #[cfg(feature = "std")]
-    mod std_support {
+    #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn sval2_collect() {
+        use value_bag_sval2::dynamic::Value;
+
+        use crate::std::vec::Vec;
+
+        let value = ValueBag::from_sval2(&[
+            &1 as &dyn Value,
+            &"string" as &dyn Value,
+            &2 as &dyn Value,
+            &3 as &dyn Value,
+        ]);
+
+        let mut vec = Vec::<Option<f64>>::new();
+        value.collect_f64(&mut vec);
+        assert_eq!(vec, vec![Some(1.0), None, Some(2.0), Some(3.0)]);
+
+        let mut vec = Vec::<Option<&str>>::new();
+        value.collect_borrowed_str(&mut vec);
+        assert_eq!(vec, vec![None, Some("string"), None, None]);
+    }
+
+    #[cfg(feature = "alloc")]
+    mod alloc_support {
         use super::*;
 
         use crate::std::borrow::ToOwned;

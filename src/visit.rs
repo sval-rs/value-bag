@@ -144,6 +144,17 @@ pub trait Visit<'v> {
     ) -> Result<(), Error> {
         self.visit_any(ValueBag::from_dyn_error(err))
     }
+
+    #[inline]
+    fn visit_seq_elem(&mut self, v: ValueBag) -> Result<(), Error> {
+        let _ = v;
+        Err(Error::msg("sequences are not supported"))
+    }
+
+    #[inline]
+    fn visit_borrowed_seq_elem(&mut self, v: ValueBag<'v>) -> Result<(), Error> {
+        self.visit_seq_elem(v)
+    }
 }
 
 impl<'a, 'v, T: ?Sized> Visit<'v> for &'a mut T
@@ -214,6 +225,16 @@ where
     ) -> Result<(), Error> {
         (**self).visit_borrowed_error(err)
     }
+
+    #[inline]
+    fn visit_seq_elem(&mut self, v: ValueBag) -> Result<(), Error> {
+        (**self).visit_seq_elem(v)
+    }
+
+    #[inline]
+    fn visit_borrowed_seq_elem(&mut self, v: ValueBag<'v>) -> Result<(), Error> {
+        (**self).visit_borrowed_seq_elem(v)
+    }
 }
 
 impl<'v> ValueBag<'v> {
@@ -237,8 +258,12 @@ impl<'v> ValueBag<'v> {
                 self.0.visit_any(ValueBag::from_dyn_display(v))
             }
 
-            fn seq_elem(&mut self, _: ValueBag) -> Result<(), Error> {
-                Err(Error::msg("sequences are not supported"))
+            fn seq_elem(&mut self, v: ValueBag) -> Result<(), Error> {
+                self.0.visit_seq_elem(v)
+            }
+
+            fn borrowed_seq_elem(&mut self, v: ValueBag<'v>) -> Result<(), Error> {
+                self.0.visit_borrowed_seq_elem(v)
             }
 
             fn u64(&mut self, v: u64) -> Result<(), Error> {

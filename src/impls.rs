@@ -1,63 +1,543 @@
 //! Converting standard types into `ValueBag`s.
 
-use super::ValueBag;
+use crate::internal::Internal;
 
-macro_rules! impl_from_internal {
-    ($($into_ty:ty,)*) => {
-        $(
-            impl<'v> From<$into_ty> for ValueBag<'v> {
-                #[inline]
-                fn from(value: $into_ty) -> Self {
-                    ValueBag::from_internal(value)
-                }
-            }
+use super::{Error, ValueBag};
 
-            impl<'a, 'v> From<&'a $into_ty> for ValueBag<'v> {
-                #[inline]
-                fn from(value: &'a $into_ty) -> Self {
-                    ValueBag::from_internal(*value)
-                }
-            }
-        )*
-    };
+impl<'v> From<()> for ValueBag<'v> {
+    #[inline]
+    fn from(_: ()) -> Self {
+        ValueBag {
+            inner: Internal::None,
+        }
+    }
 }
 
-impl_from_internal![
-    (),
-    usize,
-    u8,
-    u16,
-    u32,
-    u64,
-    isize,
-    i8,
-    i16,
-    i32,
-    i64,
-    f32,
-    f64,
-    char,
-    bool,
-];
+impl<'v> From<u8> for ValueBag<'v> {
+    #[inline]
+    fn from(v: u8) -> Self {
+        ValueBag {
+            inner: Internal::Unsigned(v as u64),
+        }
+    }
+}
+
+impl<'v> TryFrom<ValueBag<'v>> for u8 {
+    type Error = Error;
+
+    #[inline]
+    fn try_from(v: ValueBag<'v>) -> Result<Self, Error> {
+        v.to_u64()
+            .ok_or_else(|| Error::msg("conversion failed"))?
+            .try_into()
+            .map_err(|_| Error::msg("conversion failed"))
+    }
+}
+
+impl<'v> From<u16> for ValueBag<'v> {
+    #[inline]
+    fn from(v: u16) -> Self {
+        ValueBag {
+            inner: Internal::Unsigned(v as u64),
+        }
+    }
+}
+
+impl<'v> TryFrom<ValueBag<'v>> for u16 {
+    type Error = Error;
+
+    #[inline]
+    fn try_from(v: ValueBag<'v>) -> Result<Self, Error> {
+        v.to_u64()
+            .ok_or_else(|| Error::msg("conversion failed"))?
+            .try_into()
+            .map_err(|_| Error::msg("conversion failed"))
+    }
+}
+
+impl<'v> From<u32> for ValueBag<'v> {
+    #[inline]
+    fn from(v: u32) -> Self {
+        ValueBag {
+            inner: Internal::Unsigned(v as u64),
+        }
+    }
+}
+
+impl<'v> TryFrom<ValueBag<'v>> for u32 {
+    type Error = Error;
+
+    #[inline]
+    fn try_from(v: ValueBag<'v>) -> Result<Self, Error> {
+        v.to_u64()
+            .ok_or_else(|| Error::msg("conversion failed"))?
+            .try_into()
+            .map_err(|_| Error::msg("conversion failed"))
+    }
+}
+
+impl<'v> From<u64> for ValueBag<'v> {
+    #[inline]
+    fn from(v: u64) -> Self {
+        ValueBag {
+            inner: Internal::Unsigned(v),
+        }
+    }
+}
+
+impl<'v> TryFrom<ValueBag<'v>> for u64 {
+    type Error = Error;
+
+    #[inline]
+    fn try_from(v: ValueBag<'v>) -> Result<Self, Error> {
+        v.to_u64().ok_or_else(|| Error::msg("conversion failed"))
+    }
+}
+
+impl<'v> From<usize> for ValueBag<'v> {
+    #[inline]
+    fn from(v: usize) -> Self {
+        ValueBag {
+            inner: Internal::Unsigned(v as u64),
+        }
+    }
+}
+
+impl<'v> TryFrom<ValueBag<'v>> for usize {
+    type Error = Error;
+
+    #[inline]
+    fn try_from(v: ValueBag<'v>) -> Result<Self, Error> {
+        v.to_u64()
+            .ok_or_else(|| Error::msg("conversion failed"))?
+            .try_into()
+            .map_err(|_| Error::msg("conversion failed"))
+    }
+}
+
+impl<'v> From<i8> for ValueBag<'v> {
+    #[inline]
+    fn from(v: i8) -> Self {
+        ValueBag {
+            inner: Internal::Signed(v as i64),
+        }
+    }
+}
+
+impl<'v> TryFrom<ValueBag<'v>> for i8 {
+    type Error = Error;
+
+    #[inline]
+    fn try_from(v: ValueBag<'v>) -> Result<Self, Error> {
+        v.to_i64()
+            .ok_or_else(|| Error::msg("conversion failed"))?
+            .try_into()
+            .map_err(|_| Error::msg("conversion failed"))
+    }
+}
+
+impl<'v> From<i16> for ValueBag<'v> {
+    #[inline]
+    fn from(v: i16) -> Self {
+        ValueBag {
+            inner: Internal::Signed(v as i64),
+        }
+    }
+}
+
+impl<'v> TryFrom<ValueBag<'v>> for i16 {
+    type Error = Error;
+
+    #[inline]
+    fn try_from(v: ValueBag<'v>) -> Result<Self, Error> {
+        v.to_i64()
+            .ok_or_else(|| Error::msg("conversion failed"))?
+            .try_into()
+            .map_err(|_| Error::msg("conversion failed"))
+    }
+}
+
+impl<'v> From<i32> for ValueBag<'v> {
+    #[inline]
+    fn from(v: i32) -> Self {
+        ValueBag {
+            inner: Internal::Signed(v as i64),
+        }
+    }
+}
+
+impl<'v> TryFrom<ValueBag<'v>> for i32 {
+    type Error = Error;
+
+    #[inline]
+    fn try_from(v: ValueBag<'v>) -> Result<Self, Error> {
+        v.to_i64()
+            .ok_or_else(|| Error::msg("conversion failed"))?
+            .try_into()
+            .map_err(|_| Error::msg("conversion failed"))
+    }
+}
+
+impl<'v> From<i64> for ValueBag<'v> {
+    #[inline]
+    fn from(v: i64) -> Self {
+        ValueBag {
+            inner: Internal::Signed(v),
+        }
+    }
+}
+
+impl<'v> TryFrom<ValueBag<'v>> for i64 {
+    type Error = Error;
+
+    #[inline]
+    fn try_from(v: ValueBag<'v>) -> Result<Self, Error> {
+        v.to_i64().ok_or_else(|| Error::msg("conversion failed"))
+    }
+}
+
+impl<'v> From<isize> for ValueBag<'v> {
+    #[inline]
+    fn from(v: isize) -> Self {
+        ValueBag {
+            inner: Internal::Signed(v as i64),
+        }
+    }
+}
+
+impl<'v> TryFrom<ValueBag<'v>> for isize {
+    type Error = Error;
+
+    #[inline]
+    fn try_from(v: ValueBag<'v>) -> Result<Self, Error> {
+        v.to_i64()
+            .ok_or_else(|| Error::msg("conversion failed"))?
+            .try_into()
+            .map_err(|_| Error::msg("conversion failed"))
+    }
+}
+
+impl<'v> From<f32> for ValueBag<'v> {
+    #[inline]
+    fn from(v: f32) -> Self {
+        ValueBag {
+            inner: Internal::Float(v as f64),
+        }
+    }
+}
+
+impl<'v> From<f64> for ValueBag<'v> {
+    #[inline]
+    fn from(v: f64) -> Self {
+        ValueBag {
+            inner: Internal::Float(v),
+        }
+    }
+}
+
+impl<'v> TryFrom<ValueBag<'v>> for f64 {
+    type Error = Error;
+
+    #[inline]
+    fn try_from(v: ValueBag<'v>) -> Result<Self, Error> {
+        v.to_f64()
+            .ok_or_else(|| Error::msg("conversion failed"))?
+            .try_into()
+            .map_err(|_| Error::msg("conversion failed"))
+    }
+}
+
+impl<'v> From<bool> for ValueBag<'v> {
+    #[inline]
+    fn from(v: bool) -> Self {
+        ValueBag {
+            inner: Internal::Bool(v),
+        }
+    }
+}
+
+impl<'v> TryFrom<ValueBag<'v>> for bool {
+    type Error = Error;
+
+    #[inline]
+    fn try_from(v: ValueBag<'v>) -> Result<Self, Error> {
+        v.to_bool().ok_or_else(|| Error::msg("conversion failed"))
+    }
+}
+
+impl<'v> From<char> for ValueBag<'v> {
+    #[inline]
+    fn from(v: char) -> Self {
+        ValueBag {
+            inner: Internal::Char(v),
+        }
+    }
+}
+
+impl<'v> TryFrom<ValueBag<'v>> for char {
+    type Error = Error;
+
+    #[inline]
+    fn try_from(v: ValueBag<'v>) -> Result<Self, Error> {
+        v.to_char().ok_or_else(|| Error::msg("conversion failed"))
+    }
+}
 
 impl<'v> From<&'v str> for ValueBag<'v> {
     #[inline]
-    fn from(value: &'v str) -> Self {
-        ValueBag::from_internal(value)
+    fn from(v: &'v str) -> Self {
+        ValueBag {
+            inner: Internal::Str(v),
+        }
+    }
+}
+
+impl<'v> TryFrom<ValueBag<'v>> for &'v str {
+    type Error = Error;
+
+    #[inline]
+    fn try_from(v: ValueBag<'v>) -> Result<Self, Error> {
+        v.to_borrowed_str()
+            .ok_or_else(|| Error::msg("conversion failed"))
+    }
+}
+
+impl<'v> From<&'v ()> for ValueBag<'v> {
+    #[inline]
+    fn from(_: &'v ()) -> Self {
+        ValueBag {
+            inner: Internal::None,
+        }
+    }
+}
+
+impl<'v> From<&'v u8> for ValueBag<'v> {
+    #[inline]
+    fn from(v: &'v u8) -> Self {
+        ValueBag {
+            inner: Internal::Unsigned(*v as u64),
+        }
+    }
+}
+
+impl<'v> From<&'v u16> for ValueBag<'v> {
+    #[inline]
+    fn from(v: &'v u16) -> Self {
+        ValueBag {
+            inner: Internal::Unsigned(*v as u64),
+        }
+    }
+}
+
+impl<'v> From<&'v u32> for ValueBag<'v> {
+    #[inline]
+    fn from(v: &'v u32) -> Self {
+        ValueBag {
+            inner: Internal::Unsigned(*v as u64),
+        }
+    }
+}
+
+impl<'v> From<&'v u64> for ValueBag<'v> {
+    #[inline]
+    fn from(v: &'v u64) -> Self {
+        ValueBag {
+            inner: Internal::Unsigned(*v),
+        }
     }
 }
 
 impl<'v> From<&'v u128> for ValueBag<'v> {
     #[inline]
-    fn from(value: &'v u128) -> Self {
-        ValueBag::from_internal(value)
+    fn from(v: &'v u128) -> Self {
+        #[cfg(feature = "inline-i128")]
+        {
+            ValueBag {
+                inner: Internal::BigUnsigned(*v),
+            }
+        }
+        #[cfg(not(feature = "inline-i128"))]
+        {
+            ValueBag {
+                inner: Internal::BigUnsigned(v),
+            }
+        }
+    }
+}
+
+#[cfg(feature = "inline-i128")]
+impl<'v> From<u128> for ValueBag<'v> {
+    #[inline]
+    fn from(v: u128) -> Self {
+        ValueBag {
+            inner: Internal::BigUnsigned(v),
+        }
+    }
+}
+
+impl<'v> From<&'v usize> for ValueBag<'v> {
+    #[inline]
+    fn from(v: &'v usize) -> Self {
+        ValueBag {
+            inner: Internal::Unsigned(*v as u64),
+        }
+    }
+}
+
+impl<'v> From<&'v i8> for ValueBag<'v> {
+    #[inline]
+    fn from(v: &'v i8) -> Self {
+        ValueBag {
+            inner: Internal::Signed(*v as i64),
+        }
+    }
+}
+
+impl<'v> From<&'v i16> for ValueBag<'v> {
+    #[inline]
+    fn from(v: &'v i16) -> Self {
+        ValueBag {
+            inner: Internal::Signed(*v as i64),
+        }
+    }
+}
+
+impl<'v> From<&'v i32> for ValueBag<'v> {
+    #[inline]
+    fn from(v: &'v i32) -> Self {
+        ValueBag {
+            inner: Internal::Signed(*v as i64),
+        }
+    }
+}
+
+impl<'v> From<&'v i64> for ValueBag<'v> {
+    #[inline]
+    fn from(v: &'v i64) -> Self {
+        ValueBag {
+            inner: Internal::Signed(*v),
+        }
     }
 }
 
 impl<'v> From<&'v i128> for ValueBag<'v> {
     #[inline]
-    fn from(value: &'v i128) -> Self {
-        ValueBag::from_internal(value)
+    fn from(v: &'v i128) -> Self {
+        #[cfg(feature = "inline-i128")]
+        {
+            ValueBag {
+                inner: Internal::BigSigned(*v),
+            }
+        }
+        #[cfg(not(feature = "inline-i128"))]
+        {
+            ValueBag {
+                inner: Internal::BigSigned(v),
+            }
+        }
+    }
+}
+
+#[cfg(feature = "inline-i128")]
+impl<'v> From<i128> for ValueBag<'v> {
+    #[inline]
+    fn from(v: i128) -> Self {
+        ValueBag {
+            inner: Internal::BigSigned(v),
+        }
+    }
+}
+
+impl<'v> From<&'v isize> for ValueBag<'v> {
+    #[inline]
+    fn from(v: &'v isize) -> Self {
+        ValueBag {
+            inner: Internal::Signed(*v as i64),
+        }
+    }
+}
+
+impl<'v> From<&'v f32> for ValueBag<'v> {
+    #[inline]
+    fn from(v: &'v f32) -> Self {
+        ValueBag {
+            inner: Internal::Float(*v as f64),
+        }
+    }
+}
+
+impl<'v> From<&'v f64> for ValueBag<'v> {
+    #[inline]
+    fn from(v: &'v f64) -> Self {
+        ValueBag {
+            inner: Internal::Float(*v),
+        }
+    }
+}
+
+impl<'v> From<&'v bool> for ValueBag<'v> {
+    #[inline]
+    fn from(v: &'v bool) -> Self {
+        ValueBag {
+            inner: Internal::Bool(*v),
+        }
+    }
+}
+
+impl<'v> From<&'v char> for ValueBag<'v> {
+    #[inline]
+    fn from(v: &'v char) -> Self {
+        ValueBag {
+            inner: Internal::Char(*v),
+        }
+    }
+}
+
+impl<'v, 'u> From<&'v &'u str> for ValueBag<'v>
+where
+    'u: 'v,
+{
+    #[inline]
+    fn from(v: &'v &'u str) -> Self {
+        ValueBag {
+            inner: Internal::Str(*v),
+        }
+    }
+}
+
+#[cfg(feature = "alloc")]
+mod alloc_support {
+    use super::*;
+
+    use crate::std::{borrow::Cow, string::String};
+
+    impl<'v> From<&'v String> for ValueBag<'v> {
+        #[inline]
+        fn from(v: &'v String) -> Self {
+            ValueBag {
+                inner: Internal::Str(&**v),
+            }
+        }
+    }
+
+    impl<'v> TryFrom<ValueBag<'v>> for Cow<'v, str> {
+        type Error = Error;
+
+        #[inline]
+        fn try_from(v: ValueBag<'v>) -> Result<Self, Error> {
+            v.to_str().ok_or_else(|| Error::msg("conversion failed"))
+        }
+    }
+
+    impl<'v> TryFrom<ValueBag<'v>> for String {
+        type Error = Error;
+
+        #[inline]
+        fn try_from(v: ValueBag<'v>) -> Result<Self, Error> {
+            Ok(v.to_str()
+                .ok_or_else(|| Error::msg("conversion failed"))?
+                .into_owned())
+        }
     }
 }
 
@@ -65,7 +545,9 @@ impl<'v> From<&'v i128> for ValueBag<'v> {
 impl<'v> From<u128> for ValueBag<'v> {
     #[inline]
     fn from(value: u128) -> Self {
-        ValueBag::from_internal(value)
+        ValueBag {
+            inner: Internal::BigUnsigned(value),
+        }
     }
 }
 
@@ -73,20 +555,8 @@ impl<'v> From<u128> for ValueBag<'v> {
 impl<'v> From<i128> for ValueBag<'v> {
     #[inline]
     fn from(value: i128) -> Self {
-        ValueBag::from_internal(value)
-    }
-}
-
-#[cfg(feature = "std")]
-mod std_support {
-    use super::*;
-
-    use crate::std::string::String;
-
-    impl<'v> From<&'v String> for ValueBag<'v> {
-        #[inline]
-        fn from(v: &'v String) -> ValueBag<'v> {
-            ValueBag::from_internal(&**v)
+        ValueBag {
+            inner: Internal::BigSigned(value),
         }
     }
 }

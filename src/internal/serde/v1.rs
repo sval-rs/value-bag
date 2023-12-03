@@ -494,7 +494,7 @@ mod tests {
                 .expect("invalid value")
         );
 
-        #[cfg(feature = "std")]
+        #[cfg(feature = "alloc")]
         assert_eq!(
             "a string",
             ValueBag::capture_serde1(&"a string")
@@ -513,7 +513,7 @@ mod tests {
                 .expect("invalid value")
         );
 
-        #[cfg(feature = "std")]
+        #[cfg(feature = "alloc")]
         assert_eq!(
             "a string",
             ValueBag::from_serde1(&"a string")
@@ -620,8 +620,8 @@ mod tests {
         value_bag_sval2::test::assert_tokens(&value, &[Token::U64(42)]);
     }
 
-    #[cfg(feature = "std")]
-    mod std_support {
+    #[cfg(feature = "alloc")]
+    mod alloc_support {
         use super::*;
 
         use crate::std::borrow::ToOwned;

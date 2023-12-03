@@ -92,7 +92,7 @@ extern crate alloc;
 #[cfg(all(not(test), feature = "alloc", not(feature = "std")))]
 mod std {
     pub use crate::{
-        alloc::{boxed, string},
+        alloc::{borrow, boxed, string},
         core::*,
     };
 }

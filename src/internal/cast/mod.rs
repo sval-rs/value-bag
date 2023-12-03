@@ -4,13 +4,15 @@
 //! but may end up executing arbitrary caller code if the value is complex.
 //! They will also attempt to downcast erased types into a primitive where possible.
 
+use core::marker::PhantomData;
+
 use crate::std::{
     convert::{TryFrom, TryInto},
     fmt,
 };
 
-#[cfg(feature = "std")]
-use crate::std::{borrow::ToOwned, string::String};
+#[cfg(feature = "alloc")]
+use crate::std::string::String;
 
 use super::{Internal, InternalVisitor};
 use crate::{Error, ValueBag};
@@ -27,7 +29,7 @@ impl<'v> ValueBag<'v> {
     where
         T: ?Sized + 'static,
     {
-        primitive::from_any(value).map(|inner| ValueBag { inner })
+        primitive::from_any(value)
     }
 
     /// Try get a `u64` from this value.
@@ -38,12 +40,20 @@ impl<'v> ValueBag<'v> {
         self.inner.cast().into_u64()
     }
 
+    pub fn collect_u64(&self, into: &mut (impl Extend<Option<u64>> + ?Sized)) {
+        self.inner.collect(into, |cast| cast.into_u64())
+    }
+
     /// Try get a `i64` from this value.
     ///
     /// This method is cheap for primitive types, but may call arbitrary
     /// serialization implementations for complex ones.
     pub fn to_i64(&self) -> Option<i64> {
         self.inner.cast().into_i64()
+    }
+
+    pub fn collect_i64(&self, into: &mut (impl Extend<Option<i64>> + ?Sized)) {
+        self.inner.collect(into, |cast| cast.into_i64())
     }
 
     /// Try get a `u128` from this value.
@@ -54,12 +64,20 @@ impl<'v> ValueBag<'v> {
         self.inner.cast().into_u128()
     }
 
+    pub fn collect_u128(&self, into: &mut (impl Extend<Option<u128>> + ?Sized)) {
+        self.inner.collect(into, |cast| cast.into_u128())
+    }
+
     /// Try get a `i128` from this value.
     ///
     /// This method is cheap for primitive types, but may call arbitrary
     /// serialization implementations for complex ones.
     pub fn to_i128(&self) -> Option<i128> {
         self.inner.cast().into_i128()
+    }
+
+    pub fn collect_i128(&self, into: &mut (impl Extend<Option<i128>> + ?Sized)) {
+        self.inner.collect(into, |cast| cast.into_i128())
     }
 
     /// Try get a `f64` from this value.
@@ -70,12 +88,20 @@ impl<'v> ValueBag<'v> {
         self.inner.cast().into_f64()
     }
 
+    pub fn collect_f64(&self, into: &mut (impl Extend<Option<f64>> + ?Sized)) {
+        self.inner.collect(into, |cast| cast.into_f64())
+    }
+
     /// Try get a `bool` from this value.
     ///
     /// This method is cheap for primitive types, but may call arbitrary
     /// serialization implementations for complex ones.
     pub fn to_bool(&self) -> Option<bool> {
         self.inner.cast().into_bool()
+    }
+
+    pub fn collect_bool(&self, into: &mut (impl Extend<Option<bool>> + ?Sized)) {
+        self.inner.collect(into, |cast| cast.into_bool())
     }
 
     /// Try get a `char` from this value.
@@ -86,12 +112,20 @@ impl<'v> ValueBag<'v> {
         self.inner.cast().into_char()
     }
 
+    pub fn collect_char(&self, into: &mut (impl Extend<Option<char>> + ?Sized)) {
+        self.inner.collect(into, |cast| cast.into_char())
+    }
+
     /// Try get a `str` from this value.
     ///
     /// This method is cheap for primitive types. It won't allocate an owned
     /// `String` if the value is a complex type.
     pub fn to_borrowed_str(&self) -> Option<&'v str> {
         self.inner.cast().into_borrowed_str()
+    }
+
+    pub fn collect_borrowed_str(&self, into: &mut (impl Extend<Option<&'v str>> + ?Sized)) {
+        self.inner.collect(into, |cast| cast.into_borrowed_str())
     }
 
     /// Check whether this value can be downcast to `T`.
@@ -182,16 +216,9 @@ impl<'v> Internal<'v> {
                 self.set(Cast::Char(v))
             }
 
-            #[cfg(feature = "std")]
             #[inline]
             fn str(&mut self, s: &str) -> Result<(), Error> {
-                self.set(Cast::String(s.to_owned()))
-            }
-
-            #[cfg(not(feature = "std"))]
-            #[inline]
-            fn str(&mut self, _: &str) -> Result<(), Error> {
-                Ok(())
+                self.set(Cast::Str(s).into_owned().unwrap_or(Cast::None))
             }
 
             #[inline]
@@ -257,6 +284,138 @@ impl<'v> Internal<'v> {
             }
         }
     }
+
+    fn collect<T, F: Fn(Cast<'v>) -> Option<T>, C: Extend<Option<T>> + ?Sized>(
+        &self,
+        collection: &mut C,
+        cast: F,
+    ) {
+        struct Visitor<'a, T, F, C: ?Sized>(&'a mut C, F, PhantomData<T>);
+
+        impl<'a, 'v, T, F, C> InternalVisitor<'v> for Visitor<'a, T, F, C>
+        where
+            F: Fn(Cast<'v>) -> Option<T>,
+            C: Extend<Option<T>> + ?Sized,
+        {
+            fn debug(&mut self, _: &dyn fmt::Debug) -> Result<(), Error> {
+                self.0.extend(Some((self.1)(Cast::None)));
+
+                Ok(())
+            }
+
+            fn display(&mut self, _: &dyn fmt::Display) -> Result<(), Error> {
+                self.0.extend(Some((self.1)(Cast::None)));
+
+                Ok(())
+            }
+
+            fn seq_elem(&mut self, v: ValueBag) -> Result<(), Error> {
+                self.0.extend(Some((self.1)(
+                    v.inner.cast().into_owned().unwrap_or(Cast::None),
+                )));
+
+                Ok(())
+            }
+
+            fn borrowed_seq_elem(&mut self, v: ValueBag<'v>) -> Result<(), Error> {
+                self.0.extend(Some((self.1)(v.inner.cast())));
+
+                Ok(())
+            }
+
+            fn u64(&mut self, v: u64) -> Result<(), Error> {
+                self.0.extend(Some((self.1)(Cast::Unsigned(v))));
+
+                Ok(())
+            }
+
+            fn i64(&mut self, v: i64) -> Result<(), Error> {
+                self.0.extend(Some((self.1)(Cast::Signed(v))));
+
+                Ok(())
+            }
+
+            fn u128(&mut self, v: &u128) -> Result<(), Error> {
+                self.0.extend(Some((self.1)(Cast::BigUnsigned(*v))));
+
+                Ok(())
+            }
+
+            fn i128(&mut self, v: &i128) -> Result<(), Error> {
+                self.0.extend(Some((self.1)(Cast::BigSigned(*v))));
+
+                Ok(())
+            }
+
+            fn f64(&mut self, v: f64) -> Result<(), Error> {
+                self.0.extend(Some((self.1)(Cast::Float(v))));
+
+                Ok(())
+            }
+
+            fn bool(&mut self, v: bool) -> Result<(), Error> {
+                self.0.extend(Some((self.1)(Cast::Bool(v))));
+
+                Ok(())
+            }
+
+            fn char(&mut self, v: char) -> Result<(), Error> {
+                self.0.extend(Some((self.1)(Cast::Char(v))));
+
+                Ok(())
+            }
+
+            fn str(&mut self, v: &str) -> Result<(), Error> {
+                self.0.extend(Some((self.1)(
+                    Cast::Str(v).into_owned().unwrap_or(Cast::None),
+                )));
+
+                Ok(())
+            }
+
+            fn borrowed_str(&mut self, v: &'v str) -> Result<(), Error> {
+                self.0.extend(Some((self.1)(Cast::Str(v))));
+
+                Ok(())
+            }
+
+            fn none(&mut self) -> Result<(), Error> {
+                self.0.extend(Some((self.1)(Cast::None)));
+
+                Ok(())
+            }
+
+            #[cfg(feature = "error")]
+            fn error(&mut self, v: &(dyn super::error::Error + 'static)) -> Result<(), Error> {
+                self.0.extend(Some((self.1)(Cast::None)));
+
+                Ok(())
+            }
+
+            #[cfg(feature = "sval2")]
+            fn sval2(&mut self, v: &dyn super::sval::v2::Value) -> Result<(), Error> {
+                super::sval::v2::internal_visit(v, self)
+            }
+
+            #[cfg(feature = "sval2")]
+            fn borrowed_sval2(&mut self, v: &'v dyn super::sval::v2::Value) -> Result<(), Error> {
+                super::sval::v2::borrowed_internal_visit(v, self)
+            }
+
+            #[cfg(feature = "serde1")]
+            fn serde1(&mut self, v: &dyn super::serde::v1::Serialize) -> Result<(), Error> {
+                super::serde::v1::internal_visit(v, self)
+            }
+
+            fn poisoned(&mut self, _: &'static str) -> Result<(), Error> {
+                self.0.extend(Some((self.1)(Cast::None)));
+
+                Ok(())
+            }
+        }
+
+        let _ = self.internal_visit(&mut Visitor(collection, cast, PhantomData));
+    }
 }
 
 pub(in crate::internal) enum Cast<'v> {
@@ -269,11 +428,31 @@ pub(in crate::internal) enum Cast<'v> {
     Char(char),
     Str(&'v str),
     None,
-    #[cfg(feature = "std")]
+    #[cfg(feature = "alloc")]
     String(String),
 }
 
 impl<'v> Cast<'v> {
+    #[inline]
+    fn into_owned(self) -> Option<Cast<'static>> {
+        match self {
+            Cast::Signed(v) => Some(Cast::Signed(v)),
+            Cast::Unsigned(v) => Some(Cast::Unsigned(v)),
+            Cast::BigSigned(v) => Some(Cast::BigSigned(v)),
+            Cast::BigUnsigned(v) => Some(Cast::BigUnsigned(v)),
+            Cast::Float(v) => Some(Cast::Float(v)),
+            Cast::Bool(v) => Some(Cast::Bool(v)),
+            Cast::Char(v) => Some(Cast::Char(v)),
+            Cast::None => Some(Cast::None),
+            #[cfg(feature = "alloc")]
+            Cast::String(v) => Some(Cast::String(v)),
+            #[cfg(feature = "alloc")]
+            Cast::Str(v) => Some(Cast::String(v.into())),
+            #[cfg(not(feature = "alloc"))]
+            Cast::Str(_) => None,
+        }
+    }
+
     #[inline]
     fn into_borrowed_str(self) -> Option<&'v str> {
         if let Cast::Str(value) = self {
@@ -366,8 +545,8 @@ impl<'v> Cast<'v> {
     }
 }
 
-#[cfg(feature = "std")]
-mod std_support {
+#[cfg(feature = "alloc")]
+mod alloc_support {
     use super::*;
 
     use crate::std::borrow::Cow;
@@ -381,6 +560,10 @@ mod std_support {
         #[inline]
         pub fn to_str(&self) -> Option<Cow<'v, str>> {
             self.inner.cast().into_str()
+        }
+
+        pub fn collect_str(&self, into: &mut (impl Extend<Option<Cow<'v, str>>> + ?Sized)) {
+            self.inner.collect(into, |cast| cast.into_str())
         }
     }
 
