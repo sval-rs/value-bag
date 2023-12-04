@@ -1,7 +1,7 @@
 use crate::{
     internal::{self, Internal, InternalVisitor},
     std::boxed::Box,
-    Error,
+    Error, ValueBag,
 };
 
 #[derive(Clone)]
@@ -85,6 +85,11 @@ impl<'v> Internal<'v> {
 
             fn display(&mut self, v: &dyn internal::fmt::Display) -> Result<(), Error> {
                 self.0 = OwnedInternal::Display(internal::fmt::owned::buffer_display(v));
+                Ok(())
+            }
+
+            fn seq_elem(&mut self, v: ValueBag) -> Result<(), Error> {
+                self.0 = v.inner.to_owned();
                 Ok(())
             }
 

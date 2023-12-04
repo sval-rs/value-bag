@@ -541,26 +541,6 @@ mod alloc_support {
     }
 }
 
-#[cfg(feature = "inline-i128")]
-impl<'v> From<u128> for ValueBag<'v> {
-    #[inline]
-    fn from(value: u128) -> Self {
-        ValueBag {
-            inner: Internal::BigUnsigned(value),
-        }
-    }
-}
-
-#[cfg(feature = "inline-i128")]
-impl<'v> From<i128> for ValueBag<'v> {
-    #[inline]
-    fn from(value: i128) -> Self {
-        ValueBag {
-            inner: Internal::BigSigned(value),
-        }
-    }
-}
-
 #[cfg(feature = "owned")]
 mod owned_support {
     use super::*;

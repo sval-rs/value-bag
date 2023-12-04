@@ -125,6 +125,13 @@ impl<'v> value_bag_serde1::lib::Serialize for ValueBag<'v> {
                 self.result()
             }
 
+            fn seq_elem(&mut self, v: ValueBag) -> Result<(), Error> {
+                use value_bag_serde1::lib::Serialize as _;
+
+                self.result = Some(v.serialize(self.serializer()?));
+                self.result()
+            }
+
             fn u64(&mut self, v: u64) -> Result<(), Error> {
                 self.result = Some(self.serializer()?.serialize_u64(v));
                 self.result()
@@ -230,9 +237,9 @@ pub(crate) fn internal_visit<'v>(
         type Ok = ();
         type Error = Unsupported;
 
-        type SerializeSeq = Impossible<Self::Ok, Self::Error>;
-        type SerializeTuple = Impossible<Self::Ok, Self::Error>;
-        type SerializeTupleStruct = Impossible<Self::Ok, Self::Error>;
+        type SerializeSeq = Self;
+        type SerializeTuple = Self;
+        type SerializeTupleStruct = Self;
         type SerializeTupleVariant = Impossible<Self::Ok, Self::Error>;
         type SerializeMap = Impossible<Self::Ok, Self::Error>;
         type SerializeStruct = Impossible<Self::Ok, Self::Error>;
@@ -358,11 +365,11 @@ pub(crate) fn internal_visit<'v>(
             self,
             _: core::option::Option<usize>,
         ) -> Result<Self::SerializeSeq, Self::Error> {
-            Err(Unsupported)
+            Ok(self)
         }
 
         fn serialize_tuple(self, _: usize) -> Result<Self::SerializeTuple, Self::Error> {
-            Err(Unsupported)
+            Ok(self)
         }
 
         fn serialize_tuple_struct(
@@ -406,6 +413,60 @@ pub(crate) fn internal_visit<'v>(
             _: usize,
         ) -> Result<Self::SerializeStructVariant, Self::Error> {
             Err(Unsupported)
+        }
+    }
+
+    impl<'a, 'v> value_bag_serde1::lib::ser::SerializeSeq for VisitorSerializer<'a, 'v> {
+        type Ok = ();
+        type Error = Unsupported;
+
+        fn serialize_element<T>(&mut self, value: &T) -> Result<(), Self::Error>
+        where
+            T: value_bag_serde1::lib::Serialize + ?Sized,
+        {
+            self.0
+                .seq_elem(ValueBag::from_serde1(&value))
+                .map_err(|_| Unsupported)
+        }
+
+        fn end(self) -> Result<Self::Ok, Self::Error> {
+            Ok(())
+        }
+    }
+
+    impl<'a, 'v> value_bag_serde1::lib::ser::SerializeTuple for VisitorSerializer<'a, 'v> {
+        type Ok = ();
+        type Error = Unsupported;
+
+        fn serialize_element<T>(&mut self, value: &T) -> Result<(), Self::Error>
+        where
+            T: value_bag_serde1::lib::Serialize + ?Sized,
+        {
+            self.0
+                .seq_elem(ValueBag::from_serde1(&value))
+                .map_err(|_| Unsupported)
+        }
+
+        fn end(self) -> Result<Self::Ok, Self::Error> {
+            Ok(())
+        }
+    }
+
+    impl<'a, 'v> value_bag_serde1::lib::ser::SerializeTupleStruct for VisitorSerializer<'a, 'v> {
+        type Ok = ();
+        type Error = Unsupported;
+
+        fn serialize_field<T>(&mut self, value: &T) -> Result<(), Self::Error>
+        where
+            T: value_bag_serde1::lib::Serialize + ?Sized,
+        {
+            self.0
+                .seq_elem(ValueBag::from_serde1(&value))
+                .map_err(|_| Unsupported)
+        }
+
+        fn end(self) -> Result<Self::Ok, Self::Error> {
+            Ok(())
         }
     }
 
@@ -618,6 +679,29 @@ mod tests {
         let value = ValueBag::from_serde1(&TestSerde);
 
         value_bag_sval2::test::assert_tokens(&value, &[Token::U64(42)]);
+    }
+
+    #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn serde1_collect() {
+        use value_bag_serde1::erased::Serialize;
+
+        use crate::std::vec::Vec;
+
+        let value = ValueBag::from_serde1(&[
+            &1 as &dyn Serialize,
+            &true as &dyn Serialize,
+            &2 as &dyn Serialize,
+            &3 as &dyn Serialize,
+        ]);
+
+        let mut vec = Vec::<Option<f64>>::new();
+        value.collect_f64(&mut vec);
+        assert_eq!(vec, vec![Some(1.0), None, Some(2.0), Some(3.0)]);
+
+        let mut vec = Vec::<Option<bool>>::new();
+        value.collect_bool(&mut vec);
+        assert_eq!(vec, vec![None, Some(true), None, None]);
     }
 
     #[cfg(feature = "alloc")]

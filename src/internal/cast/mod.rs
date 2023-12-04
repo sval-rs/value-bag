@@ -386,7 +386,7 @@ impl<'v> Internal<'v> {
             }
 
             #[cfg(feature = "error")]
-            fn error(&mut self, v: &(dyn super::error::Error + 'static)) -> Result<(), Error> {
+            fn error(&mut self, _: &(dyn super::error::Error + 'static)) -> Result<(), Error> {
                 self.0.extend(Some((self.1)(Cast::None)));
 
                 Ok(())
