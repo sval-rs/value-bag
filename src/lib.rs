@@ -8,7 +8,7 @@
 //! consumer. They don't need to coordinate directly.
 
 #![doc(html_root_url = "https://docs.rs/value-bag/1.4.2")]
-//#![no_std]
+#![no_std]
 
 /*
 # Crate design
