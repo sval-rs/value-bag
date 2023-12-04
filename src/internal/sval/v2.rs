@@ -290,6 +290,20 @@ impl<'a, 'v> VisitorInternal<'a, 'v> {
         }
         .map_err(Error::into_sval2)
     }
+
+    fn visit_complex<'b>(&mut self) -> value_bag_sval2::lib::Result {
+        if self.depth > 1 {
+            match self.position {
+                Position::Root => self.visitor.none(),
+                Position::SeqElem => self.visitor.seq_elem(().into()),
+                Position::MapKey => Err(Error::msg("maps are not supported")),
+                Position::MapValue => Err(Error::msg("maps are not supported")),
+            }
+            .map_err(Error::into_sval2)?;
+        }
+
+        Ok(())
+    }
 }
 
 impl<'a, 'v> value_bag_sval2::lib::Stream<'v> for VisitorStream<'a, 'v> {
@@ -365,9 +379,7 @@ impl<'a, 'v> value_bag_sval2::lib::Stream<'v> for VisitorStream<'a, 'v> {
     fn seq_begin(&mut self, _: Option<usize>) -> value_bag_sval2::lib::Result {
         self.internal.depth += 1;
 
-        if self.internal.depth != 1 {
-            self.internal.visit(|visitor| visitor.none(), ())?;
-        }
+        self.internal.visit_complex()?;
 
         Ok(())
     }
@@ -379,7 +391,10 @@ impl<'a, 'v> value_bag_sval2::lib::Stream<'v> for VisitorStream<'a, 'v> {
 
     fn map_begin(&mut self, _: Option<usize>) -> value_bag_sval2::lib::Result {
         self.internal.depth += 1;
-        self.internal.visit(|visitor| visitor.none(), ())
+
+        self.internal.visit_complex()?;
+
+        Ok(())
     }
 
     fn map_end(&mut self) -> value_bag_sval2::lib::Result {
@@ -645,13 +660,13 @@ mod tests {
             &&[&1 as &dyn Value, &2 as &dyn Value] as &dyn Value,
         ]);
 
-        let mut vec = Vec::<Option<f64>>::new();
-        value.collect_f64(&mut vec);
-        assert_eq!(vec, vec![Some(1.0), None, Some(2.0), Some(3.0)]);
+        let vec = value.to_f64_sequence::<Vec<Option<f64>>>().unwrap();
+        assert_eq!(vec, vec![Some(1.0), None, Some(2.0), Some(3.0), None]);
 
-        let mut vec = Vec::<Option<&str>>::new();
-        value.collect_borrowed_str(&mut vec);
-        assert_eq!(vec, vec![None, Some("string"), None, None]);
+        let vec = value
+            .to_borrowed_str_sequence::<Vec<Option<&str>>>()
+            .unwrap();
+        assert_eq!(vec, vec![None, Some("string"), None, None, None]);
     }
 
     #[cfg(feature = "alloc")]

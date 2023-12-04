@@ -696,12 +696,10 @@ mod tests {
             &&[&1 as &dyn Serialize, &2 as &dyn Serialize] as &dyn Serialize,
         ]);
 
-        let mut vec = Vec::<Option<f64>>::new();
-        value.collect_f64(&mut vec);
+        let vec = value.to_f64_sequence::<Vec<Option<f64>>>().unwrap();
         assert_eq!(vec, vec![Some(1.0), None, Some(2.0), Some(3.0), None]);
 
-        let mut vec = Vec::<Option<bool>>::new();
-        value.collect_bool(&mut vec);
+        let vec = value.to_bool_sequence::<Vec<Option<bool>>>().unwrap();
         assert_eq!(vec, vec![None, Some(true), None, None, None]);
     }
 

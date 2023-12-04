@@ -45,8 +45,16 @@ impl<'v> ValueBag<'v> {
     /// If this value is a primitive type then this method is equivalent to `to_u64`.
     /// If this value is a sequence then each element will be cast to a `u64`.
     /// Any elements that fail to cast will be passed as `None`s.
-    pub fn collect_u64(&self, into: &mut (impl Extend<Option<u64>> + ?Sized)) {
-        self.inner.collect(into, |cast| cast.into_u64())
+    pub fn to_u64_sequence<S: Extend<Option<u64>> + Default>(&self) -> Option<S> {
+        let mut into = S::default();
+        if self
+            .inner
+            .extend_from_sequence(&mut into, |cast| cast.into_u64())
+        {
+            Some(into)
+        } else {
+            None
+        }
     }
 
     /// Try get a `i64` from this value.
@@ -62,8 +70,16 @@ impl<'v> ValueBag<'v> {
     /// If this value is a primitive type then this method is equivalent to `to_i64`.
     /// If this value is a sequence then each element will be cast to a `i64`.
     /// Any elements that fail to cast will be passed as `None`s.
-    pub fn collect_i64(&self, into: &mut (impl Extend<Option<i64>> + ?Sized)) {
-        self.inner.collect(into, |cast| cast.into_i64())
+    pub fn to_i64_sequence<S: Extend<Option<i64>> + Default>(&self) -> Option<S> {
+        let mut into = S::default();
+        if self
+            .inner
+            .extend_from_sequence(&mut into, |cast| cast.into_i64())
+        {
+            Some(into)
+        } else {
+            None
+        }
     }
 
     /// Try get a `u128` from this value.
@@ -79,8 +95,16 @@ impl<'v> ValueBag<'v> {
     /// If this value is a primitive type then this method is equivalent to `to_u128`.
     /// If this value is a sequence then each element will be cast to a `u128`.
     /// Any elements that fail to cast will be passed as `None`s.
-    pub fn collect_u128(&self, into: &mut (impl Extend<Option<u128>> + ?Sized)) {
-        self.inner.collect(into, |cast| cast.into_u128())
+    pub fn to_u128_sequence<S: Extend<Option<u128>> + Default>(&self) -> Option<S> {
+        let mut into = S::default();
+        if self
+            .inner
+            .extend_from_sequence(&mut into, |cast| cast.into_u128())
+        {
+            Some(into)
+        } else {
+            None
+        }
     }
 
     /// Try get a `i128` from this value.
@@ -96,8 +120,16 @@ impl<'v> ValueBag<'v> {
     /// If this value is a primitive type then this method is equivalent to `to_i128`.
     /// If this value is a sequence then each element will be cast to a `i128`.
     /// Any elements that fail to cast will be passed as `None`s.
-    pub fn collect_i128(&self, into: &mut (impl Extend<Option<i128>> + ?Sized)) {
-        self.inner.collect(into, |cast| cast.into_i128())
+    pub fn to_i128_sequence<S: Extend<Option<i128>> + Default>(&self) -> Option<S> {
+        let mut into = S::default();
+        if self
+            .inner
+            .extend_from_sequence(&mut into, |cast| cast.into_i128())
+        {
+            Some(into)
+        } else {
+            None
+        }
     }
 
     /// Try get a `f64` from this value.
@@ -113,8 +145,16 @@ impl<'v> ValueBag<'v> {
     /// If this value is a primitive type then this method is equivalent to `to_f64`.
     /// If this value is a sequence then each element will be cast to a `f64`.
     /// Any elements that fail to cast will be passed as `None`s.
-    pub fn collect_f64(&self, into: &mut (impl Extend<Option<f64>> + ?Sized)) {
-        self.inner.collect(into, |cast| cast.into_f64())
+    pub fn to_f64_sequence<S: Extend<Option<f64>> + Default>(&self) -> Option<S> {
+        let mut into = S::default();
+        if self
+            .inner
+            .extend_from_sequence(&mut into, |cast| cast.into_f64())
+        {
+            Some(into)
+        } else {
+            None
+        }
     }
 
     /// Try get a `bool` from this value.
@@ -130,8 +170,16 @@ impl<'v> ValueBag<'v> {
     /// If this value is a primitive type then this method is equivalent to `to_bool`.
     /// If this value is a sequence then each element will be cast to a `bool`.
     /// Any elements that fail to cast will be passed as `None`s.
-    pub fn collect_bool(&self, into: &mut (impl Extend<Option<bool>> + ?Sized)) {
-        self.inner.collect(into, |cast| cast.into_bool())
+    pub fn to_bool_sequence<S: Extend<Option<bool>> + Default>(&self) -> Option<S> {
+        let mut into = S::default();
+        if self
+            .inner
+            .extend_from_sequence(&mut into, |cast| cast.into_bool())
+        {
+            Some(into)
+        } else {
+            None
+        }
     }
 
     /// Try get a `char` from this value.
@@ -147,8 +195,16 @@ impl<'v> ValueBag<'v> {
     /// If this value is a primitive type then this method is equivalent to `to_char`.
     /// If this value is a sequence then each element will be cast to a `char`.
     /// Any elements that fail to cast will be passed as `None`s.
-    pub fn collect_char(&self, into: &mut (impl Extend<Option<char>> + ?Sized)) {
-        self.inner.collect(into, |cast| cast.into_char())
+    pub fn to_char_sequence<S: Extend<Option<char>> + Default>(&self) -> Option<S> {
+        let mut into = S::default();
+        if self
+            .inner
+            .extend_from_sequence(&mut into, |cast| cast.into_char())
+        {
+            Some(into)
+        } else {
+            None
+        }
     }
 
     /// Try get a `str` from this value.
@@ -164,8 +220,16 @@ impl<'v> ValueBag<'v> {
     /// If this value is a primitive type then this method is equivalent to `to_borrowed_str`.
     /// If this value is a sequence then each element will be cast to a `str`.
     /// Any elements that fail to cast will be passed as `None`s.
-    pub fn collect_borrowed_str(&self, into: &mut (impl Extend<Option<&'v str>> + ?Sized)) {
-        self.inner.collect(into, |cast| cast.into_borrowed_str())
+    pub fn to_borrowed_str_sequence<S: Extend<Option<&'v str>> + Default>(&self) -> Option<S> {
+        let mut into = S::default();
+        if self
+            .inner
+            .extend_from_sequence(&mut into, |cast| cast.into_borrowed_str())
+        {
+            Some(into)
+        } else {
+            None
+        }
     }
 
     /// Check whether this value can be downcast to `T`.
@@ -325,12 +389,17 @@ impl<'v> Internal<'v> {
         }
     }
 
-    fn collect<T, F: Fn(Cast<'v>) -> Option<T>, C: Extend<Option<T>> + ?Sized>(
+    fn extend_from_sequence<T, F: Fn(Cast<'v>) -> Option<T>, C: Extend<Option<T>> + ?Sized>(
         &self,
-        collection: &mut C,
+        into: &mut C,
         cast: F,
-    ) {
-        struct Visitor<'a, T, F, C: ?Sized>(&'a mut C, F, PhantomData<T>);
+    ) -> bool {
+        struct Visitor<'a, T, F, C: ?Sized> {
+            into: &'a mut C,
+            cast: F,
+            is_seq: bool,
+            _marker: PhantomData<T>,
+        }
 
         impl<'a, 'v, T, F, C> InternalVisitor<'v> for Visitor<'a, T, F, C>
         where
@@ -338,19 +407,17 @@ impl<'v> Internal<'v> {
             C: Extend<Option<T>> + ?Sized,
         {
             fn debug(&mut self, _: &dyn fmt::Debug) -> Result<(), Error> {
-                self.0.extend(Some((self.1)(Cast::None)));
-
-                Ok(())
+                self.is_seq = false;
+                Err(Error::msg("not a sequence"))
             }
 
             fn display(&mut self, _: &dyn fmt::Display) -> Result<(), Error> {
-                self.0.extend(Some((self.1)(Cast::None)));
-
-                Ok(())
+                self.is_seq = false;
+                Err(Error::msg("not a sequence"))
             }
 
             fn seq_elem(&mut self, v: ValueBag) -> Result<(), Error> {
-                self.0.extend(Some((self.1)(
+                self.into.extend(Some((self.cast)(
                     v.inner.cast().into_owned().unwrap_or(Cast::None),
                 )));
 
@@ -358,78 +425,65 @@ impl<'v> Internal<'v> {
             }
 
             fn borrowed_seq_elem(&mut self, v: ValueBag<'v>) -> Result<(), Error> {
-                self.0.extend(Some((self.1)(v.inner.cast())));
+                self.into.extend(Some((self.cast)(v.inner.cast())));
 
                 Ok(())
             }
 
-            fn u64(&mut self, v: u64) -> Result<(), Error> {
-                self.0.extend(Some((self.1)(Cast::Unsigned(v))));
-
-                Ok(())
+            fn u64(&mut self, _: u64) -> Result<(), Error> {
+                self.is_seq = false;
+                Err(Error::msg("not a sequence"))
             }
 
-            fn i64(&mut self, v: i64) -> Result<(), Error> {
-                self.0.extend(Some((self.1)(Cast::Signed(v))));
-
-                Ok(())
+            fn i64(&mut self, _: i64) -> Result<(), Error> {
+                self.is_seq = false;
+                Err(Error::msg("not a sequence"))
             }
 
-            fn u128(&mut self, v: &u128) -> Result<(), Error> {
-                self.0.extend(Some((self.1)(Cast::BigUnsigned(*v))));
-
-                Ok(())
+            fn u128(&mut self, _: &u128) -> Result<(), Error> {
+                self.is_seq = false;
+                Err(Error::msg("not a sequence"))
             }
 
-            fn i128(&mut self, v: &i128) -> Result<(), Error> {
-                self.0.extend(Some((self.1)(Cast::BigSigned(*v))));
-
-                Ok(())
+            fn i128(&mut self, _: &i128) -> Result<(), Error> {
+                self.is_seq = false;
+                Err(Error::msg("not a sequence"))
             }
 
-            fn f64(&mut self, v: f64) -> Result<(), Error> {
-                self.0.extend(Some((self.1)(Cast::Float(v))));
-
-                Ok(())
+            fn f64(&mut self, _: f64) -> Result<(), Error> {
+                self.is_seq = false;
+                Err(Error::msg("not a sequence"))
             }
 
-            fn bool(&mut self, v: bool) -> Result<(), Error> {
-                self.0.extend(Some((self.1)(Cast::Bool(v))));
-
-                Ok(())
+            fn bool(&mut self, _: bool) -> Result<(), Error> {
+                self.is_seq = false;
+                Err(Error::msg("not a sequence"))
             }
 
-            fn char(&mut self, v: char) -> Result<(), Error> {
-                self.0.extend(Some((self.1)(Cast::Char(v))));
-
-                Ok(())
+            fn char(&mut self, _: char) -> Result<(), Error> {
+                self.is_seq = false;
+                Err(Error::msg("not a sequence"))
             }
 
-            fn str(&mut self, v: &str) -> Result<(), Error> {
-                self.0.extend(Some((self.1)(
-                    Cast::Str(v).into_owned().unwrap_or(Cast::None),
-                )));
-
-                Ok(())
+            fn str(&mut self, _: &str) -> Result<(), Error> {
+                self.is_seq = false;
+                Err(Error::msg("not a sequence"))
             }
 
-            fn borrowed_str(&mut self, v: &'v str) -> Result<(), Error> {
-                self.0.extend(Some((self.1)(Cast::Str(v))));
-
-                Ok(())
+            fn borrowed_str(&mut self, _: &'v str) -> Result<(), Error> {
+                self.is_seq = false;
+                Err(Error::msg("not a sequence"))
             }
 
             fn none(&mut self) -> Result<(), Error> {
-                self.0.extend(Some((self.1)(Cast::None)));
-
-                Ok(())
+                self.is_seq = false;
+                Err(Error::msg("not a sequence"))
             }
 
             #[cfg(feature = "error")]
             fn error(&mut self, _: &(dyn super::error::Error + 'static)) -> Result<(), Error> {
-                self.0.extend(Some((self.1)(Cast::None)));
-
-                Ok(())
+                self.is_seq = false;
+                Err(Error::msg("not a sequence"))
             }
 
             #[cfg(feature = "sval2")]
@@ -448,13 +502,19 @@ impl<'v> Internal<'v> {
             }
 
             fn poisoned(&mut self, _: &'static str) -> Result<(), Error> {
-                self.0.extend(Some((self.1)(Cast::None)));
-
-                Ok(())
+                self.is_seq = false;
+                Err(Error::msg("not a sequence"))
             }
         }
 
-        let _ = self.internal_visit(&mut Visitor(collection, cast, PhantomData));
+        let mut visitor = Visitor {
+            into,
+            cast,
+            is_seq: true,
+            _marker: PhantomData,
+        };
+        let _ = self.internal_visit(&mut visitor);
+        visitor.is_seq
     }
 }
 
@@ -607,8 +667,16 @@ mod alloc_support {
         /// If this value is a primitive type then this method is equivalent to `to_str`.
         /// If this value is a sequence then each element will be cast to a `str`.
         /// Any elements that fail to cast will be passed as `None`s.
-        pub fn collect_str(&self, into: &mut (impl Extend<Option<Cow<'v, str>>> + ?Sized)) {
-            self.inner.collect(into, |cast| cast.into_str())
+        pub fn to_str_sequence<S: Extend<Option<Cow<'v, str>>> + Default>(&self) -> Option<S> {
+            let mut into = S::default();
+            if self
+                .inner
+                .extend_from_sequence(&mut into, |cast| cast.into_str())
+            {
+                Some(into)
+            } else {
+                None
+            }
         }
     }
 
@@ -628,11 +696,7 @@ mod alloc_support {
         #[cfg(target_arch = "wasm32")]
         use wasm_bindgen_test::*;
 
-        use crate::{
-            std::borrow::{Cow, ToOwned},
-            test::IntoValueBag,
-            ValueBag,
-        };
+        use crate::{std::borrow::ToOwned, test::IntoValueBag, ValueBag};
 
         #[test]
         #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
@@ -663,16 +727,6 @@ mod alloc_support {
                     .to_borrowed_str()
                     .expect("invalid value")
             );
-        }
-
-        #[test]
-        #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-        fn primitive_collect() {
-            use crate::std::vec::Vec;
-
-            let mut vec = Vec::<Option<Cow<str>>>::new();
-            "string".into_value_bag().collect_str(&mut vec);
-            assert_eq!(vec![Some(Cow::Borrowed("string"))], vec);
         }
     }
 }
@@ -837,43 +891,5 @@ mod tests {
                 .to_bool()
                 .expect("invalid value")
         );
-    }
-
-    #[test]
-    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-    fn primitive_collect() {
-        use crate::std::vec::Vec;
-
-        let mut vec = Vec::<Option<u64>>::new();
-        1u64.into_value_bag().collect_u64(&mut vec);
-        assert_eq!(vec![Some(1u64)], vec);
-
-        let mut vec = Vec::<Option<i64>>::new();
-        1i64.into_value_bag().collect_i64(&mut vec);
-        assert_eq!(vec![Some(1i64)], vec);
-
-        let mut vec = Vec::<Option<u128>>::new();
-        (&1u128).into_value_bag().collect_u128(&mut vec);
-        assert_eq!(vec![Some(1u128)], vec);
-
-        let mut vec = Vec::<Option<i128>>::new();
-        (&1i128).into_value_bag().collect_i128(&mut vec);
-        assert_eq!(vec![Some(1i128)], vec);
-
-        let mut vec = Vec::<Option<f64>>::new();
-        1f64.into_value_bag().collect_f64(&mut vec);
-        assert_eq!(vec![Some(1f64)], vec);
-
-        let mut vec = Vec::<Option<bool>>::new();
-        true.into_value_bag().collect_bool(&mut vec);
-        assert_eq!(vec![Some(true)], vec);
-
-        let mut vec = Vec::<Option<char>>::new();
-        'a'.into_value_bag().collect_char(&mut vec);
-        assert_eq!(vec![Some('a')], vec);
-
-        let mut vec = Vec::<Option<&str>>::new();
-        "string".into_value_bag().collect_borrowed_str(&mut vec);
-        assert_eq!(vec![Some("string")], vec);
     }
 }
