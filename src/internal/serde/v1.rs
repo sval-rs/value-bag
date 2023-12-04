@@ -693,15 +693,16 @@ mod tests {
             &true as &dyn Serialize,
             &2 as &dyn Serialize,
             &3 as &dyn Serialize,
+            &&[&1 as &dyn Serialize, &2 as &dyn Serialize] as &dyn Serialize,
         ]);
 
         let mut vec = Vec::<Option<f64>>::new();
         value.collect_f64(&mut vec);
-        assert_eq!(vec, vec![Some(1.0), None, Some(2.0), Some(3.0)]);
+        assert_eq!(vec, vec![Some(1.0), None, Some(2.0), Some(3.0), None]);
 
         let mut vec = Vec::<Option<bool>>::new();
         value.collect_bool(&mut vec);
-        assert_eq!(vec, vec![None, Some(true), None, None]);
+        assert_eq!(vec, vec![None, Some(true), None, None, None]);
     }
 
     #[cfg(feature = "alloc")]

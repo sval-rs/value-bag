@@ -642,6 +642,7 @@ mod tests {
             &"string" as &dyn Value,
             &2 as &dyn Value,
             &3 as &dyn Value,
+            &&[&1 as &dyn Value, &2 as &dyn Value] as &dyn Value,
         ]);
 
         let mut vec = Vec::<Option<f64>>::new();

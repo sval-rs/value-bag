@@ -40,6 +40,11 @@ impl<'v> ValueBag<'v> {
         self.inner.cast().into_u64()
     }
 
+    /// Try push nested values as `u64`s from this value into the given collection.
+    ///
+    /// If this value is a primitive type then this method is equivalent to `to_u64`.
+    /// If this value is a sequence then each element will be cast to a `u64`.
+    /// Any elements that fail to cast will be passed as `None`s.
     pub fn collect_u64(&self, into: &mut (impl Extend<Option<u64>> + ?Sized)) {
         self.inner.collect(into, |cast| cast.into_u64())
     }
@@ -52,6 +57,11 @@ impl<'v> ValueBag<'v> {
         self.inner.cast().into_i64()
     }
 
+    /// Try push nested values as `i64`s from this value into the given collection.
+    ///
+    /// If this value is a primitive type then this method is equivalent to `to_i64`.
+    /// If this value is a sequence then each element will be cast to a `i64`.
+    /// Any elements that fail to cast will be passed as `None`s.
     pub fn collect_i64(&self, into: &mut (impl Extend<Option<i64>> + ?Sized)) {
         self.inner.collect(into, |cast| cast.into_i64())
     }
@@ -64,6 +74,11 @@ impl<'v> ValueBag<'v> {
         self.inner.cast().into_u128()
     }
 
+    /// Try push nested values as `u128`s from this value into the given collection.
+    ///
+    /// If this value is a primitive type then this method is equivalent to `to_u128`.
+    /// If this value is a sequence then each element will be cast to a `u128`.
+    /// Any elements that fail to cast will be passed as `None`s.
     pub fn collect_u128(&self, into: &mut (impl Extend<Option<u128>> + ?Sized)) {
         self.inner.collect(into, |cast| cast.into_u128())
     }
@@ -76,6 +91,11 @@ impl<'v> ValueBag<'v> {
         self.inner.cast().into_i128()
     }
 
+    /// Try push nested values as `i128`s from this value into the given collection.
+    ///
+    /// If this value is a primitive type then this method is equivalent to `to_i128`.
+    /// If this value is a sequence then each element will be cast to a `i128`.
+    /// Any elements that fail to cast will be passed as `None`s.
     pub fn collect_i128(&self, into: &mut (impl Extend<Option<i128>> + ?Sized)) {
         self.inner.collect(into, |cast| cast.into_i128())
     }
@@ -88,6 +108,11 @@ impl<'v> ValueBag<'v> {
         self.inner.cast().into_f64()
     }
 
+    /// Try push nested values as `f64`s from this value into the given collection.
+    ///
+    /// If this value is a primitive type then this method is equivalent to `to_f64`.
+    /// If this value is a sequence then each element will be cast to a `f64`.
+    /// Any elements that fail to cast will be passed as `None`s.
     pub fn collect_f64(&self, into: &mut (impl Extend<Option<f64>> + ?Sized)) {
         self.inner.collect(into, |cast| cast.into_f64())
     }
@@ -100,6 +125,11 @@ impl<'v> ValueBag<'v> {
         self.inner.cast().into_bool()
     }
 
+    /// Try push nested values as `bool`s from this value into the given collection.
+    ///
+    /// If this value is a primitive type then this method is equivalent to `to_bool`.
+    /// If this value is a sequence then each element will be cast to a `bool`.
+    /// Any elements that fail to cast will be passed as `None`s.
     pub fn collect_bool(&self, into: &mut (impl Extend<Option<bool>> + ?Sized)) {
         self.inner.collect(into, |cast| cast.into_bool())
     }
@@ -112,6 +142,11 @@ impl<'v> ValueBag<'v> {
         self.inner.cast().into_char()
     }
 
+    /// Try push nested values as `char`s from this value into the given collection.
+    ///
+    /// If this value is a primitive type then this method is equivalent to `to_char`.
+    /// If this value is a sequence then each element will be cast to a `char`.
+    /// Any elements that fail to cast will be passed as `None`s.
     pub fn collect_char(&self, into: &mut (impl Extend<Option<char>> + ?Sized)) {
         self.inner.collect(into, |cast| cast.into_char())
     }
@@ -124,6 +159,11 @@ impl<'v> ValueBag<'v> {
         self.inner.cast().into_borrowed_str()
     }
 
+    /// Try push nested values as `str`s from this value into the given collection.
+    ///
+    /// If this value is a primitive type then this method is equivalent to `to_borrowed_str`.
+    /// If this value is a sequence then each element will be cast to a `str`.
+    /// Any elements that fail to cast will be passed as `None`s.
     pub fn collect_borrowed_str(&self, into: &mut (impl Extend<Option<&'v str>> + ?Sized)) {
         self.inner.collect(into, |cast| cast.into_borrowed_str())
     }
@@ -562,6 +602,11 @@ mod alloc_support {
             self.inner.cast().into_str()
         }
 
+        /// Try push nested values as `str`s from this value into the given collection.
+        ///
+        /// If this value is a primitive type then this method is equivalent to `to_str`.
+        /// If this value is a sequence then each element will be cast to a `str`.
+        /// Any elements that fail to cast will be passed as `None`s.
         pub fn collect_str(&self, into: &mut (impl Extend<Option<Cow<'v, str>>> + ?Sized)) {
             self.inner.collect(into, |cast| cast.into_str())
         }
@@ -583,7 +628,11 @@ mod alloc_support {
         #[cfg(target_arch = "wasm32")]
         use wasm_bindgen_test::*;
 
-        use crate::{std::borrow::ToOwned, test::IntoValueBag, ValueBag};
+        use crate::{
+            std::borrow::{Cow, ToOwned},
+            test::IntoValueBag,
+            ValueBag,
+        };
 
         #[test]
         #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
@@ -614,6 +663,16 @@ mod alloc_support {
                     .to_borrowed_str()
                     .expect("invalid value")
             );
+        }
+
+        #[test]
+        #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+        fn primitive_collect() {
+            use crate::std::vec::Vec;
+
+            let mut vec = Vec::<Option<Cow<str>>>::new();
+            "string".into_value_bag().collect_str(&mut vec);
+            assert_eq!(vec![Some(Cow::Borrowed("string"))], vec);
         }
     }
 }
@@ -778,5 +837,43 @@ mod tests {
                 .to_bool()
                 .expect("invalid value")
         );
+    }
+
+    #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn primitive_collect() {
+        use crate::std::vec::Vec;
+
+        let mut vec = Vec::<Option<u64>>::new();
+        1u64.into_value_bag().collect_u64(&mut vec);
+        assert_eq!(vec![Some(1u64)], vec);
+
+        let mut vec = Vec::<Option<i64>>::new();
+        1i64.into_value_bag().collect_i64(&mut vec);
+        assert_eq!(vec![Some(1i64)], vec);
+
+        let mut vec = Vec::<Option<u128>>::new();
+        (&1u128).into_value_bag().collect_u128(&mut vec);
+        assert_eq!(vec![Some(1u128)], vec);
+
+        let mut vec = Vec::<Option<i128>>::new();
+        (&1i128).into_value_bag().collect_i128(&mut vec);
+        assert_eq!(vec![Some(1i128)], vec);
+
+        let mut vec = Vec::<Option<f64>>::new();
+        1f64.into_value_bag().collect_f64(&mut vec);
+        assert_eq!(vec![Some(1f64)], vec);
+
+        let mut vec = Vec::<Option<bool>>::new();
+        true.into_value_bag().collect_bool(&mut vec);
+        assert_eq!(vec![Some(true)], vec);
+
+        let mut vec = Vec::<Option<char>>::new();
+        'a'.into_value_bag().collect_char(&mut vec);
+        assert_eq!(vec![Some('a')], vec);
+
+        let mut vec = Vec::<Option<&str>>::new();
+        "string".into_value_bag().collect_borrowed_str(&mut vec);
+        assert_eq!(vec![Some("string")], vec);
     }
 }
