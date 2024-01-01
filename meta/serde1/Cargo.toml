@@ -32,7 +32,7 @@ features = ["alloc"]
 default-features = false
 
 [dependencies.erased-serde]
-version = "0.3"
+version = "0.4"
 features = ["alloc"]
 default-features = false
 
