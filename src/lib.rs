@@ -388,6 +388,34 @@ pub use self::error::Error;
 ///
 /// assert!(value.downcast_ref::<SystemTime>().is_some());
 /// ```
+///
+/// # Working with sequences
+///
+/// The `seq` feature of `value-bag` enables utilities for working with values that are sequences.
+/// First, enable the `seq` feature in your `Cargo.toml`:
+///
+/// ```toml
+/// [dependencies.value-bag]
+/// features = ["seq"]
+/// ```
+///
+/// A sequence captured with either `sval` or `serde` can have its elements extracted:
+///
+/// ```
+/// # #[cfg(not(feature = "serde1"))] fn main() {}
+/// # #[cfg(feature = "serde1")]
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// # use value_bag_serde1::json as serde_json;
+/// use value_bag::ValueBag;
+///
+/// let value = ValueBag::from_serde1(&[1.0, 2.0, 3.0]);
+///
+/// let seq = value.to_f64_seq::<Vec<Option<f64>>>().ok_or("not a sequence")?;
+///
+/// assert_eq!(vec![Some(1.0), Some(2.0), Some(3.0)], seq);
+/// # Ok(())
+/// # }
+/// ```
 #[derive(Clone)]
 pub struct ValueBag<'v> {
     inner: internal::Internal<'v>,

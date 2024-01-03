@@ -156,7 +156,10 @@ impl<'v> Internal<'v> {
 
             #[cfg(feature = "serde1")]
             #[inline]
-            fn serde1(&mut self, v: &dyn crate::internal::serde::v1::Serialize) -> Result<(), Error> {
+            fn serde1(
+                &mut self,
+                v: &dyn crate::internal::serde::v1::Serialize,
+            ) -> Result<(), Error> {
                 self.0 = crate::internal::serde::v1::seq(v);
 
                 Ok(())
