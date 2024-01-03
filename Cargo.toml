@@ -47,6 +47,9 @@ owned = [
     "value-bag-serde1?/owned",
 ]
 
+# Utilities for working with sequences
+seq = []
+
 # Add support for `sval`
 sval = ["sval2"]
 sval2 = [

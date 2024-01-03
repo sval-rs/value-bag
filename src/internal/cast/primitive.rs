@@ -3,12 +3,12 @@ This module generates code to try efficiently convert some arbitrary `T: 'static
 a `Internal`.
 */
 
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 use crate::std::string::String;
 
-use crate::internal::Internal;
+use crate::ValueBag;
 
-pub(in crate::internal) fn from_any<'v, T: ?Sized + 'static>(value: &'v T) -> Option<Internal<'v>> {
+pub(in crate::internal) fn from_any<'v, T: ?Sized + 'static>(value: &'v T) -> Option<ValueBag<'v>> {
     // NOTE: The casts for unsized values (str) are dubious here. To really do this properly
     // we need https://github.com/rust-lang/rust/issues/81513
     // NOTE: With some kind of const `Any::is<T>` we could do all this at compile-time
@@ -31,7 +31,7 @@ pub(in crate::internal) fn from_any<'v, T: ?Sized + 'static>(value: &'v T) -> Op
                     // SAFETY: We verify the value is str before casting
                         let v = unsafe { *(v.0 as *const &'_ str) };
 
-                    return Some(Internal::from(v));
+                    return Some(ValueBag::from(v));
                 }
 
                     $(
@@ -40,7 +40,7 @@ pub(in crate::internal) fn from_any<'v, T: ?Sized + 'static>(value: &'v T) -> Op
                             // SAFETY: We verify the value is $ty before casting
                             let v = unsafe { *(v.0 as *const &'_ $ty) };
 
-                            return Some(Internal::from(v));
+                            return Some(ValueBag::from(v));
                         }
                     )*
                     $(
@@ -50,9 +50,9 @@ pub(in crate::internal) fn from_any<'v, T: ?Sized + 'static>(value: &'v T) -> Op
                             let v = unsafe { *(v.0 as *const &'_ Option<$ty>) };
 
                             if let Some(v) = v {
-                                return Some(Internal::from(v));
+                                return Some(ValueBag::from(v));
                             } else {
-                                return Some(Internal::None);
+                                return Some(ValueBag::from(()));
                             }
                         }
                     )*
@@ -82,7 +82,7 @@ pub(in crate::internal) fn from_any<'v, T: ?Sized + 'static>(value: &'v T) -> Op
         &'static str,
         // We deal with `str` separately because it's unsized
         // str,
-        #[cfg(feature = "std")]
+        #[cfg(feature = "alloc")]
         String,
     ];
 

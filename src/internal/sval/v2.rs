@@ -10,6 +10,9 @@ use crate::{
     Error, ValueBag,
 };
 
+#[cfg(feature = "seq")]
+use crate::std::marker::PhantomData;
+
 impl<'v> ValueBag<'v> {
     /// Get a value from a structured type.
     ///
@@ -296,6 +299,144 @@ impl<'a, 'v> value_bag_sval2::lib::Stream<'v> for VisitorStream<'a, 'v> {
     }
 }
 
+#[inline]
+#[cfg(feature = "seq")]
+pub(crate) fn seq<S: Default + for<'a> Extend<Internal<'a>>>(v: &dyn Value) -> Option<S> {
+    value_bag_sval2::lib_nested::stream_ref(Root(Default::default()), v).ok()
+}
+
+#[cfg(feature = "seq")]
+struct Root<S>(PhantomData<S>);
+
+#[cfg(feature = "seq")]
+struct Seq<S>(S);
+
+#[cfg(feature = "seq")]
+impl<'sval, S: Default + for<'a> Extend<Internal<'a>>> value_bag_sval2::lib_nested::Stream<'sval>
+    for Root<S>
+{
+    type Ok = S;
+
+    type Seq = Seq<S>;
+    type Tuple = Seq<S>;
+
+    type Map = value_bag_sval2::lib_nested::Unsupported<S>;
+    type Record = value_bag_sval2::lib_nested::Unsupported<S>;
+    type Enum = value_bag_sval2::lib_nested::Unsupported<S>;
+
+    fn null(self) -> value_bag_sval2::lib_nested::Result<Self::Ok> {
+        Err(value_bag_sval2::lib_nested::Error::invalid_value(
+            "not a sequence",
+        ))
+    }
+
+    fn bool(self, _: bool) -> value_bag_sval2::lib_nested::Result<Self::Ok> {
+        Err(value_bag_sval2::lib_nested::Error::invalid_value(
+            "not a sequence",
+        ))
+    }
+
+    fn i64(self, _: i64) -> value_bag_sval2::lib_nested::Result<Self::Ok> {
+        Err(value_bag_sval2::lib_nested::Error::invalid_value(
+            "not a sequence",
+        ))
+    }
+
+    fn f64(self, _: f64) -> value_bag_sval2::lib_nested::Result<Self::Ok> {
+        Err(value_bag_sval2::lib_nested::Error::invalid_value(
+            "not a sequence",
+        ))
+    }
+
+    fn text_computed(self, _: &str) -> value_bag_sval2::lib_nested::Result<Self::Ok> {
+        Err(value_bag_sval2::lib_nested::Error::invalid_value(
+            "not a sequence",
+        ))
+    }
+
+    fn seq_begin(self, _: Option<usize>) -> value_bag_sval2::lib_nested::Result<Self::Seq> {
+        Ok(Seq(S::default()))
+    }
+
+    fn map_begin(self, _: Option<usize>) -> value_bag_sval2::lib_nested::Result<Self::Map> {
+        Err(value_bag_sval2::lib_nested::Error::invalid_value(
+            "not a sequence",
+        ))
+    }
+
+    fn tuple_begin(
+        self,
+        _: Option<value_bag_sval2::lib::Tag>,
+        _: Option<value_bag_sval2::lib::Label>,
+        _: Option<value_bag_sval2::lib::Index>,
+        num_entries: Option<usize>,
+    ) -> value_bag_sval2::lib_nested::Result<Self::Tuple> {
+        self.seq_begin(num_entries)
+    }
+
+    fn record_begin(
+        self,
+        _: Option<value_bag_sval2::lib::Tag>,
+        _: Option<value_bag_sval2::lib::Label>,
+        _: Option<value_bag_sval2::lib::Index>,
+        _: Option<usize>,
+    ) -> value_bag_sval2::lib_nested::Result<Self::Record> {
+        Err(value_bag_sval2::lib_nested::Error::invalid_value(
+            "not a sequence",
+        ))
+    }
+
+    fn enum_begin(
+        self,
+        _: Option<value_bag_sval2::lib::Tag>,
+        _: Option<value_bag_sval2::lib::Label>,
+        _: Option<value_bag_sval2::lib::Index>,
+    ) -> value_bag_sval2::lib_nested::Result<Self::Enum> {
+        Err(value_bag_sval2::lib_nested::Error::invalid_value(
+            "not a sequence",
+        ))
+    }
+}
+
+#[cfg(feature = "seq")]
+impl<'sval, S: for<'a> Extend<Internal<'a>>> value_bag_sval2::lib_nested::StreamSeq<'sval>
+    for Seq<S>
+{
+    type Ok = S;
+
+    fn value_computed<V: value_bag_sval2::lib::Value>(
+        &mut self,
+        value: V,
+    ) -> value_bag_sval2::lib_nested::Result {
+        self.0.extend(Some(Internal::AnonSval2(&value)));
+        Ok(())
+    }
+
+    fn end(self) -> value_bag_sval2::lib_nested::Result<Self::Ok> {
+        Ok(self.0)
+    }
+}
+
+#[cfg(feature = "seq")]
+impl<'sval, S: for<'a> Extend<Internal<'a>>> value_bag_sval2::lib_nested::StreamTuple<'sval>
+    for Seq<S>
+{
+    type Ok = S;
+
+    fn value_computed<V: value_bag_sval2::lib::Value>(
+        &mut self,
+        _: Option<value_bag_sval2::lib::Tag>,
+        _: value_bag_sval2::lib::Index,
+        value: V,
+    ) -> value_bag_sval2::lib_nested::Result {
+        value_bag_sval2::lib_nested::StreamSeq::value_computed(self, value)
+    }
+
+    fn end(self) -> value_bag_sval2::lib_nested::Result<Self::Ok> {
+        value_bag_sval2::lib_nested::StreamSeq::end(self)
+    }
+}
+
 impl Error {
     pub(in crate::internal) fn from_sval2(_: value_bag_sval2::lib::Error) -> Self {
         Error::msg("`sval` serialization failed")
@@ -509,6 +650,30 @@ mod tests {
         }
 
         assert_ser_tokens(&ValueBag::capture_sval2(&TestSval), &[Token::U64(42)]);
+    }
+
+    #[cfg(feature = "seq")]
+    mod seq_support {
+        use super::*;
+
+        use crate::std::vec::Vec;
+
+        #[test]
+        #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+        fn sval2_to_seq() {
+            assert_eq!(
+                vec![Some(1.0), None, Some(2.0), Some(3.0), None],
+                ValueBag::capture_sval2(&[
+                    &1.0 as &dyn Value,
+                    &true as &dyn Value,
+                    &2.0 as &dyn Value,
+                    &3.0 as &dyn Value,
+                    &"a string" as &dyn Value,
+                ])
+                .to_f64_seq::<Vec<Option<f64>>>()
+                .expect("invalid value")
+            );
+        }
     }
 
     #[cfg(feature = "std")]
