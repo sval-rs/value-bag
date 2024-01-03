@@ -1,7 +1,7 @@
 use crate::std::{fmt, marker::PhantomData};
 
 use crate::{
-    internal::{self, Internal, InternalVisitor},
+    internal::{Internal, InternalVisitor},
     Error, ValueBag,
 };
 
@@ -142,22 +142,22 @@ impl<'v> Internal<'v> {
 
             #[cfg(feature = "error")]
             #[inline]
-            fn error(&mut self, _: &dyn internal::error::Error) -> Result<(), Error> {
+            fn error(&mut self, _: &dyn crate::internal::error::Error) -> Result<(), Error> {
                 Ok(())
             }
 
             #[cfg(feature = "sval2")]
             #[inline]
-            fn sval2(&mut self, v: &dyn internal::sval::v2::Value) -> Result<(), Error> {
-                self.0 = internal::sval::v2::seq(v);
+            fn sval2(&mut self, v: &dyn crate::internal::sval::v2::Value) -> Result<(), Error> {
+                self.0 = crate::internal::sval::v2::seq(v);
 
                 Ok(())
             }
 
             #[cfg(feature = "serde1")]
             #[inline]
-            fn serde1(&mut self, v: &dyn internal::serde::v1::Serialize) -> Result<(), Error> {
-                self.0 = internal::serde::v1::seq(v);
+            fn serde1(&mut self, v: &dyn crate::internal::serde::v1::Serialize) -> Result<(), Error> {
+                self.0 = crate::internal::serde::v1::seq(v);
 
                 Ok(())
             }
