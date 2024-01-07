@@ -15,9 +15,6 @@ use crate::std::{borrow::ToOwned, string::String};
 use super::{Internal, InternalVisitor};
 use crate::{Error, ValueBag};
 
-#[cfg(feature = "seq")]
-mod seq;
-
 mod primitive;
 
 impl<'v> ValueBag<'v> {

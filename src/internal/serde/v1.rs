@@ -438,227 +438,233 @@ impl value_bag_serde1::lib::ser::Error for Unsupported {
 
 impl value_bag_serde1::lib::ser::StdError for Unsupported {}
 
-#[inline]
 #[cfg(feature = "seq")]
-pub(crate) fn seq<S: Default + for<'a> Extend<Internal<'a>>>(v: &dyn Serialize) -> Option<S> {
-    use crate::std::marker::PhantomData;
+pub(crate) mod seq {
+    use super::*;
 
-    struct Root<S>(PhantomData<S>);
+    use crate::seq::ExtendValue;
 
-    struct Seq<S>(S);
+    #[inline]
+    pub(crate) fn extend<'a, S: Default + ExtendValue<'a>>(v: &dyn Serialize) -> Option<S> {
+        use crate::std::marker::PhantomData;
 
-    impl<S: Default + for<'a> Extend<Internal<'a>>> value_bag_serde1::lib::Serializer for Root<S> {
-        type Ok = S;
+        struct Root<S>(PhantomData<S>);
 
-        type Error = Unsupported;
+        struct Seq<S>(S);
 
-        type SerializeSeq = Seq<S>;
+        impl<'a, S: Default + ExtendValue<'a>> value_bag_serde1::lib::Serializer for Root<S> {
+            type Ok = S;
 
-        type SerializeTuple = Seq<S>;
+            type Error = Unsupported;
 
-        type SerializeTupleStruct = value_bag_serde1::lib::ser::Impossible<S, Unsupported>;
+            type SerializeSeq = Seq<S>;
 
-        type SerializeTupleVariant = value_bag_serde1::lib::ser::Impossible<S, Unsupported>;
+            type SerializeTuple = Seq<S>;
 
-        type SerializeMap = value_bag_serde1::lib::ser::Impossible<S, Unsupported>;
+            type SerializeTupleStruct = value_bag_serde1::lib::ser::Impossible<S, Unsupported>;
 
-        type SerializeStruct = value_bag_serde1::lib::ser::Impossible<S, Unsupported>;
+            type SerializeTupleVariant = value_bag_serde1::lib::ser::Impossible<S, Unsupported>;
 
-        type SerializeStructVariant = value_bag_serde1::lib::ser::Impossible<S, Unsupported>;
+            type SerializeMap = value_bag_serde1::lib::ser::Impossible<S, Unsupported>;
 
-        fn serialize_bool(self, _: bool) -> Result<Self::Ok, Self::Error> {
-            Err(Unsupported)
+            type SerializeStruct = value_bag_serde1::lib::ser::Impossible<S, Unsupported>;
+
+            type SerializeStructVariant = value_bag_serde1::lib::ser::Impossible<S, Unsupported>;
+
+            fn serialize_bool(self, _: bool) -> Result<Self::Ok, Self::Error> {
+                Err(Unsupported)
+            }
+
+            fn serialize_i8(self, _: i8) -> Result<Self::Ok, Self::Error> {
+                Err(Unsupported)
+            }
+
+            fn serialize_i16(self, _: i16) -> Result<Self::Ok, Self::Error> {
+                Err(Unsupported)
+            }
+
+            fn serialize_i32(self, _: i32) -> Result<Self::Ok, Self::Error> {
+                Err(Unsupported)
+            }
+
+            fn serialize_i64(self, _: i64) -> Result<Self::Ok, Self::Error> {
+                Err(Unsupported)
+            }
+
+            fn serialize_u8(self, _: u8) -> Result<Self::Ok, Self::Error> {
+                Err(Unsupported)
+            }
+
+            fn serialize_u16(self, _: u16) -> Result<Self::Ok, Self::Error> {
+                Err(Unsupported)
+            }
+
+            fn serialize_u32(self, _: u32) -> Result<Self::Ok, Self::Error> {
+                Err(Unsupported)
+            }
+
+            fn serialize_u64(self, _: u64) -> Result<Self::Ok, Self::Error> {
+                Err(Unsupported)
+            }
+
+            fn serialize_f32(self, _: f32) -> Result<Self::Ok, Self::Error> {
+                Err(Unsupported)
+            }
+
+            fn serialize_f64(self, _: f64) -> Result<Self::Ok, Self::Error> {
+                Err(Unsupported)
+            }
+
+            fn serialize_char(self, _: char) -> Result<Self::Ok, Self::Error> {
+                Err(Unsupported)
+            }
+
+            fn serialize_str(self, _: &str) -> Result<Self::Ok, Self::Error> {
+                Err(Unsupported)
+            }
+
+            fn serialize_bytes(self, _: &[u8]) -> Result<Self::Ok, Self::Error> {
+                Err(Unsupported)
+            }
+
+            fn serialize_none(self) -> Result<Self::Ok, Self::Error> {
+                Err(Unsupported)
+            }
+
+            fn serialize_some<T: ?Sized>(self, value: &T) -> Result<Self::Ok, Self::Error>
+            where
+                T: value_bag_serde1::lib::Serialize,
+            {
+                value.serialize(self)
+            }
+
+            fn serialize_unit(self) -> Result<Self::Ok, Self::Error> {
+                Err(Unsupported)
+            }
+
+            fn serialize_unit_struct(self, _: &'static str) -> Result<Self::Ok, Self::Error> {
+                Err(Unsupported)
+            }
+
+            fn serialize_unit_variant(
+                self,
+                _: &'static str,
+                _: u32,
+                _: &'static str,
+            ) -> Result<Self::Ok, Self::Error> {
+                Err(Unsupported)
+            }
+
+            fn serialize_newtype_struct<T: ?Sized>(
+                self,
+                _: &'static str,
+                _: &T,
+            ) -> Result<Self::Ok, Self::Error>
+            where
+                T: value_bag_serde1::lib::Serialize,
+            {
+                Err(Unsupported)
+            }
+
+            fn serialize_newtype_variant<T: ?Sized>(
+                self,
+                _: &'static str,
+                _: u32,
+                _: &'static str,
+                _: &T,
+            ) -> Result<Self::Ok, Self::Error>
+            where
+                T: value_bag_serde1::lib::Serialize,
+            {
+                Err(Unsupported)
+            }
+
+            fn serialize_seq(self, _: Option<usize>) -> Result<Self::SerializeSeq, Self::Error> {
+                Ok(Seq(S::default()))
+            }
+
+            fn serialize_tuple(self, len: usize) -> Result<Self::SerializeTuple, Self::Error> {
+                self.serialize_seq(Some(len))
+            }
+
+            fn serialize_tuple_struct(
+                self,
+                _: &'static str,
+                _: usize,
+            ) -> Result<Self::SerializeTupleStruct, Self::Error> {
+                Err(Unsupported)
+            }
+
+            fn serialize_tuple_variant(
+                self,
+                _: &'static str,
+                _: u32,
+                _: &'static str,
+                _: usize,
+            ) -> Result<Self::SerializeTupleVariant, Self::Error> {
+                Err(Unsupported)
+            }
+
+            fn serialize_map(self, _: Option<usize>) -> Result<Self::SerializeMap, Self::Error> {
+                Err(Unsupported)
+            }
+
+            fn serialize_struct(
+                self,
+                _: &'static str,
+                _: usize,
+            ) -> Result<Self::SerializeStruct, Self::Error> {
+                Err(Unsupported)
+            }
+
+            fn serialize_struct_variant(
+                self,
+                _: &'static str,
+                _: u32,
+                _: &'static str,
+                _: usize,
+            ) -> Result<Self::SerializeStructVariant, Self::Error> {
+                Err(Unsupported)
+            }
         }
 
-        fn serialize_i8(self, _: i8) -> Result<Self::Ok, Self::Error> {
-            Err(Unsupported)
+        impl<'a, S: ExtendValue<'a>> value_bag_serde1::lib::ser::SerializeSeq for Seq<S> {
+            type Ok = S;
+
+            type Error = Unsupported;
+
+            fn serialize_element<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
+            where
+                T: value_bag_serde1::lib::Serialize,
+            {
+                self.0.extend(Internal::AnonSerde1(&value));
+                Ok(())
+            }
+
+            fn end(self) -> Result<Self::Ok, Self::Error> {
+                Ok(self.0)
+            }
         }
 
-        fn serialize_i16(self, _: i16) -> Result<Self::Ok, Self::Error> {
-            Err(Unsupported)
+        impl<'a, S: ExtendValue<'a>> value_bag_serde1::lib::ser::SerializeTuple for Seq<S> {
+            type Ok = S;
+
+            type Error = Unsupported;
+
+            fn serialize_element<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
+            where
+                T: value_bag_serde1::lib::Serialize,
+            {
+                value_bag_serde1::lib::ser::SerializeSeq::serialize_element(self, value)
+            }
+
+            fn end(self) -> Result<Self::Ok, Self::Error> {
+                value_bag_serde1::lib::ser::SerializeSeq::end(self)
+            }
         }
 
-        fn serialize_i32(self, _: i32) -> Result<Self::Ok, Self::Error> {
-            Err(Unsupported)
-        }
-
-        fn serialize_i64(self, _: i64) -> Result<Self::Ok, Self::Error> {
-            Err(Unsupported)
-        }
-
-        fn serialize_u8(self, _: u8) -> Result<Self::Ok, Self::Error> {
-            Err(Unsupported)
-        }
-
-        fn serialize_u16(self, _: u16) -> Result<Self::Ok, Self::Error> {
-            Err(Unsupported)
-        }
-
-        fn serialize_u32(self, _: u32) -> Result<Self::Ok, Self::Error> {
-            Err(Unsupported)
-        }
-
-        fn serialize_u64(self, _: u64) -> Result<Self::Ok, Self::Error> {
-            Err(Unsupported)
-        }
-
-        fn serialize_f32(self, _: f32) -> Result<Self::Ok, Self::Error> {
-            Err(Unsupported)
-        }
-
-        fn serialize_f64(self, _: f64) -> Result<Self::Ok, Self::Error> {
-            Err(Unsupported)
-        }
-
-        fn serialize_char(self, _: char) -> Result<Self::Ok, Self::Error> {
-            Err(Unsupported)
-        }
-
-        fn serialize_str(self, _: &str) -> Result<Self::Ok, Self::Error> {
-            Err(Unsupported)
-        }
-
-        fn serialize_bytes(self, _: &[u8]) -> Result<Self::Ok, Self::Error> {
-            Err(Unsupported)
-        }
-
-        fn serialize_none(self) -> Result<Self::Ok, Self::Error> {
-            Err(Unsupported)
-        }
-
-        fn serialize_some<T: ?Sized>(self, value: &T) -> Result<Self::Ok, Self::Error>
-        where
-            T: value_bag_serde1::lib::Serialize,
-        {
-            value.serialize(self)
-        }
-
-        fn serialize_unit(self) -> Result<Self::Ok, Self::Error> {
-            Err(Unsupported)
-        }
-
-        fn serialize_unit_struct(self, _: &'static str) -> Result<Self::Ok, Self::Error> {
-            Err(Unsupported)
-        }
-
-        fn serialize_unit_variant(
-            self,
-            _: &'static str,
-            _: u32,
-            _: &'static str,
-        ) -> Result<Self::Ok, Self::Error> {
-            Err(Unsupported)
-        }
-
-        fn serialize_newtype_struct<T: ?Sized>(
-            self,
-            _: &'static str,
-            _: &T,
-        ) -> Result<Self::Ok, Self::Error>
-        where
-            T: value_bag_serde1::lib::Serialize,
-        {
-            Err(Unsupported)
-        }
-
-        fn serialize_newtype_variant<T: ?Sized>(
-            self,
-            _: &'static str,
-            _: u32,
-            _: &'static str,
-            _: &T,
-        ) -> Result<Self::Ok, Self::Error>
-        where
-            T: value_bag_serde1::lib::Serialize,
-        {
-            Err(Unsupported)
-        }
-
-        fn serialize_seq(self, _: Option<usize>) -> Result<Self::SerializeSeq, Self::Error> {
-            Ok(Seq(S::default()))
-        }
-
-        fn serialize_tuple(self, len: usize) -> Result<Self::SerializeTuple, Self::Error> {
-            self.serialize_seq(Some(len))
-        }
-
-        fn serialize_tuple_struct(
-            self,
-            _: &'static str,
-            _: usize,
-        ) -> Result<Self::SerializeTupleStruct, Self::Error> {
-            Err(Unsupported)
-        }
-
-        fn serialize_tuple_variant(
-            self,
-            _: &'static str,
-            _: u32,
-            _: &'static str,
-            _: usize,
-        ) -> Result<Self::SerializeTupleVariant, Self::Error> {
-            Err(Unsupported)
-        }
-
-        fn serialize_map(self, _: Option<usize>) -> Result<Self::SerializeMap, Self::Error> {
-            Err(Unsupported)
-        }
-
-        fn serialize_struct(
-            self,
-            _: &'static str,
-            _: usize,
-        ) -> Result<Self::SerializeStruct, Self::Error> {
-            Err(Unsupported)
-        }
-
-        fn serialize_struct_variant(
-            self,
-            _: &'static str,
-            _: u32,
-            _: &'static str,
-            _: usize,
-        ) -> Result<Self::SerializeStructVariant, Self::Error> {
-            Err(Unsupported)
-        }
+        value_bag_serde1::lib::Serialize::serialize(v, Root::<S>(Default::default())).ok()
     }
-
-    impl<S: for<'a> Extend<Internal<'a>>> value_bag_serde1::lib::ser::SerializeSeq for Seq<S> {
-        type Ok = S;
-
-        type Error = Unsupported;
-
-        fn serialize_element<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
-        where
-            T: value_bag_serde1::lib::Serialize,
-        {
-            self.0.extend(Some(Internal::AnonSerde1(&value)));
-            Ok(())
-        }
-
-        fn end(self) -> Result<Self::Ok, Self::Error> {
-            Ok(self.0)
-        }
-    }
-
-    impl<S: for<'a> Extend<Internal<'a>>> value_bag_serde1::lib::ser::SerializeTuple for Seq<S> {
-        type Ok = S;
-
-        type Error = Unsupported;
-
-        fn serialize_element<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
-        where
-            T: value_bag_serde1::lib::Serialize,
-        {
-            value_bag_serde1::lib::ser::SerializeSeq::serialize_element(self, value)
-        }
-
-        fn end(self) -> Result<Self::Ok, Self::Error> {
-            value_bag_serde1::lib::ser::SerializeSeq::end(self)
-        }
-    }
-
-    value_bag_serde1::lib::Serialize::serialize(v, Root::<S>(Default::default())).ok()
 }
 
 #[cfg(feature = "owned")]

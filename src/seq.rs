@@ -13,7 +13,7 @@ impl<'v> ValueBag<'v> {
     ///
     /// If this value is not a sequence then this method will return `None`.
     pub fn to_u64_seq<S: Default + Extend<Option<u64>>>(&self) -> Option<S> {
-        self.inner.seq::<ExtendCast<S, u64>>().map(|seq| seq.0)
+        self.inner.seq::<ExtendPrimitive<S, u64>>().map(|seq| seq.0)
     }
 
     /// Try get a collection `S` of `i64`s from this value.
@@ -23,7 +23,7 @@ impl<'v> ValueBag<'v> {
     ///
     /// If this value is not a sequence then this method will return `None`.
     pub fn to_i64_seq<S: Default + Extend<Option<i64>>>(&self) -> Option<S> {
-        self.inner.seq::<ExtendCast<S, i64>>().map(|seq| seq.0)
+        self.inner.seq::<ExtendPrimitive<S, i64>>().map(|seq| seq.0)
     }
 
     /// Try get a collection `S` of `u128`s from this value.
@@ -33,7 +33,7 @@ impl<'v> ValueBag<'v> {
     ///
     /// If this value is not a sequence then this method will return `None`.
     pub fn to_u128_seq<S: Default + Extend<Option<u128>>>(&self) -> Option<S> {
-        self.inner.seq::<ExtendCast<S, u128>>().map(|seq| seq.0)
+        self.inner.seq::<ExtendPrimitive<S, u128>>().map(|seq| seq.0)
     }
 
     /// Try get a collection `S` of `i128`s from this value.
@@ -43,7 +43,7 @@ impl<'v> ValueBag<'v> {
     ///
     /// If this value is not a sequence then this method will return `None`.
     pub fn to_i128_seq<S: Default + Extend<Option<i128>>>(&self) -> Option<S> {
-        self.inner.seq::<ExtendCast<S, i128>>().map(|seq| seq.0)
+        self.inner.seq::<ExtendPrimitive<S, i128>>().map(|seq| seq.0)
     }
 
     /// Try get a collection `S` of `f64`s from this value.
@@ -53,7 +53,7 @@ impl<'v> ValueBag<'v> {
     ///
     /// If this value is not a sequence then this method will return `None`.
     pub fn to_f64_seq<S: Default + Extend<Option<f64>>>(&self) -> Option<S> {
-        self.inner.seq::<ExtendCast<S, f64>>().map(|seq| seq.0)
+        self.inner.seq::<ExtendPrimitive<S, f64>>().map(|seq| seq.0)
     }
 
     /// Try get a collection `S` of `bool`s from this value.
@@ -63,28 +63,71 @@ impl<'v> ValueBag<'v> {
     ///
     /// If this value is not a sequence then this method will return `None`.
     pub fn to_bool_seq<S: Default + Extend<Option<bool>>>(&self) -> Option<S> {
-        self.inner.seq::<ExtendCast<S, bool>>().map(|seq| seq.0)
+        self.inner.seq::<ExtendPrimitive<S, bool>>().map(|seq| seq.0)
+    }
+}
+
+#[cfg(feature = "alloc")]
+mod alloc_support {
+    use super::*;
+
+    use crate::std::borrow::Cow;
+
+    impl<'v> ValueBag<'v> {
+        /// Try get a `str` from this value.
+        ///
+        /// This method is cheap for primitive types, but may call arbitrary
+        /// serialization implementations for complex ones. If the serialization
+        /// implementation produces a short lived string it will be allocated.
+        #[inline]
+        pub fn to_str_seq<S: Default + Extend<Option<Cow<'v, str>>>>(&self) -> Option<S> {
+            #[derive(Default)]
+            struct ExtendStr<'a, S>(S, PhantomData<Cow<'a, str>>);
+
+            impl<'a, S: Extend<Option<Cow<'a, str>>>> ExtendValue<'a> for ExtendStr<'a, S> {
+                fn extend<'b>(&mut self, inner: Internal<'b>) {
+                    self.0.extend(Some(
+                        ValueBag { inner }
+                            .to_str()
+                            .map(|s| Cow::Owned(s.into_owned())),
+                    ))
+                }
+
+                fn extend_borrowed(&mut self, inner: Internal<'a>) {
+                    self.0.extend(Some(ValueBag { inner }.to_str()))
+                }
+            }
+
+            self.inner.seq::<ExtendStr<'v, S>>().map(|seq| seq.0)
+        }
     }
 }
 
 #[derive(Default)]
-struct ExtendCast<S, T>(S, PhantomData<T>);
+struct ExtendPrimitive<S, T>(S, PhantomData<T>);
 
-impl<'a, S: Extend<Option<T>>, T: TryFrom<ValueBag<'a>>> Extend<Internal<'a>> for ExtendCast<S, T> {
-    fn extend<I: IntoIterator<Item = Internal<'a>>>(&mut self, iter: I) {
-        self.0.extend(
-            iter.into_iter()
-                .map(|inner| ValueBag { inner }.try_into().ok()),
-        )
+impl<'a, S: Extend<Option<T>>, T: for<'b> TryFrom<ValueBag<'b>>> ExtendValue<'a>
+    for ExtendPrimitive<S, T>
+{
+    fn extend<'b>(&mut self, inner: Internal<'b>) {
+        self.0.extend(Some(ValueBag { inner }.try_into().ok()))
+    }
+}
+
+pub(crate) trait ExtendValue<'v> {
+    fn extend<'a>(&mut self, v: Internal<'a>);
+
+    fn extend_borrowed(&mut self, v: Internal<'v>) {
+        self.extend(v);
     }
 }
 
 impl<'v> Internal<'v> {
     #[inline]
-    fn seq<S: Default + for<'a> Extend<Internal<'a>>>(&self) -> Option<S> {
+    fn seq<S: Default + ExtendValue<'v>>(&self) -> Option<S> {
         struct SeqVisitor<S>(Option<S>);
 
-        impl<'v, S: Default + for<'a> Extend<Internal<'a>>> InternalVisitor<'v> for SeqVisitor<S> {
+        impl<'v, S: Default + ExtendValue<'v>> InternalVisitor<'v> for SeqVisitor<S> {
             #[inline]
             fn debug(&mut self, _: &dyn fmt::Debug) -> Result<(), Error> {
                 Ok(())
@@ -149,7 +192,18 @@ impl<'v> Internal<'v> {
             #[cfg(feature = "sval2")]
             #[inline]
             fn sval2(&mut self, v: &dyn crate::internal::sval::v2::Value) -> Result<(), Error> {
-                self.0 = crate::internal::sval::v2::seq(v);
+                self.0 = crate::internal::sval::v2::seq::extend(v);
+
+                Ok(())
+            }
+
+            #[cfg(feature = "sval2")]
+            #[inline]
+            fn borrowed_sval2(
+                &mut self,
+                v: &'v dyn crate::internal::sval::v2::Value,
+            ) -> Result<(), Error> {
+                self.0 = crate::internal::sval::v2::seq::extend_borrowed(v);
 
                 Ok(())
             }
@@ -160,7 +214,7 @@ impl<'v> Internal<'v> {
                 &mut self,
                 v: &dyn crate::internal::serde::v1::Serialize,
             ) -> Result<(), Error> {
-                self.0 = crate::internal::serde::v1::seq(v);
+                self.0 = crate::internal::serde::v1::seq::extend(v);
 
                 Ok(())
             }

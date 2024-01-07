@@ -117,6 +117,9 @@ mod owned;
 #[cfg(feature = "owned")]
 pub use self::owned::*;
 
+#[cfg(feature = "seq")]
+mod seq;
+
 pub use self::error::Error;
 
 /// A dynamic structured value.

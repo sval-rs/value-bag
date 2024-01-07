@@ -10,9 +10,6 @@ use crate::{
     Error, ValueBag,
 };
 
-#[cfg(feature = "seq")]
-use crate::std::marker::PhantomData;
-
 impl<'v> ValueBag<'v> {
     /// Get a value from a structured type.
     ///
@@ -299,144 +296,6 @@ impl<'a, 'v> value_bag_sval2::lib::Stream<'v> for VisitorStream<'a, 'v> {
     }
 }
 
-#[inline]
-#[cfg(feature = "seq")]
-pub(crate) fn seq<S: Default + for<'a> Extend<Internal<'a>>>(v: &dyn Value) -> Option<S> {
-    value_bag_sval2::lib_nested::stream_ref(Root(Default::default()), v).ok()
-}
-
-#[cfg(feature = "seq")]
-struct Root<S>(PhantomData<S>);
-
-#[cfg(feature = "seq")]
-struct Seq<S>(S);
-
-#[cfg(feature = "seq")]
-impl<'sval, S: Default + for<'a> Extend<Internal<'a>>> value_bag_sval2::lib_nested::Stream<'sval>
-    for Root<S>
-{
-    type Ok = S;
-
-    type Seq = Seq<S>;
-    type Tuple = Seq<S>;
-
-    type Map = value_bag_sval2::lib_nested::Unsupported<S>;
-    type Record = value_bag_sval2::lib_nested::Unsupported<S>;
-    type Enum = value_bag_sval2::lib_nested::Unsupported<S>;
-
-    fn null(self) -> value_bag_sval2::lib_nested::Result<Self::Ok> {
-        Err(value_bag_sval2::lib_nested::Error::invalid_value(
-            "not a sequence",
-        ))
-    }
-
-    fn bool(self, _: bool) -> value_bag_sval2::lib_nested::Result<Self::Ok> {
-        Err(value_bag_sval2::lib_nested::Error::invalid_value(
-            "not a sequence",
-        ))
-    }
-
-    fn i64(self, _: i64) -> value_bag_sval2::lib_nested::Result<Self::Ok> {
-        Err(value_bag_sval2::lib_nested::Error::invalid_value(
-            "not a sequence",
-        ))
-    }
-
-    fn f64(self, _: f64) -> value_bag_sval2::lib_nested::Result<Self::Ok> {
-        Err(value_bag_sval2::lib_nested::Error::invalid_value(
-            "not a sequence",
-        ))
-    }
-
-    fn text_computed(self, _: &str) -> value_bag_sval2::lib_nested::Result<Self::Ok> {
-        Err(value_bag_sval2::lib_nested::Error::invalid_value(
-            "not a sequence",
-        ))
-    }
-
-    fn seq_begin(self, _: Option<usize>) -> value_bag_sval2::lib_nested::Result<Self::Seq> {
-        Ok(Seq(S::default()))
-    }
-
-    fn map_begin(self, _: Option<usize>) -> value_bag_sval2::lib_nested::Result<Self::Map> {
-        Err(value_bag_sval2::lib_nested::Error::invalid_value(
-            "not a sequence",
-        ))
-    }
-
-    fn tuple_begin(
-        self,
-        _: Option<value_bag_sval2::lib::Tag>,
-        _: Option<value_bag_sval2::lib::Label>,
-        _: Option<value_bag_sval2::lib::Index>,
-        num_entries: Option<usize>,
-    ) -> value_bag_sval2::lib_nested::Result<Self::Tuple> {
-        self.seq_begin(num_entries)
-    }
-
-    fn record_begin(
-        self,
-        _: Option<value_bag_sval2::lib::Tag>,
-        _: Option<value_bag_sval2::lib::Label>,
-        _: Option<value_bag_sval2::lib::Index>,
-        _: Option<usize>,
-    ) -> value_bag_sval2::lib_nested::Result<Self::Record> {
-        Err(value_bag_sval2::lib_nested::Error::invalid_value(
-            "not a sequence",
-        ))
-    }
-
-    fn enum_begin(
-        self,
-        _: Option<value_bag_sval2::lib::Tag>,
-        _: Option<value_bag_sval2::lib::Label>,
-        _: Option<value_bag_sval2::lib::Index>,
-    ) -> value_bag_sval2::lib_nested::Result<Self::Enum> {
-        Err(value_bag_sval2::lib_nested::Error::invalid_value(
-            "not a sequence",
-        ))
-    }
-}
-
-#[cfg(feature = "seq")]
-impl<'sval, S: for<'a> Extend<Internal<'a>>> value_bag_sval2::lib_nested::StreamSeq<'sval>
-    for Seq<S>
-{
-    type Ok = S;
-
-    fn value_computed<V: value_bag_sval2::lib::Value>(
-        &mut self,
-        value: V,
-    ) -> value_bag_sval2::lib_nested::Result {
-        self.0.extend(Some(Internal::AnonSval2(&value)));
-        Ok(())
-    }
-
-    fn end(self) -> value_bag_sval2::lib_nested::Result<Self::Ok> {
-        Ok(self.0)
-    }
-}
-
-#[cfg(feature = "seq")]
-impl<'sval, S: for<'a> Extend<Internal<'a>>> value_bag_sval2::lib_nested::StreamTuple<'sval>
-    for Seq<S>
-{
-    type Ok = S;
-
-    fn value_computed<V: value_bag_sval2::lib::Value>(
-        &mut self,
-        _: Option<value_bag_sval2::lib::Tag>,
-        _: value_bag_sval2::lib::Index,
-        value: V,
-    ) -> value_bag_sval2::lib_nested::Result {
-        value_bag_sval2::lib_nested::StreamSeq::value_computed(self, value)
-    }
-
-    fn end(self) -> value_bag_sval2::lib_nested::Result<Self::Ok> {
-        value_bag_sval2::lib_nested::StreamSeq::end(self)
-    }
-}
-
 impl Error {
     pub(in crate::internal) fn from_sval2(_: value_bag_sval2::lib::Error) -> Self {
         Error::msg("`sval` serialization failed")
@@ -444,6 +303,186 @@ impl Error {
 
     pub(in crate::internal) fn into_sval2(self) -> value_bag_sval2::lib::Error {
         value_bag_sval2::lib::Error::new()
+    }
+}
+
+#[cfg(feature = "seq")]
+pub(crate) mod seq {
+    use super::*;
+
+    use crate::seq::ExtendValue;
+
+    #[inline]
+    pub(crate) fn extend<'a, 'b, S: Default + ExtendValue<'a>>(v: &'b dyn Value) -> Option<S> {
+        let mut stream = Root {
+            seq: None,
+            text_buf: Default::default(),
+            depth: 0,
+        };
+
+        value_bag_sval2::lib::stream_computed(&mut stream, v).ok()?;
+
+        stream.seq
+    }
+
+    #[inline]
+    pub(crate) fn extend_borrowed<'a, S: Default + ExtendValue<'a>>(v: &'a dyn Value) -> Option<S> {
+        let mut stream = Root {
+            seq: None,
+            text_buf: Default::default(),
+            depth: 0,
+        };
+
+        value_bag_sval2::lib::stream(&mut stream, v).ok()?;
+
+        stream.seq
+    }
+
+    struct Root<'v, S> {
+        seq: Option<S>,
+        text_buf: value_bag_sval2::buffer::TextBuf<'v>,
+        depth: usize,
+    }
+
+    fn extend_borrowed_internal<'sval>(
+        seq: Option<&mut impl ExtendValue<'sval>>,
+        depth: usize,
+        v: impl Into<ValueBag<'sval>>,
+    ) -> value_bag_sval2::lib::Result {
+        if depth != 1 {
+            return Ok(());
+        }
+
+        if let Some(seq) = seq {
+            seq.extend_borrowed(ValueBag::from(v.into()).inner);
+
+            Ok(())
+        } else {
+            value_bag_sval2::lib::error()
+        }
+    }
+
+    fn extend_internal<'a, 'sval>(
+        seq: Option<&mut impl ExtendValue<'sval>>,
+        depth: usize,
+        v: impl Into<ValueBag<'a>>,
+    ) -> value_bag_sval2::lib::Result {
+        if depth != 1 {
+            return Ok(());
+        }
+
+        if let Some(seq) = seq {
+            seq.extend(ValueBag::from(v.into()).inner);
+
+            Ok(())
+        } else {
+            value_bag_sval2::lib::error()
+        }
+    }
+
+    impl<'sval, S: Default + ExtendValue<'sval>> value_bag_sval2::lib::Stream<'sval>
+        for Root<'sval, S>
+    {
+        fn null(&mut self) -> value_bag_sval2::lib::Result {
+            extend_borrowed_internal(self.seq.as_mut(), self.depth, ())
+        }
+
+        fn bool(&mut self, v: bool) -> value_bag_sval2::lib::Result {
+            extend_borrowed_internal(self.seq.as_mut(), self.depth, v)
+        }
+
+        fn i64(&mut self, v: i64) -> value_bag_sval2::lib::Result {
+            extend_borrowed_internal(self.seq.as_mut(), self.depth, v)
+        }
+
+        fn u64(&mut self, v: u64) -> value_bag_sval2::lib::Result {
+            extend_borrowed_internal(self.seq.as_mut(), self.depth, v)
+        }
+
+        fn i128(&mut self, v: i128) -> value_bag_sval2::lib::Result {
+            #[cfg(feature = "inline-i128")]
+            {
+                extend_borrowed_internal(self.seq.as_mut(), self.depth, v)
+            }
+            #[cfg(not(feature = "inline-i128"))]
+            {
+                extend_internal(self.seq.as_mut(), self.depth, &v)
+            }
+        }
+
+        fn u128(&mut self, v: u128) -> value_bag_sval2::lib::Result {
+            #[cfg(feature = "inline-i128")]
+            {
+                extend_borrowed_internal(self.seq.as_mut(), self.depth, v)
+            }
+            #[cfg(not(feature = "inline-i128"))]
+            {
+                extend_internal(self.seq.as_mut(), self.depth, &v)
+            }
+        }
+
+        fn f64(&mut self, v: f64) -> value_bag_sval2::lib::Result {
+            extend_borrowed_internal(self.seq.as_mut(), self.depth, v)
+        }
+
+        fn text_begin(&mut self, _: Option<usize>) -> value_bag_sval2::lib::Result {
+            self.text_buf.clear();
+            Ok(())
+        }
+
+        fn text_fragment_computed(&mut self, f: &str) -> value_bag_sval2::lib::Result {
+            self.text_buf
+                .push_fragment_computed(f)
+                .map_err(|_| value_bag_sval2::lib::Error::new())
+        }
+
+        fn text_fragment(&mut self, f: &'sval str) -> value_bag_sval2::lib::Result {
+            self.text_buf
+                .push_fragment(f)
+                .map_err(|_| value_bag_sval2::lib::Error::new())
+        }
+
+        fn text_end(&mut self) -> value_bag_sval2::lib::Result {
+            if let Some(v) = self.text_buf.as_borrowed_str() {
+                extend_borrowed_internal(self.seq.as_mut(), self.depth, v)
+            } else {
+                let v = self.text_buf.as_str();
+                extend_internal(self.seq.as_mut(), self.depth, v)
+            }
+        }
+
+        fn seq_begin(&mut self, _: Option<usize>) -> value_bag_sval2::lib::Result {
+            if self.seq.is_none() {
+                self.seq = Some(S::default());
+            }
+
+            self.depth += 1;
+
+            // Treat nested complex values as null
+            // This ensures an upstream visitor sees them, but won't
+            // be able to convert them into anything meaningful
+            if self.depth > 1 {
+                if let Some(ref mut seq) = self.seq {
+                    seq.extend_borrowed(ValueBag::from(()).inner);
+                }
+            }
+
+            Ok(())
+        }
+
+        fn seq_value_begin(&mut self) -> value_bag_sval2::lib::Result {
+            Ok(())
+        }
+
+        fn seq_value_end(&mut self) -> value_bag_sval2::lib::Result {
+            Ok(())
+        }
+
+        fn seq_end(&mut self) -> value_bag_sval2::lib::Result {
+            self.depth -= 1;
+
+            Ok(())
+        }
     }
 }
 
