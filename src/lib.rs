@@ -405,8 +405,8 @@ pub use self::error::Error;
 /// A sequence captured with either `sval` or `serde` can have its elements extracted:
 ///
 /// ```
-/// # #[cfg(not(feature = "serde1"))] fn main() {}
-/// # #[cfg(feature = "serde1")]
+/// # #[cfg(not(all(feature = "serde1", feature = "seq")))] fn main() {}
+/// # #[cfg(all(feature = "serde1", feature = "seq"))]
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// # use value_bag_serde1::json as serde_json;
 /// use value_bag::ValueBag;
