@@ -1,24 +1,18 @@
 //! Converting standard types into `ValueBag`s.
 
-use crate::internal::Internal;
-
 use super::{Error, ValueBag};
 
 impl<'v> From<()> for ValueBag<'v> {
     #[inline]
     fn from(_: ()) -> Self {
-        ValueBag {
-            inner: Internal::None,
-        }
+        ValueBag::empty()
     }
 }
 
 impl<'v> From<u8> for ValueBag<'v> {
     #[inline]
     fn from(v: u8) -> Self {
-        ValueBag {
-            inner: Internal::Unsigned(v as u64),
-        }
+        ValueBag::from_u8(v)
     }
 }
 
@@ -37,9 +31,7 @@ impl<'v> TryFrom<ValueBag<'v>> for u8 {
 impl<'v> From<u16> for ValueBag<'v> {
     #[inline]
     fn from(v: u16) -> Self {
-        ValueBag {
-            inner: Internal::Unsigned(v as u64),
-        }
+        ValueBag::from_u16(v)
     }
 }
 
@@ -58,9 +50,7 @@ impl<'v> TryFrom<ValueBag<'v>> for u16 {
 impl<'v> From<u32> for ValueBag<'v> {
     #[inline]
     fn from(v: u32) -> Self {
-        ValueBag {
-            inner: Internal::Unsigned(v as u64),
-        }
+        ValueBag::from_u32(v)
     }
 }
 
@@ -79,9 +69,7 @@ impl<'v> TryFrom<ValueBag<'v>> for u32 {
 impl<'v> From<u64> for ValueBag<'v> {
     #[inline]
     fn from(v: u64) -> Self {
-        ValueBag {
-            inner: Internal::Unsigned(v),
-        }
+        ValueBag::from_u64(v)
     }
 }
 
@@ -97,9 +85,7 @@ impl<'v> TryFrom<ValueBag<'v>> for u64 {
 impl<'v> From<usize> for ValueBag<'v> {
     #[inline]
     fn from(v: usize) -> Self {
-        ValueBag {
-            inner: Internal::Unsigned(v as u64),
-        }
+        ValueBag::from_usize(v)
     }
 }
 
@@ -118,9 +104,7 @@ impl<'v> TryFrom<ValueBag<'v>> for usize {
 impl<'v> From<i8> for ValueBag<'v> {
     #[inline]
     fn from(v: i8) -> Self {
-        ValueBag {
-            inner: Internal::Signed(v as i64),
-        }
+        ValueBag::from_i8(v)
     }
 }
 
@@ -139,9 +123,7 @@ impl<'v> TryFrom<ValueBag<'v>> for i8 {
 impl<'v> From<i16> for ValueBag<'v> {
     #[inline]
     fn from(v: i16) -> Self {
-        ValueBag {
-            inner: Internal::Signed(v as i64),
-        }
+        ValueBag::from_i16(v)
     }
 }
 
@@ -160,9 +142,7 @@ impl<'v> TryFrom<ValueBag<'v>> for i16 {
 impl<'v> From<i32> for ValueBag<'v> {
     #[inline]
     fn from(v: i32) -> Self {
-        ValueBag {
-            inner: Internal::Signed(v as i64),
-        }
+        ValueBag::from_i32(v)
     }
 }
 
@@ -181,9 +161,7 @@ impl<'v> TryFrom<ValueBag<'v>> for i32 {
 impl<'v> From<i64> for ValueBag<'v> {
     #[inline]
     fn from(v: i64) -> Self {
-        ValueBag {
-            inner: Internal::Signed(v),
-        }
+        ValueBag::from_i64(v)
     }
 }
 
@@ -199,9 +177,7 @@ impl<'v> TryFrom<ValueBag<'v>> for i64 {
 impl<'v> From<isize> for ValueBag<'v> {
     #[inline]
     fn from(v: isize) -> Self {
-        ValueBag {
-            inner: Internal::Signed(v as i64),
-        }
+        ValueBag::from_isize(v)
     }
 }
 
@@ -220,18 +196,14 @@ impl<'v> TryFrom<ValueBag<'v>> for isize {
 impl<'v> From<f32> for ValueBag<'v> {
     #[inline]
     fn from(v: f32) -> Self {
-        ValueBag {
-            inner: Internal::Float(v as f64),
-        }
+        ValueBag::from_f32(v)
     }
 }
 
 impl<'v> From<f64> for ValueBag<'v> {
     #[inline]
     fn from(v: f64) -> Self {
-        ValueBag {
-            inner: Internal::Float(v),
-        }
+        ValueBag::from_f64(v)
     }
 }
 
@@ -250,9 +222,7 @@ impl<'v> TryFrom<ValueBag<'v>> for f64 {
 impl<'v> From<bool> for ValueBag<'v> {
     #[inline]
     fn from(v: bool) -> Self {
-        ValueBag {
-            inner: Internal::Bool(v),
-        }
+        ValueBag::from_bool(v)
     }
 }
 
@@ -268,9 +238,7 @@ impl<'v> TryFrom<ValueBag<'v>> for bool {
 impl<'v> From<char> for ValueBag<'v> {
     #[inline]
     fn from(v: char) -> Self {
-        ValueBag {
-            inner: Internal::Char(v),
-        }
+        ValueBag::from_char(v)
     }
 }
 
@@ -286,9 +254,7 @@ impl<'v> TryFrom<ValueBag<'v>> for char {
 impl<'v> From<&'v str> for ValueBag<'v> {
     #[inline]
     fn from(v: &'v str) -> Self {
-        ValueBag {
-            inner: Internal::Str(v),
-        }
+        ValueBag::from_str(v)
     }
 }
 
@@ -305,63 +271,42 @@ impl<'v> TryFrom<ValueBag<'v>> for &'v str {
 impl<'v> From<&'v ()> for ValueBag<'v> {
     #[inline]
     fn from(_: &'v ()) -> Self {
-        ValueBag {
-            inner: Internal::None,
-        }
+        ValueBag::empty()
     }
 }
 
 impl<'v> From<&'v u8> for ValueBag<'v> {
     #[inline]
     fn from(v: &'v u8) -> Self {
-        ValueBag {
-            inner: Internal::Unsigned(*v as u64),
-        }
+        ValueBag::from_u8(*v)
     }
 }
 
 impl<'v> From<&'v u16> for ValueBag<'v> {
     #[inline]
     fn from(v: &'v u16) -> Self {
-        ValueBag {
-            inner: Internal::Unsigned(*v as u64),
-        }
+        ValueBag::from_u16(*v)
     }
 }
 
 impl<'v> From<&'v u32> for ValueBag<'v> {
     #[inline]
     fn from(v: &'v u32) -> Self {
-        ValueBag {
-            inner: Internal::Unsigned(*v as u64),
-        }
+        ValueBag::from_u32(*v)
     }
 }
 
 impl<'v> From<&'v u64> for ValueBag<'v> {
     #[inline]
     fn from(v: &'v u64) -> Self {
-        ValueBag {
-            inner: Internal::Unsigned(*v),
-        }
+        ValueBag::from_u64(*v)
     }
 }
 
 impl<'v> From<&'v u128> for ValueBag<'v> {
     #[inline]
     fn from(v: &'v u128) -> Self {
-        #[cfg(feature = "inline-i128")]
-        {
-            ValueBag {
-                inner: Internal::BigUnsigned(*v),
-            }
-        }
-        #[cfg(not(feature = "inline-i128"))]
-        {
-            ValueBag {
-                inner: Internal::BigUnsigned(v),
-            }
-        }
+        ValueBag::from_u128_ref(v)
     }
 }
 
@@ -369,9 +314,7 @@ impl<'v> From<&'v u128> for ValueBag<'v> {
 impl<'v> From<u128> for ValueBag<'v> {
     #[inline]
     fn from(v: u128) -> Self {
-        ValueBag {
-            inner: Internal::BigUnsigned(v),
-        }
+        ValueBag::from_u128(v)
     }
 }
 
@@ -387,63 +330,42 @@ impl<'v> TryFrom<ValueBag<'v>> for u128 {
 impl<'v> From<&'v usize> for ValueBag<'v> {
     #[inline]
     fn from(v: &'v usize) -> Self {
-        ValueBag {
-            inner: Internal::Unsigned(*v as u64),
-        }
+        ValueBag::from_usize(*v)
     }
 }
 
 impl<'v> From<&'v i8> for ValueBag<'v> {
     #[inline]
     fn from(v: &'v i8) -> Self {
-        ValueBag {
-            inner: Internal::Signed(*v as i64),
-        }
+        ValueBag::from_i8(*v)
     }
 }
 
 impl<'v> From<&'v i16> for ValueBag<'v> {
     #[inline]
     fn from(v: &'v i16) -> Self {
-        ValueBag {
-            inner: Internal::Signed(*v as i64),
-        }
+        ValueBag::from_i16(*v)
     }
 }
 
 impl<'v> From<&'v i32> for ValueBag<'v> {
     #[inline]
     fn from(v: &'v i32) -> Self {
-        ValueBag {
-            inner: Internal::Signed(*v as i64),
-        }
+        ValueBag::from_i32(*v)
     }
 }
 
 impl<'v> From<&'v i64> for ValueBag<'v> {
     #[inline]
     fn from(v: &'v i64) -> Self {
-        ValueBag {
-            inner: Internal::Signed(*v),
-        }
+        ValueBag::from_i64(*v)
     }
 }
 
 impl<'v> From<&'v i128> for ValueBag<'v> {
     #[inline]
     fn from(v: &'v i128) -> Self {
-        #[cfg(feature = "inline-i128")]
-        {
-            ValueBag {
-                inner: Internal::BigSigned(*v),
-            }
-        }
-        #[cfg(not(feature = "inline-i128"))]
-        {
-            ValueBag {
-                inner: Internal::BigSigned(v),
-            }
-        }
+        ValueBag::from_i128_ref(v)
     }
 }
 
@@ -451,9 +373,7 @@ impl<'v> From<&'v i128> for ValueBag<'v> {
 impl<'v> From<i128> for ValueBag<'v> {
     #[inline]
     fn from(v: i128) -> Self {
-        ValueBag {
-            inner: Internal::BigSigned(v),
-        }
+        ValueBag::from_i128(v)
     }
 }
 
@@ -469,45 +389,35 @@ impl<'v> TryFrom<ValueBag<'v>> for i128 {
 impl<'v> From<&'v isize> for ValueBag<'v> {
     #[inline]
     fn from(v: &'v isize) -> Self {
-        ValueBag {
-            inner: Internal::Signed(*v as i64),
-        }
+        ValueBag::from_isize(*v)
     }
 }
 
 impl<'v> From<&'v f32> for ValueBag<'v> {
     #[inline]
     fn from(v: &'v f32) -> Self {
-        ValueBag {
-            inner: Internal::Float(*v as f64),
-        }
+        ValueBag::from_f32(*v)
     }
 }
 
 impl<'v> From<&'v f64> for ValueBag<'v> {
     #[inline]
     fn from(v: &'v f64) -> Self {
-        ValueBag {
-            inner: Internal::Float(*v),
-        }
+        ValueBag::from_f64(*v)
     }
 }
 
 impl<'v> From<&'v bool> for ValueBag<'v> {
     #[inline]
     fn from(v: &'v bool) -> Self {
-        ValueBag {
-            inner: Internal::Bool(*v),
-        }
+        ValueBag::from_bool(*v)
     }
 }
 
 impl<'v> From<&'v char> for ValueBag<'v> {
     #[inline]
     fn from(v: &'v char) -> Self {
-        ValueBag {
-            inner: Internal::Char(*v),
-        }
+        ValueBag::from_char(*v)
     }
 }
 
@@ -517,9 +427,7 @@ where
 {
     #[inline]
     fn from(v: &'v &'u str) -> Self {
-        ValueBag {
-            inner: Internal::Str(*v),
-        }
+        ValueBag::from_str(*v)
     }
 }
 
@@ -532,9 +440,7 @@ mod alloc_support {
     impl<'v> From<&'v String> for ValueBag<'v> {
         #[inline]
         fn from(v: &'v String) -> Self {
-            ValueBag {
-                inner: Internal::Str(&**v),
-            }
+            ValueBag::from_str(v)
         }
     }
 

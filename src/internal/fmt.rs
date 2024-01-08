@@ -39,7 +39,7 @@ impl<'v> ValueBag<'v> {
     }
 
     /// Get a value from a debuggable type without capturing support.
-    pub fn from_debug<T>(value: &'v T) -> Self
+    pub const fn from_debug<T>(value: &'v T) -> Self
     where
         T: Debug,
     {
@@ -49,7 +49,7 @@ impl<'v> ValueBag<'v> {
     }
 
     /// Get a value from a displayable type without capturing support.
-    pub fn from_display<T>(value: &'v T) -> Self
+    pub const fn from_display<T>(value: &'v T) -> Self
     where
         T: Display,
     {
@@ -60,7 +60,7 @@ impl<'v> ValueBag<'v> {
 
     /// Get a value from a debuggable type without capturing support.
     #[inline]
-    pub fn from_dyn_debug(value: &'v dyn Debug) -> Self {
+    pub const fn from_dyn_debug(value: &'v dyn Debug) -> Self {
         ValueBag {
             inner: Internal::AnonDebug(value),
         }
@@ -68,7 +68,7 @@ impl<'v> ValueBag<'v> {
 
     /// Get a value from a displayable type without capturing support.
     #[inline]
-    pub fn from_dyn_display(value: &'v dyn Display) -> Self {
+    pub const fn from_dyn_display(value: &'v dyn Display) -> Self {
         ValueBag {
             inner: Internal::AnonDisplay(value),
         }
