@@ -90,9 +90,10 @@ extern crate core;
 extern crate alloc;
 
 #[cfg(all(not(test), feature = "alloc", not(feature = "std")))]
+#[allow(unused_imports)]
 mod std {
     pub use crate::{
-        alloc::{boxed, string},
+        alloc::{borrow, boxed, string},
         core::*,
     };
 }
@@ -115,6 +116,9 @@ pub mod test;
 mod owned;
 #[cfg(feature = "owned")]
 pub use self::owned::*;
+
+#[cfg(feature = "seq")]
+mod seq;
 
 pub use self::error::Error;
 
@@ -386,6 +390,34 @@ pub use self::error::Error;
 /// let value = ValueBag::capture_debug(&timestamp);
 ///
 /// assert!(value.downcast_ref::<SystemTime>().is_some());
+/// ```
+///
+/// # Working with sequences
+///
+/// The `seq` feature of `value-bag` enables utilities for working with values that are sequences.
+/// First, enable the `seq` feature in your `Cargo.toml`:
+///
+/// ```toml
+/// [dependencies.value-bag]
+/// features = ["seq"]
+/// ```
+///
+/// A sequence captured with either `sval` or `serde` can have its elements extracted:
+///
+/// ```
+/// # #[cfg(not(all(feature = "serde1", feature = "seq")))] fn main() {}
+/// # #[cfg(all(feature = "serde1", feature = "seq"))]
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// # use value_bag_serde1::json as serde_json;
+/// use value_bag::ValueBag;
+///
+/// let value = ValueBag::from_serde1(&[1.0, 2.0, 3.0]);
+///
+/// let seq = value.to_f64_seq::<Vec<Option<f64>>>().ok_or("not a sequence")?;
+///
+/// assert_eq!(vec![Some(1.0), Some(2.0), Some(3.0)], seq);
+/// # Ok(())
+/// # }
 /// ```
 #[derive(Clone)]
 pub struct ValueBag<'v> {

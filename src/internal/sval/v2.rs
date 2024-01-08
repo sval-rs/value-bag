@@ -306,6 +306,186 @@ impl Error {
     }
 }
 
+#[cfg(feature = "seq")]
+pub(crate) mod seq {
+    use super::*;
+
+    use crate::seq::ExtendValue;
+
+    #[inline]
+    pub(crate) fn extend<'a, 'b, S: Default + ExtendValue<'a>>(v: &'b dyn Value) -> Option<S> {
+        let mut stream = Root {
+            seq: None,
+            text_buf: Default::default(),
+            depth: 0,
+        };
+
+        value_bag_sval2::lib::stream_computed(&mut stream, v).ok()?;
+
+        stream.seq
+    }
+
+    #[inline]
+    pub(crate) fn extend_borrowed<'a, S: Default + ExtendValue<'a>>(v: &'a dyn Value) -> Option<S> {
+        let mut stream = Root {
+            seq: None,
+            text_buf: Default::default(),
+            depth: 0,
+        };
+
+        value_bag_sval2::lib::stream(&mut stream, v).ok()?;
+
+        stream.seq
+    }
+
+    struct Root<'v, S> {
+        seq: Option<S>,
+        text_buf: value_bag_sval2::buffer::TextBuf<'v>,
+        depth: usize,
+    }
+
+    fn extend_borrowed_internal<'sval>(
+        seq: Option<&mut impl ExtendValue<'sval>>,
+        depth: usize,
+        v: impl Into<ValueBag<'sval>>,
+    ) -> value_bag_sval2::lib::Result {
+        if depth != 1 {
+            return Ok(());
+        }
+
+        if let Some(seq) = seq {
+            seq.extend_borrowed(ValueBag::from(v.into()).inner);
+
+            Ok(())
+        } else {
+            value_bag_sval2::lib::error()
+        }
+    }
+
+    fn extend_internal<'a, 'sval>(
+        seq: Option<&mut impl ExtendValue<'sval>>,
+        depth: usize,
+        v: impl Into<ValueBag<'a>>,
+    ) -> value_bag_sval2::lib::Result {
+        if depth != 1 {
+            return Ok(());
+        }
+
+        if let Some(seq) = seq {
+            seq.extend(ValueBag::from(v.into()).inner);
+
+            Ok(())
+        } else {
+            value_bag_sval2::lib::error()
+        }
+    }
+
+    impl<'sval, S: Default + ExtendValue<'sval>> value_bag_sval2::lib::Stream<'sval>
+        for Root<'sval, S>
+    {
+        fn null(&mut self) -> value_bag_sval2::lib::Result {
+            extend_borrowed_internal(self.seq.as_mut(), self.depth, ())
+        }
+
+        fn bool(&mut self, v: bool) -> value_bag_sval2::lib::Result {
+            extend_borrowed_internal(self.seq.as_mut(), self.depth, v)
+        }
+
+        fn i64(&mut self, v: i64) -> value_bag_sval2::lib::Result {
+            extend_borrowed_internal(self.seq.as_mut(), self.depth, v)
+        }
+
+        fn u64(&mut self, v: u64) -> value_bag_sval2::lib::Result {
+            extend_borrowed_internal(self.seq.as_mut(), self.depth, v)
+        }
+
+        fn i128(&mut self, v: i128) -> value_bag_sval2::lib::Result {
+            #[cfg(feature = "inline-i128")]
+            {
+                extend_borrowed_internal(self.seq.as_mut(), self.depth, v)
+            }
+            #[cfg(not(feature = "inline-i128"))]
+            {
+                extend_internal(self.seq.as_mut(), self.depth, &v)
+            }
+        }
+
+        fn u128(&mut self, v: u128) -> value_bag_sval2::lib::Result {
+            #[cfg(feature = "inline-i128")]
+            {
+                extend_borrowed_internal(self.seq.as_mut(), self.depth, v)
+            }
+            #[cfg(not(feature = "inline-i128"))]
+            {
+                extend_internal(self.seq.as_mut(), self.depth, &v)
+            }
+        }
+
+        fn f64(&mut self, v: f64) -> value_bag_sval2::lib::Result {
+            extend_borrowed_internal(self.seq.as_mut(), self.depth, v)
+        }
+
+        fn text_begin(&mut self, _: Option<usize>) -> value_bag_sval2::lib::Result {
+            self.text_buf.clear();
+            Ok(())
+        }
+
+        fn text_fragment_computed(&mut self, f: &str) -> value_bag_sval2::lib::Result {
+            self.text_buf
+                .push_fragment_computed(f)
+                .map_err(|_| value_bag_sval2::lib::Error::new())
+        }
+
+        fn text_fragment(&mut self, f: &'sval str) -> value_bag_sval2::lib::Result {
+            self.text_buf
+                .push_fragment(f)
+                .map_err(|_| value_bag_sval2::lib::Error::new())
+        }
+
+        fn text_end(&mut self) -> value_bag_sval2::lib::Result {
+            if let Some(v) = self.text_buf.as_borrowed_str() {
+                extend_borrowed_internal(self.seq.as_mut(), self.depth, v)
+            } else {
+                let v = self.text_buf.as_str();
+                extend_internal(self.seq.as_mut(), self.depth, v)
+            }
+        }
+
+        fn seq_begin(&mut self, _: Option<usize>) -> value_bag_sval2::lib::Result {
+            if self.seq.is_none() {
+                self.seq = Some(S::default());
+            }
+
+            self.depth += 1;
+
+            // Treat nested complex values as null
+            // This ensures an upstream visitor sees them, but won't
+            // be able to convert them into anything meaningful
+            if self.depth > 1 {
+                if let Some(ref mut seq) = self.seq {
+                    seq.extend_borrowed(ValueBag::from(()).inner);
+                }
+            }
+
+            Ok(())
+        }
+
+        fn seq_value_begin(&mut self) -> value_bag_sval2::lib::Result {
+            Ok(())
+        }
+
+        fn seq_value_end(&mut self) -> value_bag_sval2::lib::Result {
+            Ok(())
+        }
+
+        fn seq_end(&mut self) -> value_bag_sval2::lib::Result {
+            self.depth -= 1;
+
+            Ok(())
+        }
+    }
+}
+
 #[cfg(feature = "owned")]
 pub(crate) mod owned {
     impl value_bag_sval2::lib::Value for crate::OwnedValueBag {
@@ -509,6 +689,49 @@ mod tests {
         }
 
         assert_ser_tokens(&ValueBag::capture_sval2(&TestSval), &[Token::U64(42)]);
+    }
+
+    #[cfg(feature = "seq")]
+    mod seq_support {
+        use super::*;
+
+        use crate::std::vec::Vec;
+
+        #[test]
+        #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+        #[cfg(feature = "alloc")]
+        fn sval2_borrowed_str_to_seq() {
+            use std::borrow::Cow;
+
+            assert_eq!(
+                vec![
+                    Some(Cow::Borrowed("a string 1")),
+                    Some(Cow::Borrowed("a string 2")),
+                    Some(Cow::Borrowed("a string 3"))
+                ],
+                ValueBag::capture_sval2(&[&"a string 1", &"a string 2", &"a string 3",])
+                    .to_str_seq::<Vec<Option<Cow<str>>>>()
+                    .expect("invalid value")
+            );
+        }
+
+        #[test]
+        #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+        fn sval2_to_seq() {
+            assert_eq!(
+                vec![Some(1.0), None, None, Some(2.0), Some(3.0), None],
+                ValueBag::capture_sval2(&[
+                    &1.0 as &dyn Value,
+                    &true as &dyn Value,
+                    &[1.0, 2.0, 3.0] as &dyn Value,
+                    &2.0 as &dyn Value,
+                    &3.0 as &dyn Value,
+                    &"a string" as &dyn Value,
+                ])
+                .to_f64_seq::<Vec<Option<f64>>>()
+                .expect("invalid value")
+            );
+        }
     }
 
     #[cfg(feature = "std")]

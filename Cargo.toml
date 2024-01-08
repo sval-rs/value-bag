@@ -15,7 +15,7 @@ exclude = [
 ]
 
 [package.metadata.docs.rs]
-features = ["std", "error", "sval", "serde", "test", "owned"]
+features = ["std", "error", "sval", "serde", "test", "owned", "seq"]
 
 [workspace]
 members = [
@@ -46,6 +46,9 @@ owned = [
     "alloc",
     "value-bag-serde1?/owned",
 ]
+
+# Utilities for working with sequences
+seq = []
 
 # Add support for `sval`
 sval = ["sval2"]

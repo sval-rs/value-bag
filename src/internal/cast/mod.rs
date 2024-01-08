@@ -9,7 +9,7 @@ use crate::std::{
     fmt,
 };
 
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 use crate::std::{borrow::ToOwned, string::String};
 
 use super::{Internal, InternalVisitor};
@@ -27,7 +27,7 @@ impl<'v> ValueBag<'v> {
     where
         T: ?Sized + 'static,
     {
-        primitive::from_any(value).map(|inner| ValueBag { inner })
+        primitive::from_any(value)
     }
 
     /// Try get a `u64` from this value.
@@ -174,14 +174,14 @@ impl<'v> Internal<'v> {
                 Ok(())
             }
 
-            #[cfg(feature = "std")]
+            #[cfg(feature = "alloc")]
             #[inline]
             fn str(&mut self, s: &str) -> Result<(), Error> {
                 self.0 = Cast::String(s.to_owned());
                 Ok(())
             }
 
-            #[cfg(not(feature = "std"))]
+            #[cfg(not(feature = "alloc"))]
             #[inline]
             fn str(&mut self, _: &str) -> Result<(), Error> {
                 Ok(())
@@ -264,7 +264,7 @@ pub(in crate::internal) enum Cast<'v> {
     Char(char),
     Str(&'v str),
     None,
-    #[cfg(feature = "std")]
+    #[cfg(feature = "alloc")]
     String(String),
 }
 
@@ -361,8 +361,8 @@ impl<'v> Cast<'v> {
     }
 }
 
-#[cfg(feature = "std")]
-mod std_support {
+#[cfg(feature = "alloc")]
+mod alloc_support {
     use super::*;
 
     use crate::std::borrow::Cow;
