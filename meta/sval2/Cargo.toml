@@ -11,7 +11,6 @@ std = [
     "sval/std",
     "sval_ref/std",
     "sval_buffer/std",
-    "sval_nested/std",
     "sval_serde?/std",
     "sval_json?/std",
 ]
@@ -20,7 +19,6 @@ alloc = [
     "sval/alloc",
     "sval_ref/alloc",
     "sval_buffer/alloc",
-    "sval_nested/alloc",
     "sval_serde?/alloc",
     "sval_json?/alloc",
 ]
@@ -52,10 +50,6 @@ default-features = false
 
 [dependencies.sval_buffer]
 version = "2.1"
-default-features = false
-
-[dependencies.sval_nested]
-version = "2.11"
 default-features = false
 
 [dependencies.sval_fmt]

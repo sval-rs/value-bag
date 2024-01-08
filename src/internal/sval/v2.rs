@@ -699,6 +699,24 @@ mod tests {
 
         #[test]
         #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+        #[cfg(feature = "alloc")]
+        fn sval2_borrowed_str_to_seq() {
+            use std::borrow::Cow;
+
+            assert_eq!(
+                vec![
+                    Some(Cow::Borrowed("a string 1")),
+                    Some(Cow::Borrowed("a string 2")),
+                    Some(Cow::Borrowed("a string 3"))
+                ],
+                ValueBag::capture_sval2(&[&"a string 1", &"a string 2", &"a string 3",])
+                    .to_str_seq::<Vec<Option<Cow<str>>>>()
+                    .expect("invalid value")
+            );
+        }
+
+        #[test]
+        #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
         fn sval2_to_seq() {
             assert_eq!(
                 vec![Some(1.0), None, Some(2.0), Some(3.0), None],

@@ -33,7 +33,9 @@ impl<'v> ValueBag<'v> {
     ///
     /// If this value is not a sequence then this method will return `None`.
     pub fn to_u128_seq<S: Default + Extend<Option<u128>>>(&self) -> Option<S> {
-        self.inner.seq::<ExtendPrimitive<S, u128>>().map(|seq| seq.0)
+        self.inner
+            .seq::<ExtendPrimitive<S, u128>>()
+            .map(|seq| seq.0)
     }
 
     /// Try get a collection `S` of `i128`s from this value.
@@ -43,7 +45,9 @@ impl<'v> ValueBag<'v> {
     ///
     /// If this value is not a sequence then this method will return `None`.
     pub fn to_i128_seq<S: Default + Extend<Option<i128>>>(&self) -> Option<S> {
-        self.inner.seq::<ExtendPrimitive<S, i128>>().map(|seq| seq.0)
+        self.inner
+            .seq::<ExtendPrimitive<S, i128>>()
+            .map(|seq| seq.0)
     }
 
     /// Try get a collection `S` of `f64`s from this value.
@@ -63,7 +67,9 @@ impl<'v> ValueBag<'v> {
     ///
     /// If this value is not a sequence then this method will return `None`.
     pub fn to_bool_seq<S: Default + Extend<Option<bool>>>(&self) -> Option<S> {
-        self.inner.seq::<ExtendPrimitive<S, bool>>().map(|seq| seq.0)
+        self.inner
+            .seq::<ExtendPrimitive<S, bool>>()
+            .map(|seq| seq.0)
     }
 }
 
