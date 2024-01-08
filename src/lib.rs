@@ -425,9 +425,177 @@ pub struct ValueBag<'v> {
 }
 
 impl<'v> ValueBag<'v> {
+    /// Get an empty `ValueBag`.
+    #[inline]
+    pub const fn empty() -> ValueBag<'v> {
+        ValueBag {
+            inner: internal::Internal::None,
+        }
+    }
+
+    /// Get a `ValueBag` from a `u8`.
+    #[inline]
+    pub const fn from_u8(v: u8) -> ValueBag<'v> {
+        ValueBag {
+            inner: internal::Internal::Unsigned(v as u64)
+        }
+    }
+
+    /// Get a `ValueBag` from a `u16`.
+    #[inline]
+    pub const fn from_u16(v: u16) -> ValueBag<'v> {
+        ValueBag {
+            inner: internal::Internal::Unsigned(v as u64)
+        }
+    }
+
+    /// Get a `ValueBag` from a `u32`.
+    #[inline]
+    pub const fn from_u32(v: u32) -> ValueBag<'v> {
+        ValueBag {
+            inner: internal::Internal::Unsigned(v as u64)
+        }
+    }
+
+    /// Get a `ValueBag` from a `u64`.
+    #[inline]
+    pub const fn from_u64(v: u64) -> ValueBag<'v> {
+        ValueBag {
+            inner: internal::Internal::Unsigned(v)
+        }
+    }
+
+    /// Get a `ValueBag` from a `usize`.
+    #[inline]
+    pub const fn from_usize(v: usize) -> ValueBag<'v> {
+        ValueBag {
+            inner: internal::Internal::Unsigned(v as u64)
+        }
+    }
+
+    /// Get a `ValueBag` from a `u128`.
+    #[inline]
+    pub const fn from_u128_ref(v: &'v u128) -> ValueBag<'v> {
+        ValueBag {
+            #[cfg(not(feature = "inline-i128"))]
+            inner: internal::Internal::BigUnsigned(v),
+            #[cfg(feature = "inline-i128")]
+            inner: internal::Internal::BigUnsigned(*v),
+        }
+    }
+
+    /// Get a `ValueBag` from a `u128`.
+    #[inline]
+    #[cfg(feature = "inline-i128")]
+    pub const fn from_u128(v: u128) -> ValueBag<'v> {
+        ValueBag {
+            inner: internal::Internal::BigUnsigned(v),
+        }
+    }
+
+    /// Get a `ValueBag` from a `i8`.
+    #[inline]
+    pub const fn from_i8(v: i8) -> ValueBag<'v> {
+        ValueBag {
+            inner: internal::Internal::Signed(v as i64)
+        }
+    }
+
+    /// Get a `ValueBag` from a `i16`.
+    #[inline]
+    pub const fn from_i16(v: i16) -> ValueBag<'v> {
+        ValueBag {
+            inner: internal::Internal::Signed(v as i64)
+        }
+    }
+
+    /// Get a `ValueBag` from a `i32`.
+    #[inline]
+    pub const fn from_i32(v: i32) -> ValueBag<'v> {
+        ValueBag {
+            inner: internal::Internal::Signed(v as i64)
+        }
+    }
+
+    /// Get a `ValueBag` from a `i64`.
+    #[inline]
+    pub const fn from_i64(v: i64) -> ValueBag<'v> {
+        ValueBag {
+            inner: internal::Internal::Signed(v)
+        }
+    }
+
+    /// Get a `ValueBag` from a `isize`.
+    #[inline]
+    pub const fn from_isize(v: isize) -> ValueBag<'v> {
+        ValueBag {
+            inner: internal::Internal::Signed(v as i64)
+        }
+    }
+
+    /// Get a `ValueBag` from a `i128`.
+    #[inline]
+    pub const fn from_i128_ref(v: &'v i128) -> ValueBag<'v> {
+        ValueBag {
+            #[cfg(not(feature = "inline-i128"))]
+            inner: internal::Internal::BigSigned(v),
+            #[cfg(feature = "inline-i128")]
+            inner: internal::Internal::BigSigned(*v),
+        }
+    }
+
+    /// Get a `ValueBag` from a `i128`.
+    #[inline]
+    #[cfg(feature = "inline-i128")]
+    pub const fn from_i128(v: i128) -> ValueBag<'v> {
+        ValueBag {
+            inner: internal::Internal::BigSigned(v),
+        }
+    }
+
+    /// Get a `ValueBag` from a `f32`.
+    #[inline]
+    pub const fn from_f32(v: f32) -> ValueBag<'v> {
+        ValueBag {
+            inner: internal::Internal::Float(v as f64)
+        }
+    }
+
+    /// Get a `ValueBag` from a `f64`.
+    #[inline]
+    pub const fn from_f64(v: f64) -> ValueBag<'v> {
+        ValueBag {
+            inner: internal::Internal::Float(v)
+        }
+    }
+
+    /// Get a `ValueBag` from a `bool`.
+    #[inline]
+    pub const fn from_bool(v: bool) -> ValueBag<'v> {
+        ValueBag {
+            inner: internal::Internal::Bool(v)
+        }
+    }
+
+    /// Get a `ValueBag` from a `str`.
+    #[inline]
+    pub const fn from_str(v: &'v str) -> ValueBag<'v> {
+        ValueBag {
+            inner: internal::Internal::Str(v)
+        }
+    }
+
+    /// Get a `ValueBag` from a `char`.
+    #[inline]
+    pub const fn from_char(v: char) -> ValueBag<'v> {
+        ValueBag {
+            inner: internal::Internal::Char(v)
+        }
+    }
+
     /// Get a `ValueBag` from a reference to a `ValueBag`.
     #[inline]
-    pub fn by_ref<'u>(&'u self) -> ValueBag<'u> {
+    pub const fn by_ref<'u>(&'u self) -> ValueBag<'u> {
         ValueBag {
             inner: self.inner.by_ref(),
         }

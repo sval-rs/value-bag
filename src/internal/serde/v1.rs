@@ -27,7 +27,7 @@ impl<'v> ValueBag<'v> {
     }
 
     /// Get a value from a structured type without capturing support.
-    pub fn from_serde1<T>(value: &'v T) -> Self
+    pub const fn from_serde1<T>(value: &'v T) -> Self
     where
         T: value_bag_serde1::lib::Serialize,
     {

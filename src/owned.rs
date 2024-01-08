@@ -31,7 +31,7 @@ impl OwnedValueBag {
     /// - `fmt::Debug` won't use formatting flags.
     /// - `serde::Serialize` will use the text-based representation.
     /// - The original type will change, so downcasting won't work.
-    pub fn by_ref<'v>(&'v self) -> ValueBag<'v> {
+    pub const fn by_ref<'v>(&'v self) -> ValueBag<'v> {
         ValueBag {
             inner: self.inner.by_ref(),
         }

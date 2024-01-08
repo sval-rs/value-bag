@@ -25,7 +25,7 @@ impl<'v> ValueBag<'v> {
     }
 
     /// Get a value from a structured type without capturing support.
-    pub fn from_sval2<T>(value: &'v T) -> Self
+    pub const fn from_sval2<T>(value: &'v T) -> Self
     where
         T: value_bag_sval2::lib::Value,
     {
@@ -36,7 +36,7 @@ impl<'v> ValueBag<'v> {
 
     /// Get a value from a structured type without capturing support.
     #[inline]
-    pub fn from_dyn_sval2(value: &'v dyn Value) -> Self {
+    pub const fn from_dyn_sval2(value: &'v dyn Value) -> Self {
         ValueBag {
             inner: Internal::AnonSval2(value),
         }

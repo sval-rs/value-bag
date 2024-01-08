@@ -19,7 +19,7 @@ impl<'v> ValueBag<'v> {
 
     /// Get a value from an erased value.
     #[inline]
-    pub fn from_dyn_error(value: &'v (dyn error::Error + 'static)) -> Self {
+    pub const fn from_dyn_error(value: &'v (dyn error::Error + 'static)) -> Self {
         ValueBag {
             inner: Internal::AnonError(value),
         }

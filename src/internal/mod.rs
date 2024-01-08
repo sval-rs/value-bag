@@ -257,7 +257,7 @@ impl<'v> ValueBag<'v> {
 
 impl<'v> Internal<'v> {
     #[inline]
-    pub(crate) fn by_ref<'u>(&'u self) -> Internal<'u> {
+    pub(crate) const fn by_ref<'u>(&'u self) -> Internal<'u> {
         match self {
             Internal::Signed(value) => Internal::Signed(*value),
             Internal::Unsigned(value) => Internal::Unsigned(*value),
