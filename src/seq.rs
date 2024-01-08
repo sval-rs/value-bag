@@ -80,11 +80,12 @@ mod alloc_support {
     use crate::std::borrow::Cow;
 
     impl<'v> ValueBag<'v> {
-        /// Try get a `str` from this value.
+        /// Try get a collection `S` of strings from this value.
         ///
-        /// This method is cheap for primitive types, but may call arbitrary
-        /// serialization implementations for complex ones. If the serialization
-        /// implementation produces a short lived string it will be allocated.
+        /// If this value is a sequence then the collection `S` will be extended
+        /// with the attempted conversion of each of its elements.
+        ///
+        /// If this value is not a sequence then this method will return `None`.
         #[inline]
         pub fn to_str_seq<S: Default + Extend<Option<Cow<'v, str>>>>(&self) -> Option<S> {
             #[derive(Default)]
