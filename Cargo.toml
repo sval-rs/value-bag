@@ -15,7 +15,7 @@ exclude = [
 ]
 
 [package.metadata.docs.rs]
-features = ["std", "error", "sval", "serde", "test", "owned"]
+features = ["std", "error", "sval", "serde", "test", "owned", "seq"]
 
 [workspace]
 members = [

@@ -719,10 +719,11 @@ mod tests {
         #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
         fn sval2_to_seq() {
             assert_eq!(
-                vec![Some(1.0), None, Some(2.0), Some(3.0), None],
+                vec![Some(1.0), None, None, Some(2.0), Some(3.0), None],
                 ValueBag::capture_sval2(&[
                     &1.0 as &dyn Value,
                     &true as &dyn Value,
+                    &[1.0, 2.0, 3.0] as &dyn Value,
                     &2.0 as &dyn Value,
                     &3.0 as &dyn Value,
                     &"a string" as &dyn Value,
