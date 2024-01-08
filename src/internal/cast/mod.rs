@@ -66,8 +66,26 @@ impl<'v> ValueBag<'v> {
     ///
     /// This method is cheap for primitive types, but may call arbitrary
     /// serialization implementations for complex ones.
+    /// 
+    /// This method is based on standard `TryInto` conversions, and will
+    /// only return `Some` if there's a guaranteed lossless conversion between
+    /// the source and destination types. For a more lenient alternative, see
+    /// [`ValueBag::as_f64`].
     pub fn to_f64(&self) -> Option<f64> {
         self.inner.cast().into_f64()
+    }
+
+    /// Get a `f64` from this value.
+    ///
+    /// This method is cheap for primitive types, but may call arbitrary
+    /// serialization implementations for complex ones.
+    /// 
+    /// This method is like [`ValueBag::to_f64`] except will always return
+    /// a `f64`, regardless of the actual type of underlying value. For
+    /// numeric types, it will use a regular `as` conversion, which may be lossy.
+    /// For non-numeric types it will return `NaN`.
+    pub fn as_f64(&self) -> f64 {
+        self.inner.cast().as_f64()
     }
 
     /// Try get a `bool` from this value.
@@ -343,6 +361,18 @@ impl<'v> Cast<'v> {
     }
 
     #[inline]
+    fn as_f64(self) -> f64 {
+        match self {
+            Cast::Float(value) => value,
+            Cast::Unsigned(value) => value as f64,
+            Cast::Signed(value) => value as f64,
+            Cast::BigUnsigned(value) => value as f64,
+            Cast::BigSigned(value) => value as f64,
+            _ => f64::NAN,
+        }
+    }
+
+    #[inline]
     fn into_char(self) -> Option<char> {
         if let Cast::Char(value) = self {
             Some(value)
@@ -590,5 +620,13 @@ mod tests {
                 .to_bool()
                 .expect("invalid value")
         );
+    }
+
+    #[test]
+    fn as_cast() {
+        assert_eq!(1.0, 1f64.into_value_bag().as_f64());
+        assert_eq!(1.0, 1u64.into_value_bag().as_f64());
+        assert_eq!(-1.0, -1i64.into_value_bag().as_f64());
+        assert!(true.into_value_bag().as_f64().is_nan());
     }
 }
