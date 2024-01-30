@@ -16,6 +16,13 @@ impl<'v> From<u8> for ValueBag<'v> {
     }
 }
 
+impl<'v> From<Option<u8>> for ValueBag<'v> {
+    #[inline]
+    fn from(v: Option<u8>) -> Self {
+        ValueBag::from_option(v)
+    }
+}
+
 impl<'v> TryFrom<ValueBag<'v>> for u8 {
     type Error = Error;
 
@@ -32,6 +39,13 @@ impl<'v> From<u16> for ValueBag<'v> {
     #[inline]
     fn from(v: u16) -> Self {
         ValueBag::from_u16(v)
+    }
+}
+
+impl<'v> From<Option<u16>> for ValueBag<'v> {
+    #[inline]
+    fn from(v: Option<u16>) -> Self {
+        ValueBag::from_option(v)
     }
 }
 
@@ -54,6 +68,13 @@ impl<'v> From<u32> for ValueBag<'v> {
     }
 }
 
+impl<'v> From<Option<u32>> for ValueBag<'v> {
+    #[inline]
+    fn from(v: Option<u32>) -> Self {
+        ValueBag::from_option(v)
+    }
+}
+
 impl<'v> TryFrom<ValueBag<'v>> for u32 {
     type Error = Error;
 
@@ -73,6 +94,13 @@ impl<'v> From<u64> for ValueBag<'v> {
     }
 }
 
+impl<'v> From<Option<u64>> for ValueBag<'v> {
+    #[inline]
+    fn from(v: Option<u64>) -> Self {
+        ValueBag::from_option(v)
+    }
+}
+
 impl<'v> TryFrom<ValueBag<'v>> for u64 {
     type Error = Error;
 
@@ -86,6 +114,13 @@ impl<'v> From<usize> for ValueBag<'v> {
     #[inline]
     fn from(v: usize) -> Self {
         ValueBag::from_usize(v)
+    }
+}
+
+impl<'v> From<Option<usize>> for ValueBag<'v> {
+    #[inline]
+    fn from(v: Option<usize>) -> Self {
+        ValueBag::from_option(v)
     }
 }
 
@@ -108,6 +143,13 @@ impl<'v> From<i8> for ValueBag<'v> {
     }
 }
 
+impl<'v> From<Option<i8>> for ValueBag<'v> {
+    #[inline]
+    fn from(v: Option<i8>) -> Self {
+        ValueBag::from_option(v)
+    }
+}
+
 impl<'v> TryFrom<ValueBag<'v>> for i8 {
     type Error = Error;
 
@@ -124,6 +166,13 @@ impl<'v> From<i16> for ValueBag<'v> {
     #[inline]
     fn from(v: i16) -> Self {
         ValueBag::from_i16(v)
+    }
+}
+
+impl<'v> From<Option<i16>> for ValueBag<'v> {
+    #[inline]
+    fn from(v: Option<i16>) -> Self {
+        ValueBag::from_option(v)
     }
 }
 
@@ -146,6 +195,13 @@ impl<'v> From<i32> for ValueBag<'v> {
     }
 }
 
+impl<'v> From<Option<i32>> for ValueBag<'v> {
+    #[inline]
+    fn from(v: Option<i32>) -> Self {
+        ValueBag::from_option(v)
+    }
+}
+
 impl<'v> TryFrom<ValueBag<'v>> for i32 {
     type Error = Error;
 
@@ -165,6 +221,13 @@ impl<'v> From<i64> for ValueBag<'v> {
     }
 }
 
+impl<'v> From<Option<i64>> for ValueBag<'v> {
+    #[inline]
+    fn from(v: Option<i64>) -> Self {
+        ValueBag::from_option(v)
+    }
+}
+
 impl<'v> TryFrom<ValueBag<'v>> for i64 {
     type Error = Error;
 
@@ -178,6 +241,13 @@ impl<'v> From<isize> for ValueBag<'v> {
     #[inline]
     fn from(v: isize) -> Self {
         ValueBag::from_isize(v)
+    }
+}
+
+impl<'v> From<Option<isize>> for ValueBag<'v> {
+    #[inline]
+    fn from(v: Option<isize>) -> Self {
+        ValueBag::from_option(v)
     }
 }
 
@@ -200,10 +270,24 @@ impl<'v> From<f32> for ValueBag<'v> {
     }
 }
 
+impl<'v> From<Option<f32>> for ValueBag<'v> {
+    #[inline]
+    fn from(v: Option<f32>) -> Self {
+        ValueBag::from_option(v)
+    }
+}
+
 impl<'v> From<f64> for ValueBag<'v> {
     #[inline]
     fn from(v: f64) -> Self {
         ValueBag::from_f64(v)
+    }
+}
+
+impl<'v> From<Option<f64>> for ValueBag<'v> {
+    #[inline]
+    fn from(v: Option<f64>) -> Self {
+        ValueBag::from_option(v)
     }
 }
 
@@ -226,6 +310,13 @@ impl<'v> From<bool> for ValueBag<'v> {
     }
 }
 
+impl<'v> From<Option<bool>> for ValueBag<'v> {
+    #[inline]
+    fn from(v: Option<bool>) -> Self {
+        ValueBag::from_option(v)
+    }
+}
+
 impl<'v> TryFrom<ValueBag<'v>> for bool {
     type Error = Error;
 
@@ -242,6 +333,13 @@ impl<'v> From<char> for ValueBag<'v> {
     }
 }
 
+impl<'v> From<Option<char>> for ValueBag<'v> {
+    #[inline]
+    fn from(v: Option<char>) -> Self {
+        ValueBag::from_option(v)
+    }
+}
+
 impl<'v> TryFrom<ValueBag<'v>> for char {
     type Error = Error;
 
@@ -255,6 +353,13 @@ impl<'v> From<&'v str> for ValueBag<'v> {
     #[inline]
     fn from(v: &'v str) -> Self {
         ValueBag::from_str(v)
+    }
+}
+
+impl<'v> From<Option<&'v str>> for ValueBag<'v> {
+    #[inline]
+    fn from(v: Option<&'v str>) -> Self {
+        ValueBag::from_option(v)
     }
 }
 

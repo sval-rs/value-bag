@@ -112,6 +112,11 @@ impl<'v> ValueBag<'v> {
         self.inner.cast().into_borrowed_str()
     }
 
+    /// Check whether this value is empty.
+    pub fn is_empty(&self) -> bool {
+        matches!(self.inner, Internal::None)
+    }
+
     /// Check whether this value can be downcast to `T`.
     pub fn is<T: 'static>(&self) -> bool {
         self.downcast_ref::<T>().is_some()
@@ -470,6 +475,18 @@ mod tests {
     use crate::std::string::ToString;
 
     use crate::test::IntoValueBag;
+
+    #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn is_empty() {
+        assert!(
+            ValueBag::from(None::<i32>).is_empty(),
+        );
+
+        assert!(
+            ValueBag::try_capture(&None::<i32>).unwrap().is_empty(),
+        );
+    }
 
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]

@@ -433,6 +433,17 @@ impl<'v> ValueBag<'v> {
         }
     }
 
+    /// Get a `ValueBag` from an `Option`.
+    /// 
+    /// This method will return `ValueBag::empty` if the value is `None`.
+    #[inline]
+    pub fn from_option(v: Option<impl Into<ValueBag<'v>>>) -> ValueBag<'v> {
+        match v {
+            Some(v) => v.into(),
+            None => ValueBag::empty(),
+        }
+    }
+
     /// Get a `ValueBag` from a `u8`.
     #[inline]
     pub const fn from_u8(v: u8) -> ValueBag<'v> {
