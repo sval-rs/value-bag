@@ -52,7 +52,7 @@ pub(in crate::internal) fn from_any<'v, T: ?Sized + 'static>(value: &'v T) -> Op
                             if let Some(v) = v {
                                 return Some(ValueBag::from(v));
                             } else {
-                                return Some(ValueBag::from(()));
+                                return Some(ValueBag::empty());
                             }
                         }
                     )*

@@ -73,6 +73,12 @@ pub trait Visit<'v> {
     /// or serialized using its `sval::Value` or `serde::Serialize` implementation.
     fn visit_any(&mut self, value: ValueBag) -> Result<(), Error>;
 
+    /// Visit an empty value.
+    #[inline]
+    fn visit_empty(&mut self) -> Result<(), Error> {
+        self.visit_any(ValueBag::empty())
+    }
+
     /// Visit an unsigned integer.
     #[inline]
     fn visit_u64(&mut self, value: u64) -> Result<(), Error> {
@@ -153,6 +159,11 @@ where
     #[inline]
     fn visit_any(&mut self, value: ValueBag) -> Result<(), Error> {
         (**self).visit_any(value)
+    }
+
+    #[inline]
+    fn visit_empty(&mut self) -> Result<(), Error> {
+        (**self).visit_empty()
     }
 
     #[inline]
@@ -274,7 +285,7 @@ impl<'v> ValueBag<'v> {
             }
 
             fn none(&mut self) -> Result<(), Error> {
-                self.0.visit_any(ValueBag::from(()))
+                self.0.visit_empty()
             }
 
             #[cfg(feature = "error")]
@@ -323,6 +334,7 @@ mod tests {
     use crate::test::*;
 
     #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn visit_structured() {
         ValueBag::from(42u64)
             .visit(TestVisit::default())
@@ -348,5 +360,27 @@ mod tests {
         ValueBag::from('n')
             .visit(TestVisit::default())
             .expect("failed to visit value");
+    }
+
+    #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn visit_empty() {
+        struct Visitor(bool);
+
+        impl<'v> Visit<'v> for Visitor {
+            fn visit_any(&mut self, _: ValueBag) -> Result<(), Error> {
+                Ok(())
+            }
+
+            fn visit_empty(&mut self) -> Result<(), Error> {
+                self.0 = true;
+                Ok(())
+            }
+        }
+
+        let mut visitor = Visitor(false);
+        ValueBag::empty().visit(&mut visitor).unwrap();
+
+        assert!(visitor.0);
     }
 }
