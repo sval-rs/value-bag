@@ -167,4 +167,8 @@ impl<'v> Internal<'v> {
 
         visitor.0
     }
+
+    pub(crate) fn into_owned(self) -> OwnedInternal {
+        todo!()
+    }
 }

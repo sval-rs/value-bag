@@ -877,10 +877,7 @@ mod tests {
         fn serde1_as_seq() {
             assert_eq!(
                 vec![1.0, 2.0, 3.0],
-                ValueBag::capture_serde1(&[
-                    1.0, 2.0, 3.0,
-                ])
-                .as_f64_seq::<Vec<f64>>()
+                ValueBag::capture_serde1(&[1.0, 2.0, 3.0,]).as_f64_seq::<Vec<f64>>()
             );
         }
     }

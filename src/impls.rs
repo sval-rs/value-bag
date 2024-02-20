@@ -373,41 +373,50 @@ impl<'v> TryFrom<ValueBag<'v>> for &'v str {
     }
 }
 
-impl<'v> From<&'v ()> for ValueBag<'v> {
+impl<'a, 'v> From<&'a ()> for ValueBag<'v> {
     #[inline]
-    fn from(_: &'v ()) -> Self {
+    fn from(_: &'a ()) -> Self {
         ValueBag::empty()
     }
 }
 
-impl<'v> From<&'v u8> for ValueBag<'v> {
+impl<'a, 'v> From<&'a u8> for ValueBag<'v> {
     #[inline]
-    fn from(v: &'v u8) -> Self {
+    fn from(v: &'a u8) -> Self {
         ValueBag::from_u8(*v)
     }
 }
 
-impl<'v> From<&'v u16> for ValueBag<'v> {
+impl<'a, 'v> From<&'a u16> for ValueBag<'v> {
     #[inline]
-    fn from(v: &'v u16) -> Self {
+    fn from(v: &'a u16) -> Self {
         ValueBag::from_u16(*v)
     }
 }
 
-impl<'v> From<&'v u32> for ValueBag<'v> {
+impl<'a, 'v> From<&'a u32> for ValueBag<'v> {
     #[inline]
-    fn from(v: &'v u32) -> Self {
+    fn from(v: &'a u32) -> Self {
         ValueBag::from_u32(*v)
     }
 }
 
-impl<'v> From<&'v u64> for ValueBag<'v> {
+impl<'a, 'v> From<&'a u64> for ValueBag<'v> {
     #[inline]
-    fn from(v: &'v u64) -> Self {
+    fn from(v: &'a u64) -> Self {
         ValueBag::from_u64(*v)
     }
 }
 
+#[cfg(feature = "inline-i128")]
+impl<'a, 'v> From<&'a u128> for ValueBag<'v> {
+    #[inline]
+    fn from(v: &'a u128) -> Self {
+        ValueBag::from_u128(*v)
+    }
+}
+
+#[cfg(not(feature = "inline-i128"))]
 impl<'v> From<&'v u128> for ValueBag<'v> {
     #[inline]
     fn from(v: &'v u128) -> Self {
@@ -432,41 +441,50 @@ impl<'v> TryFrom<ValueBag<'v>> for u128 {
     }
 }
 
-impl<'v> From<&'v usize> for ValueBag<'v> {
+impl<'a, 'v> From<&'a usize> for ValueBag<'v> {
     #[inline]
-    fn from(v: &'v usize) -> Self {
+    fn from(v: &'a usize) -> Self {
         ValueBag::from_usize(*v)
     }
 }
 
-impl<'v> From<&'v i8> for ValueBag<'v> {
+impl<'a, 'v> From<&'a i8> for ValueBag<'v> {
     #[inline]
-    fn from(v: &'v i8) -> Self {
+    fn from(v: &'a i8) -> Self {
         ValueBag::from_i8(*v)
     }
 }
 
-impl<'v> From<&'v i16> for ValueBag<'v> {
+impl<'a, 'v> From<&'a i16> for ValueBag<'v> {
     #[inline]
-    fn from(v: &'v i16) -> Self {
+    fn from(v: &'a i16) -> Self {
         ValueBag::from_i16(*v)
     }
 }
 
-impl<'v> From<&'v i32> for ValueBag<'v> {
+impl<'a, 'v> From<&'a i32> for ValueBag<'v> {
     #[inline]
-    fn from(v: &'v i32) -> Self {
+    fn from(v: &'a i32) -> Self {
         ValueBag::from_i32(*v)
     }
 }
 
-impl<'v> From<&'v i64> for ValueBag<'v> {
+impl<'a, 'v> From<&'a i64> for ValueBag<'v> {
     #[inline]
-    fn from(v: &'v i64) -> Self {
+    fn from(v: &'a i64) -> Self {
         ValueBag::from_i64(*v)
     }
 }
 
+#[cfg(feature = "inline-i128")]
+impl<'a, 'v> From<&'a i128> for ValueBag<'v> {
+    #[inline]
+    fn from(v: &'a i128) -> Self {
+        ValueBag::from_i128(*v)
+    }
+}
+
+#[cfg(not(feature = "inline-i128"))]
 impl<'v> From<&'v i128> for ValueBag<'v> {
     #[inline]
     fn from(v: &'v i128) -> Self {
@@ -491,37 +509,37 @@ impl<'v> TryFrom<ValueBag<'v>> for i128 {
     }
 }
 
-impl<'v> From<&'v isize> for ValueBag<'v> {
+impl<'a, 'v> From<&'a isize> for ValueBag<'v> {
     #[inline]
-    fn from(v: &'v isize) -> Self {
+    fn from(v: &'a isize) -> Self {
         ValueBag::from_isize(*v)
     }
 }
 
-impl<'v> From<&'v f32> for ValueBag<'v> {
+impl<'a, 'v> From<&'a f32> for ValueBag<'v> {
     #[inline]
-    fn from(v: &'v f32) -> Self {
+    fn from(v: &'a f32) -> Self {
         ValueBag::from_f32(*v)
     }
 }
 
-impl<'v> From<&'v f64> for ValueBag<'v> {
+impl<'a, 'v> From<&'a f64> for ValueBag<'v> {
     #[inline]
-    fn from(v: &'v f64) -> Self {
+    fn from(v: &'a f64) -> Self {
         ValueBag::from_f64(*v)
     }
 }
 
-impl<'v> From<&'v bool> for ValueBag<'v> {
+impl<'a, 'v> From<&'a bool> for ValueBag<'v> {
     #[inline]
-    fn from(v: &'v bool) -> Self {
+    fn from(v: &'a bool) -> Self {
         ValueBag::from_bool(*v)
     }
 }
 
-impl<'v> From<&'v char> for ValueBag<'v> {
+impl<'a, 'v> From<&'a char> for ValueBag<'v> {
     #[inline]
-    fn from(v: &'v char) -> Self {
+    fn from(v: &'a char) -> Self {
         ValueBag::from_char(*v)
     }
 }

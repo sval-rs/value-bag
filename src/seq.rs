@@ -61,14 +61,14 @@ impl<'v> ValueBag<'v> {
     }
 
     /// Get a collection `S` of `f64`s from this value.
-    /// 
+    ///
     /// If this value is a sequence then the collection `S` will be extended
     /// with the conversion of each of its elements. The conversion is the
     /// same as [`ValueBag::as_f64`].
-    /// 
+    ///
     /// If this value is not a sequence then this method will return an
     /// empty collection.
-    /// 
+    ///
     /// This is similar to [`ValueBag::to_f64_seq`], but can be more
     /// convenient when there's no need to distinguish between an empty
     /// collection and a non-collection, or between `f64` and non-`f64` elements.
@@ -82,7 +82,10 @@ impl<'v> ValueBag<'v> {
             }
         }
 
-        self.inner.seq::<ExtendF64<S>>().map(|seq| seq.0).unwrap_or_default()
+        self.inner
+            .seq::<ExtendF64<S>>()
+            .map(|seq| seq.0)
+            .unwrap_or_default()
     }
 
     /// Try get a collection `S` of `bool`s from this value.

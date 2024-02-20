@@ -90,6 +90,12 @@ impl<T: fmt::Display + 'static> DowncastDisplay for T {
     }
 }
 
+impl<'a> fmt::Display for dyn DowncastDisplay + Send + Sync + 'a {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.as_super().fmt(f)
+    }
+}
+
 pub(crate) trait DowncastDebug {
     fn as_any(&self) -> &dyn Any;
     fn as_super(&self) -> &dyn fmt::Debug;
@@ -102,6 +108,12 @@ impl<T: fmt::Debug + 'static> DowncastDebug for T {
 
     fn as_super(&self) -> &dyn fmt::Debug {
         self
+    }
+}
+
+impl<'a> fmt::Debug for dyn DowncastDebug + Send + Sync + 'a {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.as_super().fmt(f)
     }
 }
 

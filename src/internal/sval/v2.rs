@@ -738,10 +738,7 @@ mod tests {
         fn sval2_as_seq() {
             assert_eq!(
                 vec![1.0, 2.0, 3.0],
-                ValueBag::capture_sval2(&[
-                    1.0, 2.0, 3.0,
-                ])
-                .as_f64_seq::<Vec<f64>>()
+                ValueBag::capture_sval2(&[1.0, 2.0, 3.0,]).as_f64_seq::<Vec<f64>>()
             );
         }
     }

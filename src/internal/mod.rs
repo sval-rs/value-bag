@@ -21,6 +21,9 @@ pub(crate) mod sval;
 #[cfg(feature = "owned")]
 pub(crate) mod owned;
 
+#[cfg(feature = "owned")]
+use crate::std::sync::Arc;
+
 // NOTE: It takes less space to have separate variants for the presence
 // of a `TypeId` instead of using `Option<T>`, because `TypeId` doesn't
 // have a niche value
@@ -85,6 +88,17 @@ pub(crate) enum Internal<'v> {
     #[cfg(feature = "serde1")]
     /// A structured value from `serde`.
     Serde1(&'v dyn serde::v1::DowncastSerialize),
+
+    #[cfg(feature = "owned")]
+    OwnedDebug(Arc<dyn fmt::DowncastDebug + Send + Sync>),
+    #[cfg(feature = "owned")]
+    OwnedDisplay(Arc<dyn fmt::DowncastDisplay + Send + Sync>),
+    #[cfg(all(feature = "error", feature = "owned"))]
+    OwnedError(Arc<dyn error::Error + Send + Sync>),
+    #[cfg(all(feature = "serde1", feature = "owned"))]
+    OwnedSerde1(Arc<dyn serde::v1::DowncastSerialize + Send + Sync>),
+    #[cfg(all(feature = "sval2", feature = "owned"))]
+    OwnedSval2(Arc<dyn sval::v2::DowncastValue + Send + Sync>),
 
     /// A poisoned value.
     #[cfg_attr(not(feature = "owned"), allow(dead_code))]
@@ -292,6 +306,22 @@ impl<'v> Internal<'v> {
             #[cfg(feature = "serde1")]
             Internal::Serde1(value) => Internal::Serde1(*value),
 
+            // NOTE: Ideally these would either clone or deref, but
+            // that's not available in `const` functions yet
+            #[cfg(feature = "owned")]
+            Internal::OwnedDebug(ref value) => Internal::Debug(value),
+            #[cfg(feature = "owned")]
+            Internal::OwnedDisplay(ref value) => Internal::Display(value),
+
+            #[cfg(all(feature = "error", feature = "owned"))]
+            Internal::OwnedError(ref value) => Internal::Error(value),
+
+            #[cfg(all(feature = "serde1", feature = "owned"))]
+            Internal::OwnedSerde1(ref value) => Internal::Serde1(value),
+
+            #[cfg(all(feature = "sval2", feature = "owned"))]
+            Internal::OwnedSval2(ref value) => Internal::Sval2(value),
+
             Internal::Poisoned(msg) => Internal::Poisoned(msg),
         }
     }
@@ -334,6 +364,20 @@ impl<'v> Internal<'v> {
             Internal::AnonSerde1(value) => visitor.borrowed_serde1(*value),
             #[cfg(feature = "serde1")]
             Internal::Serde1(value) => visitor.borrowed_serde1(value.as_super()),
+
+            #[cfg(feature = "owned")]
+            Internal::OwnedDebug(ref v) => visitor.debug(v.as_super()),
+            #[cfg(feature = "owned")]
+            Internal::OwnedDisplay(ref v) => visitor.display(v.as_super()),
+
+            #[cfg(all(feature = "error", feature = "owned"))]
+            Internal::OwnedError(ref v) => visitor.error(v.as_super()),
+
+            #[cfg(all(feature = "serde1", feature = "owned"))]
+            Internal::OwnedSerde1(ref v) => visitor.serde1(v.as_super()),
+
+            #[cfg(all(feature = "sval2", feature = "owned"))]
+            Internal::OwnedSval2(ref v) => visitor.sval2(v.as_super()),
 
             Internal::Poisoned(msg) => visitor.poisoned(*msg),
         }

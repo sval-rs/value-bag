@@ -1,4 +1,8 @@
-use crate::{internal, ValueBag};
+use crate::{
+    internal::{self, Internal},
+    std::sync::Arc,
+    ValueBag,
+};
 
 /// A dynamic structured value.
 ///
@@ -19,6 +23,22 @@ impl<'v> ValueBag<'v> {
         OwnedValueBag {
             inner: self.inner.to_owned(),
         }
+    }
+
+    /// Get a value from an owned debuggable type.
+    #[inline]
+    pub fn from_owned_debug(value: impl internal::fmt::Debug + Send + Sync + 'static) -> Self {
+        Self::try_capture_owned(&value).unwrap_or_else(|| ValueBag {
+            inner: Internal::OwnedDebug(Arc::new(value)),
+        })
+    }
+
+    /// Get a value from an owned debuggable type.
+    #[inline]
+    pub fn from_owned_display(value: impl internal::fmt::Display + Send + Sync + 'static) -> Self {
+        Self::try_capture_owned(&value).unwrap_or_else(|| ValueBag {
+            inner: Internal::OwnedDisplay(Arc::new(value)),
+        })
     }
 }
 

@@ -30,6 +30,19 @@ impl<'v> ValueBag<'v> {
         primitive::from_any(value)
     }
 
+    /// Try capture an owned raw value.
+    ///
+    /// This method will return `Some` if the value is a simple primitive
+    /// that can be captured without losing its structure. In other cases
+    /// this method will return `None`.
+    #[cfg(feature = "owned")]
+    pub fn try_capture_owned<T>(value: &'_ T) -> Option<Self>
+    where
+        T: ?Sized + 'static,
+    {
+        primitive::from_owned_any(value)
+    }
+
     /// Try get a `u64` from this value.
     ///
     /// This method is cheap for primitive types, but may call arbitrary
@@ -66,7 +79,7 @@ impl<'v> ValueBag<'v> {
     ///
     /// This method is cheap for primitive types, but may call arbitrary
     /// serialization implementations for complex ones.
-    /// 
+    ///
     /// This method is based on standard `TryInto` conversions, and will
     /// only return `Some` if there's a guaranteed lossless conversion between
     /// the source and destination types. For a more lenient alternative, see
@@ -79,7 +92,7 @@ impl<'v> ValueBag<'v> {
     ///
     /// This method is cheap for primitive types, but may call arbitrary
     /// serialization implementations for complex ones.
-    /// 
+    ///
     /// This method is like [`ValueBag::to_f64`] except will always return
     /// a `f64`, regardless of the actual type of underlying value. For
     /// numeric types, it will use a regular `as` conversion, which may be lossy.
@@ -479,13 +492,9 @@ mod tests {
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn is_empty() {
-        assert!(
-            ValueBag::from(None::<i32>).is_empty(),
-        );
+        assert!(ValueBag::from(None::<i32>).is_empty(),);
 
-        assert!(
-            ValueBag::try_capture(&None::<i32>).unwrap().is_empty(),
-        );
+        assert!(ValueBag::try_capture(&None::<i32>).unwrap().is_empty(),);
     }
 
     #[test]
