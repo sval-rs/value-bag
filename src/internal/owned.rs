@@ -1,45 +1,48 @@
 use crate::{
+    fill::Fill,
     internal::{self, Internal, InternalVisitor},
-    std::boxed::Box,
+    std::{boxed::Box, sync::Arc},
     Error,
 };
 
 #[derive(Clone)]
 pub(crate) enum OwnedInternal {
-    /// An extra large signed integer.
+    // Primitive values
     BigSigned(i128),
-    /// An extra large unsigned integer.
     BigUnsigned(u128),
-    /// A floating point number.
     Float(f64),
-    /// A boolean value.
     Bool(bool),
-    /// A UTF8 codepoint.
     Char(char),
-    /// A UTF8 string.
     Str(Box<str>),
-    /// An empty value.
     None,
 
-    /// A debuggable value.
+    // Buffered values
     Debug(internal::fmt::owned::OwnedFmt),
-    /// A displayable value.
     Display(internal::fmt::owned::OwnedFmt),
-
     #[cfg(feature = "error")]
     Error(internal::error::owned::OwnedError),
-
     #[cfg(feature = "serde1")]
     Serde1(internal::serde::v1::owned::OwnedSerialize),
-
     #[cfg(feature = "sval2")]
     Sval2(internal::sval::v2::owned::OwnedValue),
 
-    /// A poisoned value.
+    // Shared values
+    SharedFill(Arc<dyn Fill + Send + Sync>),
+    SharedDebug(Arc<dyn internal::fmt::DowncastDebug + Send + Sync>),
+    SharedDisplay(Arc<dyn internal::fmt::DowncastDisplay + Send + Sync>),
+    #[cfg(feature = "error")]
+    SharedError(Arc<dyn internal::error::DowncastError + Send + Sync>),
+    #[cfg(feature = "serde1")]
+    SharedSerde1(Arc<dyn internal::serde::v1::DowncastSerialize + Send + Sync>),
+    #[cfg(feature = "sval2")]
+    SharedSval2(Arc<dyn internal::sval::v2::DowncastValue + Send + Sync>),
+
+    // Poisoned value
     Poisoned(&'static str),
 }
 
 impl OwnedInternal {
+    #[inline]
     pub(crate) const fn by_ref<'v>(&'v self) -> Internal<'v> {
         match self {
             #[cfg(not(feature = "inline-i128"))]
@@ -58,15 +61,22 @@ impl OwnedInternal {
 
             OwnedInternal::Debug(v) => Internal::AnonDebug(v),
             OwnedInternal::Display(v) => Internal::AnonDisplay(v),
-
             #[cfg(feature = "error")]
             OwnedInternal::Error(v) => Internal::AnonError(v),
-
             #[cfg(feature = "serde1")]
             OwnedInternal::Serde1(v) => Internal::AnonSerde1(v),
-
             #[cfg(feature = "sval2")]
             OwnedInternal::Sval2(v) => Internal::AnonSval2(v),
+
+            OwnedInternal::SharedFill(ref value) => Internal::SharedRefFill(value),
+            OwnedInternal::SharedDebug(ref value) => Internal::SharedRefDebug(value),
+            OwnedInternal::SharedDisplay(ref value) => Internal::SharedRefDisplay(value),
+            #[cfg(feature = "error")]
+            OwnedInternal::SharedError(ref value) => Internal::SharedRefError(value),
+            #[cfg(feature = "serde1")]
+            OwnedInternal::SharedSerde1(ref value) => Internal::SharedRefSerde1(value),
+            #[cfg(feature = "sval2")]
+            OwnedInternal::SharedSval2(ref value) => Internal::SharedRefSval2(value),
 
             OwnedInternal::Poisoned(msg) => Internal::Poisoned(msg),
         }

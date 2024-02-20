@@ -1,4 +1,5 @@
 use crate::{
+    fill::Fill,
     internal::{self, Internal},
     std::sync::Arc,
     ValueBag,
@@ -24,20 +25,81 @@ impl<'v> ValueBag<'v> {
             inner: self.inner.to_owned(),
         }
     }
+}
 
-    /// Get a value from an owned debuggable type.
-    #[inline]
-    pub fn from_owned_debug(value: impl internal::fmt::Debug + Send + Sync + 'static) -> Self {
+impl ValueBag<'static> {
+    /// Get a value from an owned, sharable, debuggable type.
+    ///
+    /// This method will attempt to capture the given value as a well-known primitive
+    /// before resorting to using its `Debug` implementation.
+    pub fn capture_owned_debug<T>(value: T) -> Self
+    where
+        T: internal::fmt::Debug + Send + Sync + 'static,
+    {
         Self::try_capture_owned(&value).unwrap_or_else(|| ValueBag {
-            inner: Internal::OwnedDebug(Arc::new(value)),
+            inner: Internal::SharedDebug(Arc::new(value)),
         })
     }
 
-    /// Get a value from an owned debuggable type.
-    #[inline]
-    pub fn from_owned_display(value: impl internal::fmt::Display + Send + Sync + 'static) -> Self {
+    /// Get a value from an owned, sharable, displayable type.
+    ///
+    /// This method will attempt to capture the given value as a well-known primitive
+    /// before resorting to using its `Display` implementation.
+    pub fn capture_owned_display<T>(value: T) -> Self
+    where
+        T: internal::fmt::Display + Send + Sync + 'static,
+    {
         Self::try_capture_owned(&value).unwrap_or_else(|| ValueBag {
-            inner: Internal::OwnedDisplay(Arc::new(value)),
+            inner: Internal::SharedDisplay(Arc::new(value)),
+        })
+    }
+
+    /// Get a value from an owned, shared, fillable slot.
+    pub fn capture_owned_fill<T>(value: T) -> Self
+    where
+        T: Fill + Send + Sync + 'static,
+    {
+        ValueBag {
+            inner: Internal::SharedFill(Arc::new(value)),
+        }
+    }
+
+    /// Get a value from an owned, shared error.
+    #[cfg(feature = "error")]
+    pub fn capture_owned_error<T>(value: T) -> Self
+    where
+        T: internal::error::Error + Send + Sync + 'static,
+    {
+        ValueBag {
+            inner: Internal::SharedError(Arc::new(value)),
+        }
+    }
+
+    /// Get a value from an owned, shared, structured type.
+    ///
+    /// This method will attempt to capture the given value as a well-known primitive
+    /// before resorting to using its `Value` implementation.
+    #[cfg(feature = "sval2")]
+    pub fn capture_owned_sval2<T>(value: T) -> Self
+    where
+        T: value_bag_sval2::lib::Value + Send + Sync + 'static,
+    {
+        Self::try_capture_owned(&value).unwrap_or(ValueBag {
+            inner: Internal::SharedSval2(Arc::new(value)),
+        })
+    }
+
+    /// Get a value from an owned, shared, structured type.
+    ///
+    /// This method will attempt to capture the given value as a well-known primitive
+    /// before resorting to using its `Value` implementation.
+    #[cfg(feature = "serde1")]
+    pub fn capture_owned_serde1<T>(value: T) -> Self
+    where
+        T: value_bag_serde1::lib::Serialize + Send + Sync + 'static,
+    {
+        Self::try_capture_owned(&value).unwrap_or(ValueBag {
+            inner: Internal::SharedSerde1(Arc::new(value)),
         })
     }
 }

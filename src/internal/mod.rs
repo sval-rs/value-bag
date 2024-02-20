@@ -30,77 +30,74 @@ use crate::std::sync::Arc;
 /// A container for a structured value for a specific kind of visitor.
 #[derive(Clone)]
 pub(crate) enum Internal<'v> {
-    /// A signed integer.
+    // Primitive values
     Signed(i64),
-    /// An unsigned integer.
     Unsigned(u64),
-    /// An extra large signed integer.
     #[cfg(not(feature = "inline-i128"))]
     BigSigned(&'v i128),
     #[cfg(feature = "inline-i128")]
     BigSigned(i128),
-    /// An extra large unsigned integer.
     #[cfg(not(feature = "inline-i128"))]
     BigUnsigned(&'v u128),
     #[cfg(feature = "inline-i128")]
     BigUnsigned(u128),
-    /// A floating point number.
     Float(f64),
-    /// A boolean value.
     Bool(bool),
-    /// A UTF8 codepoint.
     Char(char),
-    /// A UTF8 string.
     Str(&'v str),
-    /// An empty value.
     None,
 
-    /// A value that can be filled.
+    // Captured values
     Fill(&'v dyn Fill),
-
-    /// A debuggable value.
-    AnonDebug(&'v dyn fmt::Debug),
-    /// A debuggable value.
     Debug(&'v dyn fmt::DowncastDebug),
-
-    /// A displayable value.
-    AnonDisplay(&'v dyn fmt::Display),
-    /// A displayable value.
     Display(&'v dyn fmt::DowncastDisplay),
-
     #[cfg(feature = "error")]
-    /// An error.
-    AnonError(&'v (dyn error::Error + 'static)),
-    #[cfg(feature = "error")]
-    /// An error.
     Error(&'v dyn error::DowncastError),
-
     #[cfg(feature = "sval2")]
-    /// A structured value from `sval`.
-    AnonSval2(&'v dyn sval::v2::Value),
-    #[cfg(feature = "sval2")]
-    /// A structured value from `sval`.
     Sval2(&'v dyn sval::v2::DowncastValue),
-
     #[cfg(feature = "serde1")]
-    /// A structured value from `serde`.
-    AnonSerde1(&'v dyn serde::v1::Serialize),
-    #[cfg(feature = "serde1")]
-    /// A structured value from `serde`.
     Serde1(&'v dyn serde::v1::DowncastSerialize),
 
-    #[cfg(feature = "owned")]
-    OwnedDebug(Arc<dyn fmt::DowncastDebug + Send + Sync>),
-    #[cfg(feature = "owned")]
-    OwnedDisplay(Arc<dyn fmt::DowncastDisplay + Send + Sync>),
-    #[cfg(all(feature = "error", feature = "owned"))]
-    OwnedError(Arc<dyn error::Error + Send + Sync>),
-    #[cfg(all(feature = "serde1", feature = "owned"))]
-    OwnedSerde1(Arc<dyn serde::v1::DowncastSerialize + Send + Sync>),
-    #[cfg(all(feature = "sval2", feature = "owned"))]
-    OwnedSval2(Arc<dyn sval::v2::DowncastValue + Send + Sync>),
+    // Anonymous values
+    AnonDebug(&'v dyn fmt::Debug),
+    AnonDisplay(&'v dyn fmt::Display),
+    #[cfg(feature = "error")]
+    AnonError(&'v (dyn error::Error + 'static)),
+    #[cfg(feature = "sval2")]
+    AnonSval2(&'v dyn sval::v2::Value),
+    #[cfg(feature = "serde1")]
+    AnonSerde1(&'v dyn serde::v1::Serialize),
 
-    /// A poisoned value.
+    // Shared values
+    #[cfg(feature = "owned")]
+    SharedFill(Arc<dyn Fill + Send + Sync>),
+    #[cfg(feature = "owned")]
+    SharedDebug(Arc<dyn fmt::DowncastDebug + Send + Sync>),
+    #[cfg(feature = "owned")]
+    SharedDisplay(Arc<dyn fmt::DowncastDisplay + Send + Sync>),
+    #[cfg(all(feature = "error", feature = "owned"))]
+    SharedError(Arc<dyn error::DowncastError + Send + Sync>),
+    #[cfg(all(feature = "serde1", feature = "owned"))]
+    SharedSerde1(Arc<dyn serde::v1::DowncastSerialize + Send + Sync>),
+    #[cfg(all(feature = "sval2", feature = "owned"))]
+    SharedSval2(Arc<dyn sval::v2::DowncastValue + Send + Sync>),
+
+    // NOTE: These variants exist because we can't clone an `Arc` in `const` fns
+    // (plus we may not want to anyways)
+    #[cfg(feature = "owned")]
+    SharedRefFill(&'v Arc<dyn Fill + Send + Sync>),
+    #[cfg(feature = "owned")]
+    SharedRefDebug(&'v Arc<dyn fmt::DowncastDebug + Send + Sync>),
+    #[cfg(feature = "owned")]
+    SharedRefDisplay(&'v Arc<dyn fmt::DowncastDisplay + Send + Sync>),
+    #[cfg(all(feature = "error", feature = "owned"))]
+    SharedRefError(&'v Arc<dyn error::DowncastError + Send + Sync>),
+    #[cfg(all(feature = "serde1", feature = "owned"))]
+    SharedRefSerde1(&'v Arc<dyn serde::v1::DowncastSerialize + Send + Sync>),
+    #[cfg(all(feature = "sval2", feature = "owned"))]
+    SharedRefSval2(&'v Arc<dyn sval::v2::DowncastValue + Send + Sync>),
+
+    // Poisoned value
     #[cfg_attr(not(feature = "owned"), allow(dead_code))]
     Poisoned(&'static str),
 }
@@ -306,21 +303,31 @@ impl<'v> Internal<'v> {
             #[cfg(feature = "serde1")]
             Internal::Serde1(value) => Internal::Serde1(*value),
 
-            // NOTE: Ideally these would either clone or deref, but
-            // that's not available in `const` functions yet
             #[cfg(feature = "owned")]
-            Internal::OwnedDebug(ref value) => Internal::Debug(value),
+            Internal::SharedFill(ref value) => Internal::SharedRefFill(value),
             #[cfg(feature = "owned")]
-            Internal::OwnedDisplay(ref value) => Internal::Display(value),
-
+            Internal::SharedDebug(ref value) => Internal::SharedRefDebug(value),
+            #[cfg(feature = "owned")]
+            Internal::SharedDisplay(ref value) => Internal::SharedRefDisplay(value),
             #[cfg(all(feature = "error", feature = "owned"))]
-            Internal::OwnedError(ref value) => Internal::Error(value),
-
+            Internal::SharedError(ref value) => Internal::SharedRefError(value),
             #[cfg(all(feature = "serde1", feature = "owned"))]
-            Internal::OwnedSerde1(ref value) => Internal::Serde1(value),
-
+            Internal::SharedSerde1(ref value) => Internal::SharedRefSerde1(value),
             #[cfg(all(feature = "sval2", feature = "owned"))]
-            Internal::OwnedSval2(ref value) => Internal::Sval2(value),
+            Internal::SharedSval2(ref value) => Internal::SharedRefSval2(value),
+
+            #[cfg(feature = "owned")]
+            Internal::SharedRefFill(value) => Internal::SharedRefFill(*value),
+            #[cfg(feature = "owned")]
+            Internal::SharedRefDebug(value) => Internal::SharedRefDebug(*value),
+            #[cfg(feature = "owned")]
+            Internal::SharedRefDisplay(value) => Internal::SharedRefDisplay(*value),
+            #[cfg(all(feature = "error", feature = "owned"))]
+            Internal::SharedRefError(value) => Internal::SharedRefError(*value),
+            #[cfg(all(feature = "serde1", feature = "owned"))]
+            Internal::SharedRefSerde1(value) => Internal::SharedRefSerde1(*value),
+            #[cfg(all(feature = "sval2", feature = "owned"))]
+            Internal::SharedRefSval2(value) => Internal::SharedRefSval2(*value),
 
             Internal::Poisoned(msg) => Internal::Poisoned(msg),
         }
@@ -366,18 +373,30 @@ impl<'v> Internal<'v> {
             Internal::Serde1(value) => visitor.borrowed_serde1(value.as_super()),
 
             #[cfg(feature = "owned")]
-            Internal::OwnedDebug(ref v) => visitor.debug(v.as_super()),
+            Internal::SharedFill(ref value) => value.fill(Slot::new(&mut visitor)),
             #[cfg(feature = "owned")]
-            Internal::OwnedDisplay(ref v) => visitor.display(v.as_super()),
-
+            Internal::SharedDebug(ref value) => visitor.debug(value.as_super()),
+            #[cfg(feature = "owned")]
+            Internal::SharedDisplay(ref value) => visitor.display(value.as_super()),
             #[cfg(all(feature = "error", feature = "owned"))]
-            Internal::OwnedError(ref v) => visitor.error(v.as_super()),
-
+            Internal::SharedError(ref value) => visitor.error(value.as_super()),
             #[cfg(all(feature = "serde1", feature = "owned"))]
-            Internal::OwnedSerde1(ref v) => visitor.serde1(v.as_super()),
-
+            Internal::SharedSerde1(ref value) => visitor.serde1(value.as_super()),
             #[cfg(all(feature = "sval2", feature = "owned"))]
-            Internal::OwnedSval2(ref v) => visitor.sval2(v.as_super()),
+            Internal::SharedSval2(ref value) => visitor.sval2(value.as_super()),
+
+            #[cfg(feature = "owned")]
+            Internal::SharedRefFill(value) => value.fill(Slot::new(&mut visitor)),
+            #[cfg(feature = "owned")]
+            Internal::SharedRefDebug(value) => visitor.debug(value.as_super()),
+            #[cfg(feature = "owned")]
+            Internal::SharedRefDisplay(value) => visitor.display(value.as_super()),
+            #[cfg(all(feature = "error", feature = "owned"))]
+            Internal::SharedRefError(value) => visitor.error(value.as_super()),
+            #[cfg(all(feature = "serde1", feature = "owned"))]
+            Internal::SharedRefSerde1(value) => visitor.serde1(value.as_super()),
+            #[cfg(all(feature = "sval2", feature = "owned"))]
+            Internal::SharedRefSval2(value) => visitor.sval2(value.as_super()),
 
             Internal::Poisoned(msg) => visitor.poisoned(*msg),
         }

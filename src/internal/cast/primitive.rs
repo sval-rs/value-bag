@@ -92,9 +92,9 @@ pub(in crate::internal) fn from_any<'v, T: ?Sized + 'static>(value: &'v T) -> Op
 }
 
 #[cfg(feature = "owned")]
-pub(in crate::internal) fn from_owned_any<'a, 'v, T: ?Sized + 'static>(
+pub(in crate::internal) fn from_owned_any<'a, T: ?Sized + 'static>(
     value: &'a T,
-) -> Option<ValueBag<'v>> {
+) -> Option<ValueBag<'static>> {
     let type_ids = |v: VoidRef<'a>| {
         check_type_ids!(
             &'a v =>

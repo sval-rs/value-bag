@@ -17,19 +17,7 @@ use crate::{Error, ValueBag};
 
 mod primitive;
 
-impl<'v> ValueBag<'v> {
-    /// Try capture a raw value.
-    ///
-    /// This method will return `Some` if the value is a simple primitive
-    /// that can be captured without losing its structure. In other cases
-    /// this method will return `None`.
-    pub fn try_capture<T>(value: &'v T) -> Option<Self>
-    where
-        T: ?Sized + 'static,
-    {
-        primitive::from_any(value)
-    }
-
+impl ValueBag<'static> {
     /// Try capture an owned raw value.
     ///
     /// This method will return `Some` if the value is a simple primitive
@@ -41,6 +29,20 @@ impl<'v> ValueBag<'v> {
         T: ?Sized + 'static,
     {
         primitive::from_owned_any(value)
+    }
+}
+
+impl<'v> ValueBag<'v> {
+    /// Try capture a raw value.
+    ///
+    /// This method will return `Some` if the value is a simple primitive
+    /// that can be captured without losing its structure. In other cases
+    /// this method will return `None`.
+    pub fn try_capture<T>(value: &'v T) -> Option<Self>
+    where
+        T: ?Sized + 'static,
+    {
+        primitive::from_any(value)
     }
 
     /// Try get a `u64` from this value.
@@ -146,6 +148,29 @@ impl<'v> ValueBag<'v> {
             Internal::Sval2(value) => value.as_any().downcast_ref(),
             #[cfg(feature = "serde1")]
             Internal::Serde1(value) => value.as_any().downcast_ref(),
+
+            #[cfg(feature = "owned")]
+            Internal::SharedDebug(ref value) => value.as_any().downcast_ref(),
+            #[cfg(feature = "owned")]
+            Internal::SharedDisplay(ref value) => value.as_any().downcast_ref(),
+            #[cfg(all(feature = "error", feature = "owned"))]
+            Internal::SharedError(ref value) => value.as_any().downcast_ref(),
+            #[cfg(all(feature = "serde1", feature = "owned"))]
+            Internal::SharedSerde1(ref value) => value.as_any().downcast_ref(),
+            #[cfg(all(feature = "sval2", feature = "owned"))]
+            Internal::SharedSval2(ref value) => value.as_any().downcast_ref(),
+
+            #[cfg(feature = "owned")]
+            Internal::SharedRefDebug(value) => value.as_any().downcast_ref(),
+            #[cfg(feature = "owned")]
+            Internal::SharedRefDisplay(value) => value.as_any().downcast_ref(),
+            #[cfg(all(feature = "error", feature = "owned"))]
+            Internal::SharedRefError(value) => value.as_any().downcast_ref(),
+            #[cfg(all(feature = "serde1", feature = "owned"))]
+            Internal::SharedRefSerde1(value) => value.as_any().downcast_ref(),
+            #[cfg(all(feature = "sval2", feature = "owned"))]
+            Internal::SharedRefSval2(value) => value.as_any().downcast_ref(),
+
             _ => None,
         }
     }
