@@ -3,10 +3,7 @@
 //! This implementation isn't intended to be public. It may need to change
 //! for optimizations or to support new external serialization frameworks.
 
-use crate::{
-    fill::Fill,
-    Error, ValueBag,
-};
+use crate::{fill::Fill, Error, ValueBag};
 
 pub(crate) mod cast;
 #[cfg(feature = "error")]
@@ -124,7 +121,10 @@ pub(crate) trait InternalVisitor<'v> {
         self.display(v)
     }
     #[cfg(feature = "owned")]
-    fn shared_display(&mut self, v: &Arc<dyn fmt::DowncastDisplay + Send + Sync>) -> Result<(), Error> {
+    fn shared_display(
+        &mut self,
+        v: &Arc<dyn fmt::DowncastDisplay + Send + Sync>,
+    ) -> Result<(), Error> {
         self.display(v)
     }
 
@@ -156,7 +156,10 @@ pub(crate) trait InternalVisitor<'v> {
         self.error(v)
     }
     #[cfg(all(feature = "error", feature = "owned"))]
-    fn shared_error(&mut self, v: &Arc<dyn error::DowncastError + Send + Sync>) -> Result<(), Error> {
+    fn shared_error(
+        &mut self,
+        v: &Arc<dyn error::DowncastError + Send + Sync>,
+    ) -> Result<(), Error> {
         self.error(v.as_super())
     }
 
@@ -167,7 +170,10 @@ pub(crate) trait InternalVisitor<'v> {
         self.sval2(v)
     }
     #[cfg(all(feature = "sval2", feature = "owned"))]
-    fn shared_sval2(&mut self, v: &Arc<dyn sval::v2::DowncastValue + Send + Sync>) -> Result<(), Error> {
+    fn shared_sval2(
+        &mut self,
+        v: &Arc<dyn sval::v2::DowncastValue + Send + Sync>,
+    ) -> Result<(), Error> {
         self.sval2(v.as_super())
     }
 
@@ -178,7 +184,10 @@ pub(crate) trait InternalVisitor<'v> {
         self.serde1(v)
     }
     #[cfg(all(feature = "serde1", feature = "owned"))]
-    fn shared_serde1(&mut self, v: &Arc<dyn serde::v1::DowncastSerialize + Send + Sync>) -> Result<(), Error> {
+    fn shared_serde1(
+        &mut self,
+        v: &Arc<dyn serde::v1::DowncastSerialize + Send + Sync>,
+    ) -> Result<(), Error> {
         self.serde1(v.as_super())
     }
 
@@ -220,7 +229,10 @@ impl<'a, 'v, V: InternalVisitor<'v> + ?Sized> InternalVisitor<'v> for &'a mut V 
     }
 
     #[cfg(feature = "owned")]
-    fn shared_display(&mut self, v: &Arc<dyn fmt::DowncastDisplay + Send + Sync>) -> Result<(), Error> {
+    fn shared_display(
+        &mut self,
+        v: &Arc<dyn fmt::DowncastDisplay + Send + Sync>,
+    ) -> Result<(), Error> {
         (**self).shared_display(v)
     }
 
@@ -283,7 +295,10 @@ impl<'a, 'v, V: InternalVisitor<'v> + ?Sized> InternalVisitor<'v> for &'a mut V 
     }
 
     #[cfg(all(feature = "error", feature = "owned"))]
-    fn shared_error(&mut self, v: &Arc<dyn error::DowncastError + Send + Sync>) -> Result<(), Error> {
+    fn shared_error(
+        &mut self,
+        v: &Arc<dyn error::DowncastError + Send + Sync>,
+    ) -> Result<(), Error> {
         (**self).shared_error(v)
     }
 
@@ -298,7 +313,10 @@ impl<'a, 'v, V: InternalVisitor<'v> + ?Sized> InternalVisitor<'v> for &'a mut V 
     }
 
     #[cfg(all(feature = "sval2", feature = "owned"))]
-    fn shared_sval2(&mut self, v: &Arc<dyn sval::v2::DowncastValue + Send + Sync>) -> Result<(), Error> {
+    fn shared_sval2(
+        &mut self,
+        v: &Arc<dyn sval::v2::DowncastValue + Send + Sync>,
+    ) -> Result<(), Error> {
         (**self).shared_sval2(v)
     }
 
@@ -313,7 +331,10 @@ impl<'a, 'v, V: InternalVisitor<'v> + ?Sized> InternalVisitor<'v> for &'a mut V 
     }
 
     #[cfg(all(feature = "serde1", feature = "owned"))]
-    fn shared_serde1(&mut self, v: &Arc<dyn serde::v1::DowncastSerialize + Send + Sync>) -> Result<(), Error> {
+    fn shared_serde1(
+        &mut self,
+        v: &Arc<dyn serde::v1::DowncastSerialize + Send + Sync>,
+    ) -> Result<(), Error> {
         (**self).shared_serde1(v)
     }
 

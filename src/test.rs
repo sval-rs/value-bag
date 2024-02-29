@@ -65,7 +65,7 @@ impl<'v> ValueBag<'v> {
             fn fill(&mut self, v: &dyn crate::fill::Fill) -> Result<(), Error> {
                 v.fill(crate::fill::Slot::new(self))
             }
-            
+
             fn debug(&mut self, v: &dyn fmt::Debug) -> Result<(), Error> {
                 self.0 = Some(TestToken::Str(format!("{:?}", v)));
                 Ok(())

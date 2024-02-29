@@ -256,7 +256,7 @@ impl<'v> Display for ValueBag<'v> {
             fn fill(&mut self, v: &dyn crate::fill::Fill) -> Result<(), Error> {
                 v.fill(crate::fill::Slot::new(self))
             }
-            
+
             fn debug(&mut self, v: &dyn Debug) -> Result<(), Error> {
                 Debug::fmt(v, self.0)?;
 

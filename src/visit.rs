@@ -243,7 +243,7 @@ impl<'v> ValueBag<'v> {
             fn fill(&mut self, v: &dyn crate::fill::Fill) -> Result<(), Error> {
                 v.fill(crate::fill::Slot::new(self))
             }
-            
+
             fn debug(&mut self, v: &dyn internal::fmt::Debug) -> Result<(), Error> {
                 self.0.visit_any(ValueBag::from_dyn_debug(v))
             }

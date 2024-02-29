@@ -92,7 +92,10 @@ impl<'v> Internal<'v> {
                 v.fill(crate::fill::Slot::new(self))
             }
 
-            fn shared_fill(&mut self, v: &Arc<dyn crate::fill::Fill + Send + Sync>) -> Result<(), Error> {
+            fn shared_fill(
+                &mut self,
+                v: &Arc<dyn crate::fill::Fill + Send + Sync>,
+            ) -> Result<(), Error> {
                 self.0 = OwnedInternal::SharedFill(v.clone());
                 Ok(())
             }
@@ -102,7 +105,10 @@ impl<'v> Internal<'v> {
                 Ok(())
             }
 
-            fn shared_debug(&mut self, v: &Arc<dyn internal::fmt::DowncastDebug + Send + Sync>) -> Result<(), Error> {
+            fn shared_debug(
+                &mut self,
+                v: &Arc<dyn internal::fmt::DowncastDebug + Send + Sync>,
+            ) -> Result<(), Error> {
                 self.0 = OwnedInternal::SharedDebug(v.clone());
                 Ok(())
             }
@@ -112,7 +118,10 @@ impl<'v> Internal<'v> {
                 Ok(())
             }
 
-            fn shared_display(&mut self, v: &Arc<dyn internal::fmt::DowncastDisplay + Send + Sync>) -> Result<(), Error> {
+            fn shared_display(
+                &mut self,
+                v: &Arc<dyn internal::fmt::DowncastDisplay + Send + Sync>,
+            ) -> Result<(), Error> {
                 self.0 = OwnedInternal::SharedDisplay(v.clone());
                 Ok(())
             }
@@ -169,7 +178,10 @@ impl<'v> Internal<'v> {
             }
 
             #[cfg(feature = "error")]
-            fn shared_error(&mut self, v: &Arc<dyn internal::error::DowncastError + Send + Sync>) -> Result<(), Error> {
+            fn shared_error(
+                &mut self,
+                v: &Arc<dyn internal::error::DowncastError + Send + Sync>,
+            ) -> Result<(), Error> {
                 self.0 = OwnedInternal::SharedError(v.clone());
                 Ok(())
             }
@@ -183,7 +195,10 @@ impl<'v> Internal<'v> {
             }
 
             #[cfg(feature = "sval2")]
-            fn shared_sval2(&mut self, v: &Arc<dyn internal::sval::v2::DowncastValue + Send + Sync>) -> Result<(), Error> {
+            fn shared_sval2(
+                &mut self,
+                v: &Arc<dyn internal::sval::v2::DowncastValue + Send + Sync>,
+            ) -> Result<(), Error> {
                 self.0 = OwnedInternal::SharedSval2(v.clone());
                 Ok(())
             }
@@ -197,7 +212,10 @@ impl<'v> Internal<'v> {
             }
 
             #[cfg(feature = "serde1")]
-            fn shared_serde1(&mut self, v: &Arc<dyn internal::serde::v1::DowncastSerialize + Send + Sync>) -> Result<(), Error> {
+            fn shared_serde1(
+                &mut self,
+                v: &Arc<dyn internal::serde::v1::DowncastSerialize + Send + Sync>,
+            ) -> Result<(), Error> {
                 self.0 = OwnedInternal::SharedSerde1(v.clone());
                 Ok(())
             }

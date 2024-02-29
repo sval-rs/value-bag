@@ -107,7 +107,7 @@ impl<'v> value_bag_serde1::lib::Serialize for ValueBag<'v> {
             fn fill(&mut self, v: &dyn crate::fill::Fill) -> Result<(), Error> {
                 v.fill(crate::fill::Slot::new(self))
             }
-            
+
             fn debug(&mut self, v: &dyn fmt::Debug) -> Result<(), Error> {
                 struct DebugToDisplay<T>(T);
 
