@@ -93,9 +93,12 @@ extern crate alloc;
 #[allow(unused_imports)]
 mod std {
     pub use crate::{
-        alloc::{borrow, boxed, string, sync},
+        alloc::{borrow, boxed, string},
         core::*,
     };
+
+    #[cfg(feature = "owned")]
+    pub use crate::alloc::sync;
 }
 
 #[cfg(not(any(feature = "alloc", feature = "std", test)))]
