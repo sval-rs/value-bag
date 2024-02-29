@@ -62,6 +62,10 @@ impl<'v> ValueBag<'v> {
         struct TestVisitor(Option<TestToken>);
 
         impl<'v> internal::InternalVisitor<'v> for TestVisitor {
+            fn fill(&mut self, v: &dyn crate::fill::Fill) -> Result<(), Error> {
+                v.fill(crate::fill::Slot::new(self))
+            }
+            
             fn debug(&mut self, v: &dyn fmt::Debug) -> Result<(), Error> {
                 self.0 = Some(TestToken::Str(format!("{:?}", v)));
                 Ok(())

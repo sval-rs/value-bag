@@ -62,6 +62,13 @@ where
     }
 }
 
+#[cfg(feature = "owned")]
+impl<F: Fill + ?Sized> Fill for crate::std::sync::Arc<F> {
+    fn fill(&self, slot: Slot) -> Result<(), Error> {
+        (**self).fill(slot)
+    }
+}
+
 /// A value slot to fill using the [`Fill`](trait.Fill.html) trait.
 pub struct Slot<'s, 'f> {
     visitor: &'s mut dyn InternalVisitor<'f>,

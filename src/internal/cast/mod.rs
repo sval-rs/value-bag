@@ -184,6 +184,11 @@ impl<'v> Internal<'v> {
 
         impl<'v> InternalVisitor<'v> for CastVisitor<'v> {
             #[inline]
+            fn fill(&mut self, v: &dyn crate::fill::Fill) -> Result<(), Error> {
+                v.fill(crate::fill::Slot::new(self))
+            }
+
+            #[inline]
             fn debug(&mut self, _: &dyn fmt::Debug) -> Result<(), Error> {
                 Ok(())
             }

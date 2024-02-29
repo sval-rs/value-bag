@@ -91,6 +91,10 @@ impl<'sval> value_bag_sval2::lib_ref::ValueRef<'sval> for ValueBag<'sval> {
         impl<'a, 'v, S: value_bag_sval2::lib::Stream<'v> + ?Sized> InternalVisitor<'v>
             for Sval2Visitor<'a, S>
         {
+            fn fill(&mut self, v: &dyn crate::fill::Fill) -> Result<(), Error> {
+                v.fill(crate::fill::Slot::new(self))
+            }
+
             fn debug(&mut self, v: &dyn fmt::Debug) -> Result<(), Error> {
                 value_bag_sval2::fmt::stream_debug(self.0, v).map_err(Error::from_sval2)
             }

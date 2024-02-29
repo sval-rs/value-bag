@@ -146,6 +146,10 @@ impl<'v> Debug for ValueBag<'v> {
         struct DebugVisitor<'a, 'b: 'a>(&'a mut fmt::Formatter<'b>);
 
         impl<'a, 'b: 'a, 'v> InternalVisitor<'v> for DebugVisitor<'a, 'b> {
+            fn fill(&mut self, v: &dyn crate::fill::Fill) -> Result<(), Error> {
+                v.fill(crate::fill::Slot::new(self))
+            }
+
             fn debug(&mut self, v: &dyn Debug) -> Result<(), Error> {
                 Debug::fmt(v, self.0)?;
 
@@ -249,6 +253,10 @@ impl<'v> Display for ValueBag<'v> {
         struct DisplayVisitor<'a, 'b: 'a>(&'a mut fmt::Formatter<'b>);
 
         impl<'a, 'b: 'a, 'v> InternalVisitor<'v> for DisplayVisitor<'a, 'b> {
+            fn fill(&mut self, v: &dyn crate::fill::Fill) -> Result<(), Error> {
+                v.fill(crate::fill::Slot::new(self))
+            }
+            
             fn debug(&mut self, v: &dyn Debug) -> Result<(), Error> {
                 Debug::fmt(v, self.0)?;
 

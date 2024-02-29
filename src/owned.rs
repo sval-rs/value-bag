@@ -167,6 +167,17 @@ mod tests {
 
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn owned_fill_to_owned() {
+        let value = ValueBag::capture_owned_fill(|slot: fill::Slot| slot.fill_any(42u64)).to_owned();
+
+        assert!(matches!(
+            value.inner,
+            internal::owned::OwnedInternal::SharedFill(_),
+        ));
+    }
+
+    #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn fmt_to_owned() {
         let debug = ValueBag::from_debug(&"a value").to_owned();
         let display = ValueBag::from_display(&"a value").to_owned();
@@ -188,6 +199,31 @@ mod tests {
 
         assert!(matches!(debug.inner, internal::Internal::AnonDebug(_)));
         assert!(matches!(display.inner, internal::Internal::AnonDisplay(_)));
+    }
+
+    #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn owned_fmt_to_owned() {
+        let debug = ValueBag::capture_owned_debug("a value".to_string()).to_owned();
+        let display = ValueBag::capture_owned_display("a value".to_string()).to_owned();
+
+        assert!(matches!(
+            debug.inner,
+            internal::owned::OwnedInternal::SharedDebug(_)
+        ));
+        assert!(matches!(
+            display.inner,
+            internal::owned::OwnedInternal::SharedDisplay(_)
+        ));
+
+        assert_eq!("\"a value\"", debug.to_string());
+        assert_eq!("a value", display.to_string());
+
+        let debug = debug.by_ref();
+        let display = display.by_ref();
+
+        assert!(matches!(debug.inner, internal::Internal::SharedRefDebug(_)));
+        assert!(matches!(display.inner, internal::Internal::SharedRefDisplay(_)));
     }
 
     #[test]
@@ -213,6 +249,26 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "error")]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn owned_error_to_owned() {
+        use crate::std::io;
+
+        let value =
+            ValueBag::capture_owned_error(io::Error::new(io::ErrorKind::Other, "something failed!"))
+                .to_owned();
+
+        assert!(matches!(
+            value.inner,
+            internal::owned::OwnedInternal::SharedError(_)
+        ));
+
+        let value = value.by_ref();
+
+        assert!(matches!(value.inner, internal::Internal::SharedRefError(_)));
+    }
+
+    #[test]
     #[cfg(feature = "serde1")]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn serde1_to_owned() {
@@ -229,6 +285,22 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "serde1")]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn owned_serde1_to_owned() {
+        let value = ValueBag::capture_owned_serde1("a value".to_string()).to_owned();
+
+        assert!(matches!(
+            value.inner,
+            internal::owned::OwnedInternal::SharedSerde1(_)
+        ));
+
+        let value = value.by_ref();
+
+        assert!(matches!(value.inner, internal::Internal::SharedRefSerde1(_)));
+    }
+
+    #[test]
     #[cfg(feature = "sval2")]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn sval2_to_owned() {
@@ -242,5 +314,21 @@ mod tests {
         let value = value.by_ref();
 
         assert!(matches!(value.inner, internal::Internal::AnonSval2(_)));
+    }
+
+    #[test]
+    #[cfg(feature = "sval2")]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn owned_sval2_to_owned() {
+        let value = ValueBag::capture_owned_sval2("a value".to_string()).to_owned();
+
+        assert!(matches!(
+            value.inner,
+            internal::owned::OwnedInternal::SharedSval2(_)
+        ));
+
+        let value = value.by_ref();
+
+        assert!(matches!(value.inner, internal::Internal::SharedRefSval2(_)));
     }
 }
