@@ -32,7 +32,7 @@ jobs:
         run: cargo hack test --feature-powerset --lib
 
       - name: Minimal versions
-        run: cargo hack test --feature-powerset -Z minimal-versions
+        run: cargo hack test --feature-powerset --lib -Z minimal-versions
 
   embedded:
     name: Build (embedded)
