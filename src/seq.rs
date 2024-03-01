@@ -149,6 +149,7 @@ impl<'a, S: Extend<Option<T>>, T: for<'b> TryFrom<ValueBag<'b>>> ExtendValue<'a>
     }
 }
 
+#[allow(dead_code)]
 pub(crate) trait ExtendValue<'v> {
     fn extend<'a>(&mut self, v: Internal<'a>);
 

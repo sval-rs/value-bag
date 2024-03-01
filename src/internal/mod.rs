@@ -131,10 +131,12 @@ pub(crate) trait InternalVisitor<'v> {
     fn u64(&mut self, v: u64) -> Result<(), Error>;
     fn i64(&mut self, v: i64) -> Result<(), Error>;
     fn u128(&mut self, v: &u128) -> Result<(), Error>;
+    #[cfg(not(feature = "inline-i128"))]
     fn borrowed_u128(&mut self, v: &'v u128) -> Result<(), Error> {
         self.u128(v)
     }
     fn i128(&mut self, v: &i128) -> Result<(), Error>;
+    #[cfg(not(feature = "inline-i128"))]
     fn borrowed_i128(&mut self, v: &'v i128) -> Result<(), Error> {
         self.i128(v)
     }
@@ -248,6 +250,7 @@ impl<'a, 'v, V: InternalVisitor<'v> + ?Sized> InternalVisitor<'v> for &'a mut V 
         (**self).u128(v)
     }
 
+    #[cfg(not(feature = "inline-i128"))]
     fn borrowed_u128(&mut self, v: &'v u128) -> Result<(), Error> {
         (**self).borrowed_u128(v)
     }
@@ -256,6 +259,7 @@ impl<'a, 'v, V: InternalVisitor<'v> + ?Sized> InternalVisitor<'v> for &'a mut V 
         (**self).i128(v)
     }
 
+    #[cfg(not(feature = "inline-i128"))]
     fn borrowed_i128(&mut self, v: &'v i128) -> Result<(), Error> {
         (**self).borrowed_i128(v)
     }
@@ -426,8 +430,14 @@ impl<'v> Internal<'v> {
         match self {
             Internal::Signed(value) => visitor.i64(*value),
             Internal::Unsigned(value) => visitor.u64(*value),
+            #[cfg(feature = "inline-i128")]
             Internal::BigSigned(value) => visitor.i128(value),
+            #[cfg(feature = "inline-i128")]
             Internal::BigUnsigned(value) => visitor.u128(value),
+            #[cfg(not(feature = "inline-i128"))]
+            Internal::BigSigned(value) => visitor.borrowed_i128(*value),
+            #[cfg(not(feature = "inline-i128"))]
+            Internal::BigUnsigned(value) => visitor.borrowed_u128(*value),
             Internal::Float(value) => visitor.f64(*value),
             Internal::Bool(value) => visitor.bool(*value),
             Internal::Char(value) => visitor.char(*value),
@@ -436,11 +446,11 @@ impl<'v> Internal<'v> {
 
             Internal::Fill(value) => visitor.fill(*value),
 
-            Internal::AnonDebug(value) => visitor.debug(value),
-            Internal::Debug(value) => visitor.debug(value.as_super()),
+            Internal::AnonDebug(value) => visitor.borrowed_debug(*value),
+            Internal::Debug(value) => visitor.borrowed_debug(value.as_super()),
 
-            Internal::AnonDisplay(value) => visitor.display(value),
-            Internal::Display(value) => visitor.display(value.as_super()),
+            Internal::AnonDisplay(value) => visitor.borrowed_display(*value),
+            Internal::Display(value) => visitor.borrowed_display(value.as_super()),
 
             #[cfg(feature = "error")]
             Internal::AnonError(value) => visitor.borrowed_error(*value),

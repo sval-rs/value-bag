@@ -25,8 +25,11 @@ jobs:
       - name: Install cargo-hack
         run: cargo install cargo-hack
 
+      - name: All
+        run: cargo test --all-features
+
       - name: Powerset
-        run: cargo hack test --feature-powerset
+        run: cargo hack test --feature-powerset --lib
 
       - name: Minimal versions
         run: cargo hack test --feature-powerset -Z minimal-versions
