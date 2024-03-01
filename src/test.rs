@@ -7,10 +7,12 @@ use crate::{
     Error, ValueBag,
 };
 
+#[cfg(test)]
 pub(crate) trait IntoValueBag<'v> {
     fn into_value_bag(self) -> ValueBag<'v>;
 }
 
+#[cfg(test)]
 impl<'v, T> IntoValueBag<'v> for T
 where
     T: Into<ValueBag<'v>>,

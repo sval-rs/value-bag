@@ -105,7 +105,7 @@ pub(crate) trait InternalVisitor<'v> {
 
     #[cfg(feature = "owned")]
     fn shared_fill(&mut self, v: &Arc<dyn Fill + Send + Sync>) -> Result<(), Error> {
-        self.fill(v)
+        self.fill(&**v)
     }
 
     fn debug(&mut self, v: &dyn fmt::Debug) -> Result<(), Error>;
