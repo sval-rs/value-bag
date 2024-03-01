@@ -90,6 +90,12 @@ impl<T: fmt::Display + 'static> DowncastDisplay for T {
     }
 }
 
+impl<'a> fmt::Display for dyn DowncastDisplay + Send + Sync + 'a {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.as_super().fmt(f)
+    }
+}
+
 pub(crate) trait DowncastDebug {
     fn as_any(&self) -> &dyn Any;
     fn as_super(&self) -> &dyn fmt::Debug;
@@ -102,6 +108,12 @@ impl<T: fmt::Debug + 'static> DowncastDebug for T {
 
     fn as_super(&self) -> &dyn fmt::Debug {
         self
+    }
+}
+
+impl<'a> fmt::Debug for dyn DowncastDebug + Send + Sync + 'a {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.as_super().fmt(f)
     }
 }
 
@@ -134,6 +146,10 @@ impl<'v> Debug for ValueBag<'v> {
         struct DebugVisitor<'a, 'b: 'a>(&'a mut fmt::Formatter<'b>);
 
         impl<'a, 'b: 'a, 'v> InternalVisitor<'v> for DebugVisitor<'a, 'b> {
+            fn fill(&mut self, v: &dyn crate::fill::Fill) -> Result<(), Error> {
+                v.fill(crate::fill::Slot::new(self))
+            }
+
             fn debug(&mut self, v: &dyn Debug) -> Result<(), Error> {
                 Debug::fmt(v, self.0)?;
 
@@ -237,6 +253,10 @@ impl<'v> Display for ValueBag<'v> {
         struct DisplayVisitor<'a, 'b: 'a>(&'a mut fmt::Formatter<'b>);
 
         impl<'a, 'b: 'a, 'v> InternalVisitor<'v> for DisplayVisitor<'a, 'b> {
+            fn fill(&mut self, v: &dyn crate::fill::Fill) -> Result<(), Error> {
+                v.fill(crate::fill::Slot::new(self))
+            }
+
             fn debug(&mut self, v: &dyn Debug) -> Result<(), Error> {
                 Debug::fmt(v, self.0)?;
 

@@ -4,10 +4,7 @@
 //! but may end up executing arbitrary caller code if the value is complex.
 //! They will also attempt to downcast erased types into a primitive where possible.
 
-use crate::std::{
-    convert::{TryFrom, TryInto},
-    fmt,
-};
+use crate::std::fmt;
 
 #[cfg(feature = "alloc")]
 use crate::std::{borrow::ToOwned, string::String};
@@ -16,6 +13,21 @@ use super::{Internal, InternalVisitor};
 use crate::{Error, ValueBag};
 
 mod primitive;
+
+impl ValueBag<'static> {
+    /// Try capture an owned raw value.
+    ///
+    /// This method will return `Some` if the value is a simple primitive
+    /// that can be captured without losing its structure. In other cases
+    /// this method will return `None`.
+    #[cfg(feature = "owned")]
+    pub fn try_capture_owned<T>(value: &'_ T) -> Option<Self>
+    where
+        T: ?Sized + 'static,
+    {
+        primitive::from_owned_any(value)
+    }
+}
 
 impl<'v> ValueBag<'v> {
     /// Try capture a raw value.
@@ -66,7 +78,7 @@ impl<'v> ValueBag<'v> {
     ///
     /// This method is cheap for primitive types, but may call arbitrary
     /// serialization implementations for complex ones.
-    /// 
+    ///
     /// This method is based on standard `TryInto` conversions, and will
     /// only return `Some` if there's a guaranteed lossless conversion between
     /// the source and destination types. For a more lenient alternative, see
@@ -79,7 +91,7 @@ impl<'v> ValueBag<'v> {
     ///
     /// This method is cheap for primitive types, but may call arbitrary
     /// serialization implementations for complex ones.
-    /// 
+    ///
     /// This method is like [`ValueBag::to_f64`] except will always return
     /// a `f64`, regardless of the actual type of underlying value. For
     /// numeric types, it will use a regular `as` conversion, which may be lossy.
@@ -133,6 +145,29 @@ impl<'v> ValueBag<'v> {
             Internal::Sval2(value) => value.as_any().downcast_ref(),
             #[cfg(feature = "serde1")]
             Internal::Serde1(value) => value.as_any().downcast_ref(),
+
+            #[cfg(feature = "owned")]
+            Internal::SharedDebug(ref value) => value.as_any().downcast_ref(),
+            #[cfg(feature = "owned")]
+            Internal::SharedDisplay(ref value) => value.as_any().downcast_ref(),
+            #[cfg(all(feature = "error", feature = "owned"))]
+            Internal::SharedError(ref value) => value.as_any().downcast_ref(),
+            #[cfg(all(feature = "serde1", feature = "owned"))]
+            Internal::SharedSerde1(ref value) => value.as_any().downcast_ref(),
+            #[cfg(all(feature = "sval2", feature = "owned"))]
+            Internal::SharedSval2(ref value) => value.as_any().downcast_ref(),
+
+            #[cfg(feature = "owned")]
+            Internal::SharedRefDebug(value) => value.as_any().downcast_ref(),
+            #[cfg(feature = "owned")]
+            Internal::SharedRefDisplay(value) => value.as_any().downcast_ref(),
+            #[cfg(all(feature = "error", feature = "owned"))]
+            Internal::SharedRefError(value) => value.as_any().downcast_ref(),
+            #[cfg(all(feature = "serde1", feature = "owned"))]
+            Internal::SharedRefSerde1(value) => value.as_any().downcast_ref(),
+            #[cfg(all(feature = "sval2", feature = "owned"))]
+            Internal::SharedRefSval2(value) => value.as_any().downcast_ref(),
+
             _ => None,
         }
     }
@@ -145,6 +180,11 @@ impl<'v> Internal<'v> {
         struct CastVisitor<'v>(Cast<'v>);
 
         impl<'v> InternalVisitor<'v> for CastVisitor<'v> {
+            #[inline]
+            fn fill(&mut self, v: &dyn crate::fill::Fill) -> Result<(), Error> {
+                v.fill(crate::fill::Slot::new(self))
+            }
+
             #[inline]
             fn debug(&mut self, _: &dyn fmt::Debug) -> Result<(), Error> {
                 Ok(())
@@ -479,13 +519,9 @@ mod tests {
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn is_empty() {
-        assert!(
-            ValueBag::from(None::<i32>).is_empty(),
-        );
+        assert!(ValueBag::from(None::<i32>).is_empty(),);
 
-        assert!(
-            ValueBag::try_capture(&None::<i32>).unwrap().is_empty(),
-        );
+        assert!(ValueBag::try_capture(&None::<i32>).unwrap().is_empty(),);
     }
 
     #[test]

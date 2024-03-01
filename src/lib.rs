@@ -96,6 +96,9 @@ mod std {
         alloc::{borrow, boxed, string},
         core::*,
     };
+
+    #[cfg(feature = "owned")]
+    pub use crate::alloc::sync;
 }
 
 #[cfg(not(any(feature = "alloc", feature = "std", test)))]
@@ -434,7 +437,7 @@ impl<'v> ValueBag<'v> {
     }
 
     /// Get a `ValueBag` from an `Option`.
-    /// 
+    ///
     /// This method will return `ValueBag::empty` if the value is `None`.
     #[inline]
     pub fn from_option(v: Option<impl Into<ValueBag<'v>>>) -> ValueBag<'v> {
@@ -448,7 +451,7 @@ impl<'v> ValueBag<'v> {
     #[inline]
     pub const fn from_u8(v: u8) -> ValueBag<'v> {
         ValueBag {
-            inner: internal::Internal::Unsigned(v as u64)
+            inner: internal::Internal::Unsigned(v as u64),
         }
     }
 
@@ -456,7 +459,7 @@ impl<'v> ValueBag<'v> {
     #[inline]
     pub const fn from_u16(v: u16) -> ValueBag<'v> {
         ValueBag {
-            inner: internal::Internal::Unsigned(v as u64)
+            inner: internal::Internal::Unsigned(v as u64),
         }
     }
 
@@ -464,7 +467,7 @@ impl<'v> ValueBag<'v> {
     #[inline]
     pub const fn from_u32(v: u32) -> ValueBag<'v> {
         ValueBag {
-            inner: internal::Internal::Unsigned(v as u64)
+            inner: internal::Internal::Unsigned(v as u64),
         }
     }
 
@@ -472,7 +475,7 @@ impl<'v> ValueBag<'v> {
     #[inline]
     pub const fn from_u64(v: u64) -> ValueBag<'v> {
         ValueBag {
-            inner: internal::Internal::Unsigned(v)
+            inner: internal::Internal::Unsigned(v),
         }
     }
 
@@ -480,7 +483,7 @@ impl<'v> ValueBag<'v> {
     #[inline]
     pub const fn from_usize(v: usize) -> ValueBag<'v> {
         ValueBag {
-            inner: internal::Internal::Unsigned(v as u64)
+            inner: internal::Internal::Unsigned(v as u64),
         }
     }
 
@@ -508,7 +511,7 @@ impl<'v> ValueBag<'v> {
     #[inline]
     pub const fn from_i8(v: i8) -> ValueBag<'v> {
         ValueBag {
-            inner: internal::Internal::Signed(v as i64)
+            inner: internal::Internal::Signed(v as i64),
         }
     }
 
@@ -516,7 +519,7 @@ impl<'v> ValueBag<'v> {
     #[inline]
     pub const fn from_i16(v: i16) -> ValueBag<'v> {
         ValueBag {
-            inner: internal::Internal::Signed(v as i64)
+            inner: internal::Internal::Signed(v as i64),
         }
     }
 
@@ -524,7 +527,7 @@ impl<'v> ValueBag<'v> {
     #[inline]
     pub const fn from_i32(v: i32) -> ValueBag<'v> {
         ValueBag {
-            inner: internal::Internal::Signed(v as i64)
+            inner: internal::Internal::Signed(v as i64),
         }
     }
 
@@ -532,7 +535,7 @@ impl<'v> ValueBag<'v> {
     #[inline]
     pub const fn from_i64(v: i64) -> ValueBag<'v> {
         ValueBag {
-            inner: internal::Internal::Signed(v)
+            inner: internal::Internal::Signed(v),
         }
     }
 
@@ -540,7 +543,7 @@ impl<'v> ValueBag<'v> {
     #[inline]
     pub const fn from_isize(v: isize) -> ValueBag<'v> {
         ValueBag {
-            inner: internal::Internal::Signed(v as i64)
+            inner: internal::Internal::Signed(v as i64),
         }
     }
 
@@ -568,7 +571,7 @@ impl<'v> ValueBag<'v> {
     #[inline]
     pub const fn from_f32(v: f32) -> ValueBag<'v> {
         ValueBag {
-            inner: internal::Internal::Float(v as f64)
+            inner: internal::Internal::Float(v as f64),
         }
     }
 
@@ -576,7 +579,7 @@ impl<'v> ValueBag<'v> {
     #[inline]
     pub const fn from_f64(v: f64) -> ValueBag<'v> {
         ValueBag {
-            inner: internal::Internal::Float(v)
+            inner: internal::Internal::Float(v),
         }
     }
 
@@ -584,7 +587,7 @@ impl<'v> ValueBag<'v> {
     #[inline]
     pub const fn from_bool(v: bool) -> ValueBag<'v> {
         ValueBag {
-            inner: internal::Internal::Bool(v)
+            inner: internal::Internal::Bool(v),
         }
     }
 
@@ -592,7 +595,7 @@ impl<'v> ValueBag<'v> {
     #[inline]
     pub const fn from_str(v: &'v str) -> ValueBag<'v> {
         ValueBag {
-            inner: internal::Internal::Str(v)
+            inner: internal::Internal::Str(v),
         }
     }
 
@@ -600,7 +603,7 @@ impl<'v> ValueBag<'v> {
     #[inline]
     pub const fn from_char(v: char) -> ValueBag<'v> {
         ValueBag {
-            inner: internal::Internal::Char(v)
+            inner: internal::Internal::Char(v),
         }
     }
 

@@ -1,4 +1,9 @@
-use crate::{internal, ValueBag};
+use crate::{
+    fill::Fill,
+    internal::{self, Internal},
+    std::sync::Arc,
+    ValueBag,
+};
 
 /// A dynamic structured value.
 ///
@@ -22,6 +27,95 @@ impl<'v> ValueBag<'v> {
     }
 }
 
+impl ValueBag<'static> {
+    /// Get a value from an owned, sharable, debuggable type.
+    ///
+    /// This method will attempt to capture the given value as a well-known primitive
+    /// before resorting to using its `Debug` implementation.
+    ///
+    /// The value will be stored in an `Arc` for cheap cloning.
+    pub fn capture_shared_debug<T>(value: T) -> Self
+    where
+        T: internal::fmt::Debug + Send + Sync + 'static,
+    {
+        Self::try_capture_owned(&value).unwrap_or_else(|| ValueBag {
+            inner: Internal::SharedDebug(Arc::new(value)),
+        })
+    }
+
+    /// Get a value from an owned, sharable, displayable type.
+    ///
+    /// This method will attempt to capture the given value as a well-known primitive
+    /// before resorting to using its `Display` implementation.
+    ///
+    /// The value will be stored in an `Arc` for cheap cloning.
+    pub fn capture_shared_display<T>(value: T) -> Self
+    where
+        T: internal::fmt::Display + Send + Sync + 'static,
+    {
+        Self::try_capture_owned(&value).unwrap_or_else(|| ValueBag {
+            inner: Internal::SharedDisplay(Arc::new(value)),
+        })
+    }
+
+    /// Get a value from an owned, shared, fillable slot.
+    ///
+    /// The value will be stored in an `Arc` for cheap cloning.
+    pub fn capture_shared_fill<T>(value: T) -> Self
+    where
+        T: Fill + Send + Sync + 'static,
+    {
+        ValueBag {
+            inner: Internal::SharedFill(Arc::new(value)),
+        }
+    }
+
+    /// Get a value from an owned, shared error.
+    ///
+    /// The value will be stored in an `Arc` for cheap cloning.
+    #[cfg(feature = "error")]
+    pub fn capture_shared_error<T>(value: T) -> Self
+    where
+        T: internal::error::Error + Send + Sync + 'static,
+    {
+        ValueBag {
+            inner: Internal::SharedError(Arc::new(value)),
+        }
+    }
+
+    /// Get a value from an owned, shared, structured type.
+    ///
+    /// This method will attempt to capture the given value as a well-known primitive
+    /// before resorting to using its `Value` implementation.
+    ///
+    /// The value will be stored in an `Arc` for cheap cloning.
+    #[cfg(feature = "sval2")]
+    pub fn capture_shared_sval2<T>(value: T) -> Self
+    where
+        T: value_bag_sval2::lib::Value + Send + Sync + 'static,
+    {
+        Self::try_capture_owned(&value).unwrap_or(ValueBag {
+            inner: Internal::SharedSval2(Arc::new(value)),
+        })
+    }
+
+    /// Get a value from an owned, shared, structured type.
+    ///
+    /// This method will attempt to capture the given value as a well-known primitive
+    /// before resorting to using its `Value` implementation.
+    ///
+    /// The value will be stored in an `Arc` for cheap cloning.
+    #[cfg(feature = "serde1")]
+    pub fn capture_shared_serde1<T>(value: T) -> Self
+    where
+        T: value_bag_serde1::lib::Serialize + Send + Sync + 'static,
+    {
+        Self::try_capture_owned(&value).unwrap_or(ValueBag {
+            inner: Internal::SharedSerde1(Arc::new(value)),
+        })
+    }
+}
+
 impl OwnedValueBag {
     /// Get a regular [`ValueBag`] from this type.
     ///
@@ -30,7 +124,7 @@ impl OwnedValueBag {
     ///
     /// - `fmt::Debug` won't use formatting flags.
     /// - `serde::Serialize` will use the text-based representation.
-    /// - The original type will change, so downcasting won't work.
+    /// - The original type may change, so downcasting can stop producing results.
     pub const fn by_ref<'v>(&'v self) -> ValueBag<'v> {
         ValueBag {
             inner: self.inner.by_ref(),
@@ -85,6 +179,18 @@ mod tests {
 
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn owned_fill_to_owned() {
+        let value =
+            ValueBag::capture_shared_fill(|slot: fill::Slot| slot.fill_any(42u64)).to_owned();
+
+        assert!(matches!(
+            value.inner,
+            internal::owned::OwnedInternal::SharedFill(_),
+        ));
+    }
+
+    #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn fmt_to_owned() {
         let debug = ValueBag::from_debug(&"a value").to_owned();
         let display = ValueBag::from_display(&"a value").to_owned();
@@ -106,6 +212,34 @@ mod tests {
 
         assert!(matches!(debug.inner, internal::Internal::AnonDebug(_)));
         assert!(matches!(display.inner, internal::Internal::AnonDisplay(_)));
+    }
+
+    #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn owned_fmt_to_owned() {
+        let debug = ValueBag::capture_shared_debug("a value".to_string()).to_owned();
+        let display = ValueBag::capture_shared_display("a value".to_string()).to_owned();
+
+        assert!(matches!(
+            debug.inner,
+            internal::owned::OwnedInternal::SharedDebug(_)
+        ));
+        assert!(matches!(
+            display.inner,
+            internal::owned::OwnedInternal::SharedDisplay(_)
+        ));
+
+        assert_eq!("\"a value\"", debug.to_string());
+        assert_eq!("a value", display.to_string());
+
+        let debug = debug.by_ref();
+        let display = display.by_ref();
+
+        assert!(matches!(debug.inner, internal::Internal::SharedRefDebug(_)));
+        assert!(matches!(
+            display.inner,
+            internal::Internal::SharedRefDisplay(_)
+        ));
     }
 
     #[test]
@@ -131,6 +265,28 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "error")]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn owned_error_to_owned() {
+        use crate::std::io;
+
+        let value = ValueBag::capture_shared_error(io::Error::new(
+            io::ErrorKind::Other,
+            "something failed!",
+        ))
+        .to_owned();
+
+        assert!(matches!(
+            value.inner,
+            internal::owned::OwnedInternal::SharedError(_)
+        ));
+
+        let value = value.by_ref();
+
+        assert!(matches!(value.inner, internal::Internal::SharedRefError(_)));
+    }
+
+    #[test]
     #[cfg(feature = "serde1")]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn serde1_to_owned() {
@@ -147,6 +303,25 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "serde1")]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn owned_serde1_to_owned() {
+        let value = ValueBag::capture_shared_serde1("a value".to_string()).to_owned();
+
+        assert!(matches!(
+            value.inner,
+            internal::owned::OwnedInternal::SharedSerde1(_)
+        ));
+
+        let value = value.by_ref();
+
+        assert!(matches!(
+            value.inner,
+            internal::Internal::SharedRefSerde1(_)
+        ));
+    }
+
+    #[test]
     #[cfg(feature = "sval2")]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn sval2_to_owned() {
@@ -160,5 +335,21 @@ mod tests {
         let value = value.by_ref();
 
         assert!(matches!(value.inner, internal::Internal::AnonSval2(_)));
+    }
+
+    #[test]
+    #[cfg(feature = "sval2")]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn owned_sval2_to_owned() {
+        let value = ValueBag::capture_shared_sval2("a value".to_string()).to_owned();
+
+        assert!(matches!(
+            value.inner,
+            internal::owned::OwnedInternal::SharedSval2(_)
+        ));
+
+        let value = value.by_ref();
+
+        assert!(matches!(value.inner, internal::Internal::SharedRefSval2(_)));
     }
 }

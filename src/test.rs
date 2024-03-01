@@ -7,10 +7,12 @@ use crate::{
     Error, ValueBag,
 };
 
+#[cfg(test)]
 pub(crate) trait IntoValueBag<'v> {
     fn into_value_bag(self) -> ValueBag<'v>;
 }
 
+#[cfg(test)]
 impl<'v, T> IntoValueBag<'v> for T
 where
     T: Into<ValueBag<'v>>,
@@ -62,6 +64,10 @@ impl<'v> ValueBag<'v> {
         struct TestVisitor(Option<TestToken>);
 
         impl<'v> internal::InternalVisitor<'v> for TestVisitor {
+            fn fill(&mut self, v: &dyn crate::fill::Fill) -> Result<(), Error> {
+                v.fill(crate::fill::Slot::new(self))
+            }
+
             fn debug(&mut self, v: &dyn fmt::Debug) -> Result<(), Error> {
                 self.0 = Some(TestToken::Str(format!("{:?}", v)));
                 Ok(())
