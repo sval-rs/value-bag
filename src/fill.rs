@@ -51,6 +51,11 @@ use super::{Error, ValueBag};
 pub trait Fill {
     /// Fill a value.
     fn fill(&self, slot: Slot) -> Result<(), Error>;
+
+    /// Fill a borrowed value.
+    fn fill_borrowed<'v>(&'v self, slot: Slot<'_, 'v>) -> Result<(), Error> {
+        self.fill(slot)
+    }
 }
 
 impl<F> Fill for F

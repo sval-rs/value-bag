@@ -285,6 +285,12 @@ impl<'v> Internal<'v> {
                 super::serde::v1::internal_visit(v, self)
             }
 
+            #[cfg(feature = "seq")]
+            fn seq<'a>(&mut self, seq: &dyn super::seq::ForEachValue<'a>) -> Result<(), Error> {
+                self.0 = Cast::None;
+                Ok(())
+            }
+
             fn poisoned(&mut self, _: &'static str) -> Result<(), Error> {
                 self.0 = Cast::None;
                 Ok(())

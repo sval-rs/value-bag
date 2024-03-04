@@ -234,6 +234,20 @@ impl<'v> Debug for ValueBag<'v> {
                 crate::internal::serde::v1::fmt(self.0, v)
             }
 
+            #[cfg(feature = "seq")]
+            fn seq<'c>(&mut self, seq: &dyn crate::internal::seq::ForEachValue<'c>) -> Result<(), Error> {
+                let mut list = self.0.debug_list();
+
+                seq.for_each(&mut |inner| {
+                    list.entry(&ValueBag { inner });
+                    crate::internal::seq::for_each_continue()
+                });
+
+                list.finish()?;
+
+                Ok(())
+            }
+
             fn poisoned(&mut self, msg: &'static str) -> Result<(), Error> {
                 write!(self.0, "<{msg}>")?;
 
@@ -339,6 +353,20 @@ impl<'v> Display for ValueBag<'v> {
                 v: &dyn crate::internal::serde::v1::Serialize,
             ) -> Result<(), Error> {
                 crate::internal::serde::v1::fmt(self.0, v)
+            }
+
+            #[cfg(feature = "seq")]
+            fn seq<'c>(&mut self, seq: &dyn crate::internal::seq::ForEachValue<'c>) -> Result<(), Error> {
+                let mut list = self.0.debug_list();
+
+                seq.for_each(&mut |inner| {
+                    list.entry(&ValueBag { inner });
+                    crate::internal::seq::for_each_continue()
+                });
+
+                list.finish()?;
+
+                Ok(())
             }
 
             fn poisoned(&mut self, msg: &'static str) -> Result<(), Error> {

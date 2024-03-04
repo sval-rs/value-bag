@@ -14,6 +14,8 @@ pub(crate) mod fmt;
 pub(crate) mod serde;
 #[cfg(feature = "sval2")]
 pub(crate) mod sval;
+#[cfg(feature = "seq")]
+pub(crate) mod seq;
 
 #[cfg(feature = "owned")]
 pub(crate) mod owned;
@@ -102,6 +104,10 @@ pub(crate) enum Internal<'v> {
 /// The internal serialization contract.
 pub(crate) trait InternalVisitor<'v> {
     fn fill(&mut self, v: &dyn Fill) -> Result<(), Error>;
+
+    fn borrowed_fill(&mut self, v: &'v dyn Fill) -> Result<(), Error> {
+        self.fill(v)
+    }
 
     #[cfg(feature = "owned")]
     fn shared_fill(&mut self, v: &Arc<dyn Fill + Send + Sync>) -> Result<(), Error> {
@@ -193,12 +199,24 @@ pub(crate) trait InternalVisitor<'v> {
         self.serde1(v.as_super())
     }
 
+    #[cfg(feature = "seq")]
+    fn seq<'a>(&mut self, seq: &dyn seq::ForEachValue<'a>) -> Result<(), Error>;
+
+    #[cfg(feature = "seq")]
+    fn borrowed_seq(&mut self, seq: &dyn seq::ForEachValue<'v>) -> Result<(), Error> {
+        self.seq(seq)
+    }
+
     fn poisoned(&mut self, msg: &'static str) -> Result<(), Error>;
 }
 
 impl<'a, 'v, V: InternalVisitor<'v> + ?Sized> InternalVisitor<'v> for &'a mut V {
     fn fill(&mut self, v: &dyn Fill) -> Result<(), Error> {
         (**self).fill(v)
+    }
+
+    fn borrowed_fill(&mut self, v: &'v dyn Fill) -> Result<(), Error> {
+        (**self).borrowed_fill(v)
     }
 
     #[cfg(feature = "owned")]
@@ -341,6 +359,16 @@ impl<'a, 'v, V: InternalVisitor<'v> + ?Sized> InternalVisitor<'v> for &'a mut V 
     ) -> Result<(), Error> {
         (**self).shared_serde1(v)
     }
+    
+    #[cfg(feature = "seq")]
+    fn seq<'b>(&mut self, seq: &dyn seq::ForEachValue<'b>) -> Result<(), Error> {
+        (**self).seq(seq)
+    }
+
+    #[cfg(feature = "seq")]
+    fn borrowed_seq(&mut self, seq: &dyn seq::ForEachValue<'v>) -> Result<(), Error> {
+        (**self).borrowed_seq(seq)
+    }
 
     fn poisoned(&mut self, msg: &'static str) -> Result<(), Error> {
         (**self).poisoned(msg)
@@ -444,7 +472,7 @@ impl<'v> Internal<'v> {
             Internal::Str(value) => visitor.borrowed_str(value),
             Internal::None => visitor.none(),
 
-            Internal::Fill(value) => visitor.fill(*value),
+            Internal::Fill(value) => visitor.borrowed_fill(*value),
 
             Internal::AnonDebug(value) => visitor.borrowed_debug(*value),
             Internal::Debug(value) => visitor.borrowed_debug(value.as_super()),
