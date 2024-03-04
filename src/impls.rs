@@ -2,6 +2,45 @@
 
 use super::{Error, ValueBag};
 
+macro_rules! convert_primitive {
+    ($($t:ty: $from:ident, $to:ident,)*) => {
+        $(
+            impl<'v> From<$t> for ValueBag<'v> {
+                #[inline]
+                fn from(v: $t) -> Self {
+                    ValueBag::$from(v)
+                }
+            }
+
+            impl<'a, 'v> From<&'a $t> for ValueBag<'v> {
+                #[inline]
+                fn from(v: &'a $t) -> Self {
+                    ValueBag::$from(*v)
+                }
+            }
+
+            impl<'v> From<Option<$t>> for ValueBag<'v> {
+                #[inline]
+                fn from(v: Option<$t>) -> Self {
+                    ValueBag::from_option(v)
+                }
+            }
+
+            impl<'v> TryFrom<ValueBag<'v>> for $t {
+                type Error = Error;
+
+                #[inline]
+                fn try_from(v: ValueBag<'v>) -> Result<Self, Error> {
+                    v.$to()
+                        .ok_or_else(|| Error::msg("conversion failed"))?
+                        .try_into()
+                        .map_err(|_| Error::msg("conversion failed"))
+                }
+            }
+        )*
+    };
+}
+
 impl<'v> From<()> for ValueBag<'v> {
     #[inline]
     fn from(_: ()) -> Self {
@@ -9,259 +48,28 @@ impl<'v> From<()> for ValueBag<'v> {
     }
 }
 
-impl<'v> From<u8> for ValueBag<'v> {
+impl<'a, 'v> From<&'a ()> for ValueBag<'v> {
     #[inline]
-    fn from(v: u8) -> Self {
-        ValueBag::from_u8(v)
+    fn from(_: &'a ()) -> Self {
+        ValueBag::empty()
     }
 }
 
-impl<'v> From<Option<u8>> for ValueBag<'v> {
-    #[inline]
-    fn from(v: Option<u8>) -> Self {
-        ValueBag::from_option(v)
-    }
-}
-
-impl<'v> TryFrom<ValueBag<'v>> for u8 {
-    type Error = Error;
-
-    #[inline]
-    fn try_from(v: ValueBag<'v>) -> Result<Self, Error> {
-        v.to_u64()
-            .ok_or_else(|| Error::msg("conversion failed"))?
-            .try_into()
-            .map_err(|_| Error::msg("conversion failed"))
-    }
-}
-
-impl<'v> From<u16> for ValueBag<'v> {
-    #[inline]
-    fn from(v: u16) -> Self {
-        ValueBag::from_u16(v)
-    }
-}
-
-impl<'v> From<Option<u16>> for ValueBag<'v> {
-    #[inline]
-    fn from(v: Option<u16>) -> Self {
-        ValueBag::from_option(v)
-    }
-}
-
-impl<'v> TryFrom<ValueBag<'v>> for u16 {
-    type Error = Error;
-
-    #[inline]
-    fn try_from(v: ValueBag<'v>) -> Result<Self, Error> {
-        v.to_u64()
-            .ok_or_else(|| Error::msg("conversion failed"))?
-            .try_into()
-            .map_err(|_| Error::msg("conversion failed"))
-    }
-}
-
-impl<'v> From<u32> for ValueBag<'v> {
-    #[inline]
-    fn from(v: u32) -> Self {
-        ValueBag::from_u32(v)
-    }
-}
-
-impl<'v> From<Option<u32>> for ValueBag<'v> {
-    #[inline]
-    fn from(v: Option<u32>) -> Self {
-        ValueBag::from_option(v)
-    }
-}
-
-impl<'v> TryFrom<ValueBag<'v>> for u32 {
-    type Error = Error;
-
-    #[inline]
-    fn try_from(v: ValueBag<'v>) -> Result<Self, Error> {
-        v.to_u64()
-            .ok_or_else(|| Error::msg("conversion failed"))?
-            .try_into()
-            .map_err(|_| Error::msg("conversion failed"))
-    }
-}
-
-impl<'v> From<u64> for ValueBag<'v> {
-    #[inline]
-    fn from(v: u64) -> Self {
-        ValueBag::from_u64(v)
-    }
-}
-
-impl<'v> From<Option<u64>> for ValueBag<'v> {
-    #[inline]
-    fn from(v: Option<u64>) -> Self {
-        ValueBag::from_option(v)
-    }
-}
-
-impl<'v> TryFrom<ValueBag<'v>> for u64 {
-    type Error = Error;
-
-    #[inline]
-    fn try_from(v: ValueBag<'v>) -> Result<Self, Error> {
-        v.to_u64().ok_or_else(|| Error::msg("conversion failed"))
-    }
-}
-
-impl<'v> From<usize> for ValueBag<'v> {
-    #[inline]
-    fn from(v: usize) -> Self {
-        ValueBag::from_usize(v)
-    }
-}
-
-impl<'v> From<Option<usize>> for ValueBag<'v> {
-    #[inline]
-    fn from(v: Option<usize>) -> Self {
-        ValueBag::from_option(v)
-    }
-}
-
-impl<'v> TryFrom<ValueBag<'v>> for usize {
-    type Error = Error;
-
-    #[inline]
-    fn try_from(v: ValueBag<'v>) -> Result<Self, Error> {
-        v.to_u64()
-            .ok_or_else(|| Error::msg("conversion failed"))?
-            .try_into()
-            .map_err(|_| Error::msg("conversion failed"))
-    }
-}
-
-impl<'v> From<i8> for ValueBag<'v> {
-    #[inline]
-    fn from(v: i8) -> Self {
-        ValueBag::from_i8(v)
-    }
-}
-
-impl<'v> From<Option<i8>> for ValueBag<'v> {
-    #[inline]
-    fn from(v: Option<i8>) -> Self {
-        ValueBag::from_option(v)
-    }
-}
-
-impl<'v> TryFrom<ValueBag<'v>> for i8 {
-    type Error = Error;
-
-    #[inline]
-    fn try_from(v: ValueBag<'v>) -> Result<Self, Error> {
-        v.to_i64()
-            .ok_or_else(|| Error::msg("conversion failed"))?
-            .try_into()
-            .map_err(|_| Error::msg("conversion failed"))
-    }
-}
-
-impl<'v> From<i16> for ValueBag<'v> {
-    #[inline]
-    fn from(v: i16) -> Self {
-        ValueBag::from_i16(v)
-    }
-}
-
-impl<'v> From<Option<i16>> for ValueBag<'v> {
-    #[inline]
-    fn from(v: Option<i16>) -> Self {
-        ValueBag::from_option(v)
-    }
-}
-
-impl<'v> TryFrom<ValueBag<'v>> for i16 {
-    type Error = Error;
-
-    #[inline]
-    fn try_from(v: ValueBag<'v>) -> Result<Self, Error> {
-        v.to_i64()
-            .ok_or_else(|| Error::msg("conversion failed"))?
-            .try_into()
-            .map_err(|_| Error::msg("conversion failed"))
-    }
-}
-
-impl<'v> From<i32> for ValueBag<'v> {
-    #[inline]
-    fn from(v: i32) -> Self {
-        ValueBag::from_i32(v)
-    }
-}
-
-impl<'v> From<Option<i32>> for ValueBag<'v> {
-    #[inline]
-    fn from(v: Option<i32>) -> Self {
-        ValueBag::from_option(v)
-    }
-}
-
-impl<'v> TryFrom<ValueBag<'v>> for i32 {
-    type Error = Error;
-
-    #[inline]
-    fn try_from(v: ValueBag<'v>) -> Result<Self, Error> {
-        v.to_i64()
-            .ok_or_else(|| Error::msg("conversion failed"))?
-            .try_into()
-            .map_err(|_| Error::msg("conversion failed"))
-    }
-}
-
-impl<'v> From<i64> for ValueBag<'v> {
-    #[inline]
-    fn from(v: i64) -> Self {
-        ValueBag::from_i64(v)
-    }
-}
-
-impl<'v> From<Option<i64>> for ValueBag<'v> {
-    #[inline]
-    fn from(v: Option<i64>) -> Self {
-        ValueBag::from_option(v)
-    }
-}
-
-impl<'v> TryFrom<ValueBag<'v>> for i64 {
-    type Error = Error;
-
-    #[inline]
-    fn try_from(v: ValueBag<'v>) -> Result<Self, Error> {
-        v.to_i64().ok_or_else(|| Error::msg("conversion failed"))
-    }
-}
-
-impl<'v> From<isize> for ValueBag<'v> {
-    #[inline]
-    fn from(v: isize) -> Self {
-        ValueBag::from_isize(v)
-    }
-}
-
-impl<'v> From<Option<isize>> for ValueBag<'v> {
-    #[inline]
-    fn from(v: Option<isize>) -> Self {
-        ValueBag::from_option(v)
-    }
-}
-
-impl<'v> TryFrom<ValueBag<'v>> for isize {
-    type Error = Error;
-
-    #[inline]
-    fn try_from(v: ValueBag<'v>) -> Result<Self, Error> {
-        v.to_i64()
-            .ok_or_else(|| Error::msg("conversion failed"))?
-            .try_into()
-            .map_err(|_| Error::msg("conversion failed"))
-    }
-}
+convert_primitive!(
+    u8: from_u8, to_u64,
+    u16: from_u16, to_u64,
+    u32: from_u32, to_u64,
+    u64: from_u64, to_u64,
+    usize: from_usize, to_u64,
+    i8: from_i8, to_i64,
+    i16: from_i16, to_i64,
+    i32: from_i32, to_i64,
+    i64: from_i64, to_i64,
+    isize: from_isize, to_i64,
+    f64: from_f64, to_f64,
+    bool: from_bool, to_bool,
+    char: from_char, to_char,
+);
 
 impl<'v> From<f32> for ValueBag<'v> {
     #[inline]
@@ -277,134 +85,10 @@ impl<'v> From<Option<f32>> for ValueBag<'v> {
     }
 }
 
-impl<'v> From<f64> for ValueBag<'v> {
+impl<'a, 'v> From<&'a f32> for ValueBag<'v> {
     #[inline]
-    fn from(v: f64) -> Self {
-        ValueBag::from_f64(v)
-    }
-}
-
-impl<'v> From<Option<f64>> for ValueBag<'v> {
-    #[inline]
-    fn from(v: Option<f64>) -> Self {
-        ValueBag::from_option(v)
-    }
-}
-
-impl<'v> TryFrom<ValueBag<'v>> for f64 {
-    type Error = Error;
-
-    #[inline]
-    fn try_from(v: ValueBag<'v>) -> Result<Self, Error> {
-        v.to_f64()
-            .ok_or_else(|| Error::msg("conversion failed"))?
-            .try_into()
-            .map_err(|_| Error::msg("conversion failed"))
-    }
-}
-
-impl<'v> From<bool> for ValueBag<'v> {
-    #[inline]
-    fn from(v: bool) -> Self {
-        ValueBag::from_bool(v)
-    }
-}
-
-impl<'v> From<Option<bool>> for ValueBag<'v> {
-    #[inline]
-    fn from(v: Option<bool>) -> Self {
-        ValueBag::from_option(v)
-    }
-}
-
-impl<'v> TryFrom<ValueBag<'v>> for bool {
-    type Error = Error;
-
-    #[inline]
-    fn try_from(v: ValueBag<'v>) -> Result<Self, Error> {
-        v.to_bool().ok_or_else(|| Error::msg("conversion failed"))
-    }
-}
-
-impl<'v> From<char> for ValueBag<'v> {
-    #[inline]
-    fn from(v: char) -> Self {
-        ValueBag::from_char(v)
-    }
-}
-
-impl<'v> From<Option<char>> for ValueBag<'v> {
-    #[inline]
-    fn from(v: Option<char>) -> Self {
-        ValueBag::from_option(v)
-    }
-}
-
-impl<'v> TryFrom<ValueBag<'v>> for char {
-    type Error = Error;
-
-    #[inline]
-    fn try_from(v: ValueBag<'v>) -> Result<Self, Error> {
-        v.to_char().ok_or_else(|| Error::msg("conversion failed"))
-    }
-}
-
-impl<'v> From<&'v str> for ValueBag<'v> {
-    #[inline]
-    fn from(v: &'v str) -> Self {
-        ValueBag::from_str(v)
-    }
-}
-
-impl<'v> From<Option<&'v str>> for ValueBag<'v> {
-    #[inline]
-    fn from(v: Option<&'v str>) -> Self {
-        ValueBag::from_option(v)
-    }
-}
-
-impl<'v> TryFrom<ValueBag<'v>> for &'v str {
-    type Error = Error;
-
-    #[inline]
-    fn try_from(v: ValueBag<'v>) -> Result<Self, Error> {
-        v.to_borrowed_str()
-            .ok_or_else(|| Error::msg("conversion failed"))
-    }
-}
-
-impl<'a, 'v> From<&'a ()> for ValueBag<'v> {
-    #[inline]
-    fn from(_: &'a ()) -> Self {
-        ValueBag::empty()
-    }
-}
-
-impl<'a, 'v> From<&'a u8> for ValueBag<'v> {
-    #[inline]
-    fn from(v: &'a u8) -> Self {
-        ValueBag::from_u8(*v)
-    }
-}
-
-impl<'a, 'v> From<&'a u16> for ValueBag<'v> {
-    #[inline]
-    fn from(v: &'a u16) -> Self {
-        ValueBag::from_u16(*v)
-    }
-}
-
-impl<'a, 'v> From<&'a u32> for ValueBag<'v> {
-    #[inline]
-    fn from(v: &'a u32) -> Self {
-        ValueBag::from_u32(*v)
-    }
-}
-
-impl<'a, 'v> From<&'a u64> for ValueBag<'v> {
-    #[inline]
-    fn from(v: &'a u64) -> Self {
-        ValueBag::from_u64(*v)
+    fn from(v: &'a f32) -> Self {
+        ValueBag::from_f32(*v)
     }
 }
 
@@ -441,41 +125,6 @@ impl<'v> TryFrom<ValueBag<'v>> for u128 {
     }
 }
 
-impl<'a, 'v> From<&'a usize> for ValueBag<'v> {
-    #[inline]
-    fn from(v: &'a usize) -> Self {
-        ValueBag::from_usize(*v)
-    }
-}
-
-impl<'a, 'v> From<&'a i8> for ValueBag<'v> {
-    #[inline]
-    fn from(v: &'a i8) -> Self {
-        ValueBag::from_i8(*v)
-    }
-}
-
-impl<'a, 'v> From<&'a i16> for ValueBag<'v> {
-    #[inline]
-    fn from(v: &'a i16) -> Self {
-        ValueBag::from_i16(*v)
-    }
-}
-
-impl<'a, 'v> From<&'a i32> for ValueBag<'v> {
-    #[inline]
-    fn from(v: &'a i32) -> Self {
-        ValueBag::from_i32(*v)
-    }
-}
-
-impl<'a, 'v> From<&'a i64> for ValueBag<'v> {
-    #[inline]
-    fn from(v: &'a i64) -> Self {
-        ValueBag::from_i64(*v)
-    }
-}
-
 #[cfg(feature = "inline-i128")]
 impl<'a, 'v> From<&'a i128> for ValueBag<'v> {
     #[inline]
@@ -509,38 +158,27 @@ impl<'v> TryFrom<ValueBag<'v>> for i128 {
     }
 }
 
-impl<'a, 'v> From<&'a isize> for ValueBag<'v> {
+impl<'v> From<&'v str> for ValueBag<'v> {
     #[inline]
-    fn from(v: &'a isize) -> Self {
-        ValueBag::from_isize(*v)
+    fn from(v: &'v str) -> Self {
+        ValueBag::from_str(v)
     }
 }
 
-impl<'a, 'v> From<&'a f32> for ValueBag<'v> {
+impl<'v> From<Option<&'v str>> for ValueBag<'v> {
     #[inline]
-    fn from(v: &'a f32) -> Self {
-        ValueBag::from_f32(*v)
+    fn from(v: Option<&'v str>) -> Self {
+        ValueBag::from_option(v)
     }
 }
 
-impl<'a, 'v> From<&'a f64> for ValueBag<'v> {
-    #[inline]
-    fn from(v: &'a f64) -> Self {
-        ValueBag::from_f64(*v)
-    }
-}
+impl<'v> TryFrom<ValueBag<'v>> for &'v str {
+    type Error = Error;
 
-impl<'a, 'v> From<&'a bool> for ValueBag<'v> {
     #[inline]
-    fn from(v: &'a bool) -> Self {
-        ValueBag::from_bool(*v)
-    }
-}
-
-impl<'a, 'v> From<&'a char> for ValueBag<'v> {
-    #[inline]
-    fn from(v: &'a char) -> Self {
-        ValueBag::from_char(*v)
+    fn try_from(v: ValueBag<'v>) -> Result<Self, Error> {
+        v.to_borrowed_str()
+            .ok_or_else(|| Error::msg("conversion failed"))
     }
 }
 

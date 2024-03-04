@@ -1,10 +1,10 @@
-use crate::std::{ops::ControlFlow, fmt, marker::PhantomData};
+use crate::std::{fmt, marker::PhantomData, ops::ControlFlow};
 
 use crate::{
-    internal::{Internal, InternalVisitor},
-    Error, ValueBag,
     fill::{Fill, Slot},
+    internal::{Internal, InternalVisitor},
     visit::Visit,
+    Error, ValueBag,
 };
 
 pub fn for_each_continue() -> ControlFlow<()> {
@@ -19,7 +19,9 @@ pub(crate) fn visit<'a, 'v>(
     v: &dyn ForEachValue<'a>,
     visitor: &mut dyn Visit<'v>,
 ) -> Result<(), Error> {
-    visitor.visit_any(ValueBag::from_fill(&|slot: crate::fill::Slot| slot.fill(|visitor| visitor.seq(v))))
+    visitor.visit_any(ValueBag::from_fill(&|slot: crate::fill::Slot| {
+        slot.fill(|visitor| visitor.seq(v))
+    }))
 }
 
 #[derive(Default)]
@@ -75,6 +77,11 @@ impl<'v> Internal<'v> {
             #[inline]
             fn fill(&mut self, v: &dyn crate::fill::Fill) -> Result<(), Error> {
                 v.fill(crate::fill::Slot::new(self))
+            }
+
+            #[inline]
+            fn borrowed_fill(&mut self, v: &'v dyn crate::fill::Fill) -> Result<(), Error> {
+                v.fill_borrowed(crate::fill::Slot::new(self))
             }
 
             #[inline]

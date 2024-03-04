@@ -10,12 +10,12 @@ pub(crate) mod cast;
 pub(crate) mod error;
 pub(crate) mod fill;
 pub(crate) mod fmt;
+#[cfg(feature = "seq")]
+pub(crate) mod seq;
 #[cfg(feature = "serde1")]
 pub(crate) mod serde;
 #[cfg(feature = "sval2")]
 pub(crate) mod sval;
-#[cfg(feature = "seq")]
-pub(crate) mod seq;
 
 #[cfg(feature = "owned")]
 pub(crate) mod owned;
@@ -359,7 +359,7 @@ impl<'a, 'v, V: InternalVisitor<'v> + ?Sized> InternalVisitor<'v> for &'a mut V 
     ) -> Result<(), Error> {
         (**self).shared_serde1(v)
     }
-    
+
     #[cfg(feature = "seq")]
     fn seq<'b>(&mut self, seq: &dyn seq::ForEachValue<'b>) -> Result<(), Error> {
         (**self).seq(seq)
