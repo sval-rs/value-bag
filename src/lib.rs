@@ -93,7 +93,7 @@ extern crate alloc;
 #[allow(unused_imports)]
 mod std {
     pub use crate::{
-        alloc::{borrow, boxed, string},
+        alloc::{borrow, boxed, string, vec},
         core::*,
     };
 
@@ -119,9 +119,6 @@ pub mod test;
 mod owned;
 #[cfg(feature = "owned")]
 pub use self::owned::*;
-
-#[cfg(feature = "seq")]
-mod seq;
 
 pub use self::error::Error;
 

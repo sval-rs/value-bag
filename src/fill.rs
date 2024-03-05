@@ -40,8 +40,20 @@
 
 use crate::std::fmt;
 
-use super::internal::InternalVisitor;
+use super::internal::{Internal, InternalVisitor};
 use super::{Error, ValueBag};
+
+impl<'v> ValueBag<'v> {
+    /// Get a value from a fillable slot.
+    pub const fn from_fill<T>(value: &'v T) -> Self
+    where
+        T: Fill,
+    {
+        ValueBag {
+            inner: Internal::Fill(value),
+        }
+    }
+}
 
 /// A type that requires extra work to convert into a [`ValueBag`](../struct.ValueBag.html).
 ///
@@ -51,11 +63,6 @@ use super::{Error, ValueBag};
 pub trait Fill {
     /// Fill a value.
     fn fill(&self, slot: Slot) -> Result<(), Error>;
-
-    /// Fill a borrowed value.
-    fn fill_borrowed<'v>(&'v self, slot: Slot<'_, 'v>) -> Result<(), Error> {
-        self.fill(slot)
-    }
 }
 
 impl<F> Fill for F

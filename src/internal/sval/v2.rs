@@ -6,7 +6,7 @@
 use crate::{
     fill::Slot,
     internal::{Internal, InternalVisitor},
-    std::{any::Any, fmt},
+    std::{any::Any, fmt, ops::ControlFlow},
     Error, ValueBag,
 };
 
@@ -95,10 +95,6 @@ impl<'sval> value_bag_sval2::lib_ref::ValueRef<'sval> for ValueBag<'sval> {
                 v.fill(crate::fill::Slot::new(self))
             }
 
-            fn borrowed_fill(&mut self, v: &'v dyn crate::fill::Fill) -> Result<(), Error> {
-                v.fill_borrowed(crate::fill::Slot::new(self))
-            }
-
             fn debug(&mut self, v: &dyn fmt::Debug) -> Result<(), Error> {
                 value_bag_sval2::fmt::stream_debug(self.0, v).map_err(Error::from_sval2)
             }
@@ -169,6 +165,57 @@ impl<'sval> value_bag_sval2::lib_ref::ValueRef<'sval> for ValueBag<'sval> {
                 v: &dyn crate::internal::serde::v1::Serialize,
             ) -> Result<(), Error> {
                 crate::internal::serde::v1::sval2(self.0, v)
+            }
+
+            #[cfg(feature = "seq")]
+            fn seq(&mut self, v: &dyn crate::internal::seq::Seq) -> Result<(), Error> {
+                self.0.seq_begin(None).map_err(Error::from_sval2)?;
+
+                let mut r = ControlFlow::Continue(());
+                v.for_each(&mut |inner| {
+                    r = match (|| {
+                        self.0.seq_value_begin()?;
+                        value_bag_sval2::lib::stream_computed(&mut self.0, &ValueBag { inner })?;
+                        self.0.seq_value_end()
+                    })() {
+                        Ok(()) => ControlFlow::Continue(()),
+                        Err(_) => ControlFlow::Break(()),
+                    };
+
+                    r
+                });
+                if let ControlFlow::Break(()) = r {
+                    return Err(Error::from_sval2(value_bag_sval2::lib::Error::new()));
+                }
+
+                self.0.seq_end().map_err(Error::from_sval2)
+            }
+
+            #[cfg(feature = "seq")]
+            fn borrowed_seq(&mut self, v: &'v dyn crate::internal::seq::Seq) -> Result<(), Error> {
+                self.0.seq_begin(None).map_err(Error::from_sval2)?;
+
+                let mut r = ControlFlow::Continue(());
+                v.for_each(&mut |inner| {
+                    r = match (|| {
+                        self.0.seq_value_begin()?;
+                        value_bag_sval2::lib_ref::ValueRef::stream_ref(
+                            &ValueBag { inner },
+                            &mut self.0,
+                        )?;
+                        self.0.seq_value_end()
+                    })() {
+                        Ok(()) => ControlFlow::Continue(()),
+                        Err(_) => ControlFlow::Break(()),
+                    };
+
+                    r
+                });
+                if let ControlFlow::Break(()) = r {
+                    return Err(Error::from_sval2(value_bag_sval2::lib::Error::new()));
+                }
+
+                self.0.seq_end().map_err(Error::from_sval2)
             }
 
             fn poisoned(&mut self, msg: &'static str) -> Result<(), Error> {
@@ -318,7 +365,7 @@ impl Error {
 pub(crate) mod seq {
     use super::*;
 
-    use crate::seq::ExtendValue;
+    use crate::internal::seq::ExtendValue;
 
     #[inline]
     pub(crate) fn extend<'a, 'b, S: Default + ExtendValue<'a>>(v: &'b dyn Value) -> Option<S> {

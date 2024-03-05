@@ -324,8 +324,8 @@ impl<'v> ValueBag<'v> {
             }
 
             #[cfg(feature = "seq")]
-            fn seq<'a>(&mut self, v: &dyn internal::seq::ForEachValue<'a>) -> Result<(), Error> {
-                internal::seq::visit(v, &mut self.0)
+            fn seq(&mut self, v: &dyn internal::seq::Seq) -> Result<(), Error> {
+                self.0.visit_any(ValueBag::from_dyn_seq(v))
             }
 
             fn poisoned(&mut self, msg: &'static str) -> Result<(), Error> {

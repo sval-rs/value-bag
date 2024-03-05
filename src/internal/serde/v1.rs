@@ -6,7 +6,7 @@
 use crate::{
     fill::Slot,
     internal::{Internal, InternalVisitor},
-    std::{any::Any, fmt},
+    std::{any::Any, fmt, ops::ControlFlow},
     Error, ValueBag,
 };
 
@@ -191,6 +191,12 @@ impl<'v> value_bag_serde1::lib::Serialize for ValueBag<'v> {
                 self.result()
             }
 
+            #[cfg(feature = "seq")]
+            fn seq(&mut self, v: &dyn crate::internal::seq::Seq) -> Result<(), Error> {
+                self.result = Some(serialize_seq(self.serializer()?, v));
+                self.result()
+            }
+
             fn poisoned(&mut self, msg: &'static str) -> Result<(), Error> {
                 self.result = Some(Err(S::Error::custom(msg)));
                 self.result()
@@ -222,6 +228,32 @@ pub(in crate::internal) fn sval2<'sval, S: value_bag_sval2::lib::Stream<'sval> +
     v: &dyn Serialize,
 ) -> Result<(), Error> {
     value_bag_sval2::serde1::stream(s, v).map_err(Error::from_sval2)
+}
+
+#[cfg(feature = "seq")]
+fn serialize_seq<S: value_bag_serde1::lib::Serializer>(
+    s: S,
+    seq: &dyn crate::internal::seq::Seq,
+) -> Result<S::Ok, S::Error> {
+    use value_bag_serde1::lib::ser::SerializeSeq;
+
+    let mut s = s.serialize_seq(None)?;
+
+    let mut r = None;
+    seq.for_each(
+        &mut |inner| match s.serialize_element(&ValueBag { inner }) {
+            Ok(()) => ControlFlow::Continue(()),
+            Err(e) => {
+                r = Some(e);
+                ControlFlow::Break(())
+            }
+        },
+    );
+    if let Some(e) = r {
+        return Err(e);
+    }
+
+    s.end()
 }
 
 pub(crate) fn internal_visit<'v>(
@@ -446,7 +478,7 @@ impl value_bag_serde1::lib::ser::StdError for Unsupported {}
 pub(crate) mod seq {
     use super::*;
 
-    use crate::seq::ExtendValue;
+    use crate::internal::seq::ExtendValue;
 
     #[inline]
     pub(crate) fn extend<'a, S: Default + ExtendValue<'a>>(v: &dyn Serialize) -> Option<S> {

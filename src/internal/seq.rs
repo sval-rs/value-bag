@@ -1,27 +1,313 @@
-use crate::std::{fmt, marker::PhantomData, ops::ControlFlow};
-
 use crate::{
-    fill::{Fill, Slot},
     internal::{Internal, InternalVisitor},
-    visit::Visit,
+    std::{any::Any, fmt, marker::PhantomData, ops::ControlFlow},
     Error, ValueBag,
 };
 
-pub fn for_each_continue() -> ControlFlow<()> {
+impl<'v> ValueBag<'v> {
+    // NOTE: Not public
+    pub(crate) fn capture_seq<T>(value: &'v T) -> Self
+    where
+        T: Seq + 'static,
+    {
+        ValueBag {
+            inner: Internal::Seq(value),
+        }
+    }
+
+    pub(crate) const fn from_seq<T>(value: &'v T) -> Self
+    where
+        T: Seq,
+    {
+        ValueBag {
+            inner: Internal::AnonSeq(value),
+        }
+    }
+
+    pub(crate) const fn from_dyn_seq(value: &'v dyn Seq) -> Self {
+        ValueBag {
+            inner: Internal::AnonSeq(value),
+        }
+    }
+
+    /// Try get a collection `S` of `u64`s from this value.
+    ///
+    /// If this value is a sequence then the collection `S` will be extended
+    /// with the attempted conversion of each of its elements.
+    ///
+    /// If this value is not a sequence then this method will return `None`.
+    pub fn to_u64_seq<S: Default + Extend<Option<u64>>>(&self) -> Option<S> {
+        self.inner
+            .extend::<ExtendPrimitive<S, u64>>()
+            .map(|seq| seq.into_inner())
+    }
+
+    /// Try get a collection `S` of `i64`s from this value.
+    ///
+    /// If this value is a sequence then the collection `S` will be extended
+    /// with the attempted conversion of each of its elements.
+    ///
+    /// If this value is not a sequence then this method will return `None`.
+    pub fn to_i64_seq<S: Default + Extend<Option<i64>>>(&self) -> Option<S> {
+        self.inner
+            .extend::<ExtendPrimitive<S, i64>>()
+            .map(|seq| seq.into_inner())
+    }
+
+    /// Try get a collection `S` of `u128`s from this value.
+    ///
+    /// If this value is a sequence then the collection `S` will be extended
+    /// with the attempted conversion of each of its elements.
+    ///
+    /// If this value is not a sequence then this method will return `None`.
+    pub fn to_u128_seq<S: Default + Extend<Option<u128>>>(&self) -> Option<S> {
+        self.inner
+            .extend::<ExtendPrimitive<S, u128>>()
+            .map(|seq| seq.into_inner())
+    }
+
+    /// Try get a collection `S` of `i128`s from this value.
+    ///
+    /// If this value is a sequence then the collection `S` will be extended
+    /// with the attempted conversion of each of its elements.
+    ///
+    /// If this value is not a sequence then this method will return `None`.
+    pub fn to_i128_seq<S: Default + Extend<Option<i128>>>(&self) -> Option<S> {
+        self.inner
+            .extend::<ExtendPrimitive<S, i128>>()
+            .map(|seq| seq.into_inner())
+    }
+
+    /// Try get a collection `S` of `f64`s from this value.
+    ///
+    /// If this value is a sequence then the collection `S` will be extended
+    /// with the attempted conversion of each of its elements.
+    ///
+    /// If this value is not a sequence then this method will return `None`.
+    pub fn to_f64_seq<S: Default + Extend<Option<f64>>>(&self) -> Option<S> {
+        self.inner
+            .extend::<ExtendPrimitive<S, f64>>()
+            .map(|seq| seq.into_inner())
+    }
+
+    /// Get a collection `S` of `f64`s from this value.
+    ///
+    /// If this value is a sequence then the collection `S` will be extended
+    /// with the conversion of each of its elements. The conversion is the
+    /// same as [`ValueBag::as_f64`].
+    ///
+    /// If this value is not a sequence then this method will return an
+    /// empty collection.
+    ///
+    /// This is similar to [`ValueBag::to_f64_seq`], but can be more
+    /// convenient when there's no need to distinguish between an empty
+    /// collection and a non-collection, or between `f64` and non-`f64` elements.
+    pub fn as_f64_seq<S: Default + Extend<f64>>(&self) -> S {
+        #[derive(Default)]
+        struct ExtendF64<S>(S);
+
+        impl<'a, S: Extend<f64>> ExtendValue<'a> for ExtendF64<S> {
+            fn extend<'b>(&mut self, inner: Internal<'b>) {
+                self.0.extend(Some(ValueBag { inner }.as_f64()))
+            }
+        }
+
+        self.inner
+            .extend::<ExtendF64<S>>()
+            .map(|seq| seq.0)
+            .unwrap_or_default()
+    }
+
+    /// Try get a collection `S` of `bool`s from this value.
+    ///
+    /// If this value is a sequence then the collection `S` will be extended
+    /// with the attempted conversion of each of its elements.
+    ///
+    /// If this value is not a sequence then this method will return `None`.
+    pub fn to_bool_seq<S: Default + Extend<Option<bool>>>(&self) -> Option<S> {
+        self.inner
+            .extend::<ExtendPrimitive<S, bool>>()
+            .map(|seq| seq.into_inner())
+    }
+
+    /// Try get a collection `S` of strings from this value.
+    ///
+    /// If this value is a sequence then the collection `S` will be extended
+    /// with the attempted conversion of each of its elements.
+    ///
+    /// If this value is not a sequence then this method will return `None`.
+    #[inline]
+    pub fn to_borrowed_str_seq<S: Default + Extend<Option<&'v str>>>(&self) -> Option<S> {
+        #[derive(Default)]
+        struct ExtendStr<'a, S>(S, PhantomData<&'a str>);
+
+        impl<'a, S: Extend<Option<&'a str>>> ExtendValue<'a> for ExtendStr<'a, S> {
+            fn extend<'b>(&mut self, _: Internal<'b>) {
+                self.0.extend(Some(None::<&'a str>))
+            }
+
+            fn extend_borrowed(&mut self, inner: Internal<'a>) {
+                self.0.extend(Some(ValueBag { inner }.to_borrowed_str()))
+            }
+        }
+
+        self.inner.extend::<ExtendStr<'v, S>>().map(|seq| seq.0)
+    }
+}
+
+pub(crate) trait Seq {
+    fn for_each<'v>(&'v self, f: &mut dyn FnMut(Internal<'v>) -> ControlFlow<()>);
+}
+
+impl<'a, S: Seq + ?Sized> Seq for &'a S {
+    fn for_each<'v>(&'v self, f: &mut dyn FnMut(Internal<'v>) -> ControlFlow<()>) {
+        (**self).for_each(f)
+    }
+}
+
+impl<T, const N: usize> Seq for [T; N]
+where
+    for<'v> &'v T: Into<ValueBag<'v>>,
+{
+    fn for_each<'v>(&'v self, f: &mut dyn FnMut(Internal<'v>) -> ControlFlow<()>) {
+        for v in self.iter() {
+            if let ControlFlow::Break(()) = f(v.into().inner) {
+                return;
+            }
+        }
+    }
+}
+
+impl<T> Seq for [T]
+where
+    for<'v> &'v T: Into<ValueBag<'v>>,
+{
+    fn for_each<'v>(&'v self, f: &mut dyn FnMut(Internal<'v>) -> ControlFlow<()>) {
+        for v in self.iter() {
+            if let ControlFlow::Break(()) = f(v.into().inner) {
+                return;
+            }
+        }
+    }
+}
+
+#[repr(transparent)]
+struct Ref<T: ?Sized>(T);
+
+impl<T: ?Sized> Ref<T> {
+    fn new<'a>(v: &'a T) -> &'a Ref<T> {
+        // SAFETY: `T` and `Ref<T>` have the same ABI
+        unsafe { &*(v as *const T as *const Ref<T>) }
+    }
+}
+
+impl<'a, T: ?Sized, const N: usize> Seq for Ref<[&'a T; N]>
+where
+    &'a T: Into<ValueBag<'a>>,
+{
+    fn for_each<'v>(&'v self, f: &mut dyn FnMut(Internal<'v>) -> ControlFlow<()>) {
+        for v in self.0.iter() {
+            if let ControlFlow::Break(()) = f((*v).into().inner) {
+                return;
+            }
+        }
+    }
+}
+
+impl<'a, 'b, T: ?Sized> Seq for Ref<&'a [&'b T]>
+where
+    &'a T: Into<ValueBag<'a>>,
+{
+    fn for_each<'v>(&'v self, f: &mut dyn FnMut(Internal<'v>) -> ControlFlow<()>) {
+        for v in self.0.iter() {
+            if let ControlFlow::Break(()) = f((*v).into().inner) {
+                return;
+            }
+        }
+    }
+}
+
+pub(crate) trait DowncastSeq {
+    fn as_any(&self) -> &dyn Any;
+    fn as_super(&self) -> &dyn Seq;
+}
+
+impl<T: Seq + 'static> DowncastSeq for T {
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
+    fn as_super(&self) -> &dyn Seq {
+        self
+    }
+}
+
+impl<'a> Seq for dyn DowncastSeq + Send + Sync + 'a {
+    fn for_each<'v>(&'v self, f: &mut dyn FnMut(Internal<'v>) -> ControlFlow<()>) {
+        self.as_super().for_each(f)
+    }
+}
+
+macro_rules! convert_primitive(
+    ($($t:ty,)*) => {
+        $(
+            impl<'v, const N: usize> From<&'v [$t; N]> for ValueBag<'v> {
+                fn from(v: &'v [$t; N]) -> Self {
+                    ValueBag::capture_seq(v)
+                }
+            }
+
+            impl<'v, const N: usize> From<Option<&'v [$t; N]>> for ValueBag<'v> {
+                fn from(v: Option<&'v [$t; N]>) -> Self {
+                    ValueBag::from_option(v)
+                }
+            }
+
+            impl<'a, 'v> From<&'v &'a [$t]> for ValueBag<'v> {
+                fn from(v: &'v &'a [$t]) -> Self {
+                    ValueBag::from_seq(v)
+                }
+            }
+
+            impl<'a, 'v> From<Option<&'v &'a [$t]>> for ValueBag<'v> {
+                fn from(v: Option<&'v &'a [$t]>) -> Self {
+                    ValueBag::from_option(v)
+                }
+            }
+        )*
+    }
+);
+
+convert_primitive![
+    u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64, bool, char,
+];
+
+impl<'v, 'a, const N: usize> From<&'v [&'a str; N]> for ValueBag<'v> {
+    fn from(v: &'v [&'a str; N]) -> Self {
+        ValueBag::from_seq(Ref::new(v))
+    }
+}
+
+impl<'v, 'a, const N: usize> From<Option<&'v [&'a str; N]>> for ValueBag<'v> {
+    fn from(v: Option<&'v [&'a str; N]>) -> Self {
+        ValueBag::from_option(v)
+    }
+}
+
+impl<'v, 'a, 'b> From<&'v &'a [&'b str]> for ValueBag<'v> {
+    fn from(v: &'v &'a [&'b str]) -> Self {
+        ValueBag::from_seq(Ref::new(v))
+    }
+}
+
+impl<'v, 'a, 'b> From<Option<&'v &'a [&'b str]>> for ValueBag<'v> {
+    fn from(v: Option<&'v &'a [&'b str]>) -> Self {
+        ValueBag::from_option(v)
+    }
+}
+
+pub(crate) fn for_each_continue() -> ControlFlow<()> {
     ControlFlow::Continue(())
-}
-
-pub fn for_each_break() -> ControlFlow<()> {
-    ControlFlow::Break(())
-}
-
-pub(crate) fn visit<'a, 'v>(
-    v: &dyn ForEachValue<'a>,
-    visitor: &mut dyn Visit<'v>,
-) -> Result<(), Error> {
-    visitor.visit_any(ValueBag::from_fill(&|slot: crate::fill::Slot| {
-        slot.fill(|visitor| visitor.seq(v))
-    }))
 }
 
 #[derive(Default)]
@@ -50,24 +336,6 @@ pub(crate) trait ExtendValue<'v> {
     }
 }
 
-pub(crate) trait ForEachValue<'v> {
-    fn for_each(&self, f: &mut dyn FnMut(Internal<'v>) -> ControlFlow<()>);
-}
-
-impl<'v, F, I> ForEachValue<'v> for F
-where
-    F: Fn() -> I,
-    I: Iterator<Item = Internal<'v>>,
-{
-    fn for_each(&self, f: &mut dyn FnMut(Internal<'v>) -> ControlFlow<()>) {
-        for item in (self)() {
-            if let ControlFlow::Break(()) = f(item) {
-                return;
-            }
-        }
-    }
-}
-
 impl<'v> Internal<'v> {
     #[inline]
     pub(crate) fn extend<S: Default + ExtendValue<'v>>(&self) -> Option<S> {
@@ -77,11 +345,6 @@ impl<'v> Internal<'v> {
             #[inline]
             fn fill(&mut self, v: &dyn crate::fill::Fill) -> Result<(), Error> {
                 v.fill(crate::fill::Slot::new(self))
-            }
-
-            #[inline]
-            fn borrowed_fill(&mut self, v: &'v dyn crate::fill::Fill) -> Result<(), Error> {
-                v.fill_borrowed(crate::fill::Slot::new(self))
             }
 
             #[inline]
@@ -175,7 +438,7 @@ impl<'v> Internal<'v> {
                 Ok(())
             }
 
-            fn seq<'b>(&mut self, seq: &dyn ForEachValue<'b>) -> Result<(), Error> {
+            fn seq(&mut self, seq: &dyn Seq) -> Result<(), Error> {
                 let mut s = S::default();
 
                 seq.for_each(&mut |v| {
@@ -188,7 +451,7 @@ impl<'v> Internal<'v> {
                 Ok(())
             }
 
-            fn borrowed_seq(&mut self, seq: &dyn ForEachValue<'v>) -> Result<(), Error> {
+            fn borrowed_seq(&mut self, seq: &'v dyn Seq) -> Result<(), Error> {
                 let mut s = S::default();
 
                 seq.for_each(&mut |v| {
@@ -210,5 +473,95 @@ impl<'v> Internal<'v> {
         let _ = self.internal_visit(&mut visitor);
 
         visitor.0
+    }
+}
+
+#[cfg(feature = "alloc")]
+mod alloc_support {
+    use super::*;
+
+    use crate::std::borrow::Cow;
+
+    impl<'v> ValueBag<'v> {
+        /// Try get a collection `S` of strings from this value.
+        ///
+        /// If this value is a sequence then the collection `S` will be extended
+        /// with the attempted conversion of each of its elements.
+        ///
+        /// If this value is not a sequence then this method will return `None`.
+        #[inline]
+        pub fn to_str_seq<S: Default + Extend<Option<Cow<'v, str>>>>(&self) -> Option<S> {
+            #[derive(Default)]
+            struct ExtendStr<'a, S>(S, PhantomData<Cow<'a, str>>);
+
+            impl<'a, S: Extend<Option<Cow<'a, str>>>> ExtendValue<'a> for ExtendStr<'a, S> {
+                fn extend<'b>(&mut self, inner: Internal<'b>) {
+                    self.0.extend(Some(
+                        ValueBag { inner }
+                            .to_str()
+                            .map(|s| Cow::Owned(s.into_owned())),
+                    ))
+                }
+
+                fn extend_borrowed(&mut self, inner: Internal<'a>) {
+                    self.0.extend(Some(ValueBag { inner }.to_str()))
+                }
+            }
+
+            self.inner.extend::<ExtendStr<'v, S>>().map(|seq| seq.0)
+        }
+    }
+}
+
+#[cfg(feature = "owned")]
+pub(crate) mod owned {
+    use super::*;
+
+    use crate::{
+        owned::OwnedValueBag,
+        std::{boxed::Box, vec::Vec},
+    };
+
+    #[derive(Clone)]
+    pub(crate) struct OwnedSeq(Box<[OwnedValueBag]>);
+
+    impl Seq for OwnedSeq {
+        fn for_each<'v>(&'v self, f: &mut dyn FnMut(Internal<'v>) -> ControlFlow<()>) {
+            for item in self.0.iter() {
+                if let ControlFlow::Break(()) = f(item.by_ref().inner) {
+                    return;
+                }
+            }
+        }
+    }
+
+    pub(crate) fn buffer(v: &dyn Seq) -> Result<OwnedSeq, Error> {
+        let mut buf = Vec::new();
+
+        v.for_each(&mut |inner| {
+            buf.push(ValueBag { inner }.to_owned());
+            ControlFlow::Continue(())
+        });
+
+        Ok(OwnedSeq(buf.into_boxed_slice()))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::vec::Vec;
+
+    use super::*;
+
+    #[test]
+    fn to_borrowed_str_seq() {
+        let v = ["a", "b", "c"];
+
+        let v = ValueBag::from(&v);
+
+        assert_eq!(
+            Some(vec![Some("a"), Some("b"), Some("c")]),
+            v.to_borrowed_str_<Vec<Option<&str>>>()
+        );
     }
 }

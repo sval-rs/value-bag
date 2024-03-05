@@ -1,5 +1,4 @@
 use crate::{
-    fill::Fill,
     internal::{self, Internal},
     std::sync::Arc,
     ValueBag,
@@ -56,18 +55,6 @@ impl ValueBag<'static> {
         Self::try_capture_owned(&value).unwrap_or_else(|| ValueBag {
             inner: Internal::SharedDisplay(Arc::new(value)),
         })
-    }
-
-    /// Get a value from an owned, shared, fillable slot.
-    ///
-    /// The value will be stored in an `Arc` for cheap cloning.
-    pub fn capture_shared_fill<T>(value: T) -> Self
-    where
-        T: Fill + Send + Sync + 'static,
-    {
-        ValueBag {
-            inner: Internal::SharedFill(Arc::new(value)),
-        }
     }
 
     /// Get a value from an owned, shared error.
@@ -174,18 +161,6 @@ mod tests {
         assert!(matches!(
             value.inner,
             internal::owned::OwnedInternal::BigUnsigned(42)
-        ));
-    }
-
-    #[test]
-    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-    fn owned_fill_to_owned() {
-        let value =
-            ValueBag::capture_shared_fill(|slot: fill::Slot| slot.fill_any(42u64)).to_owned();
-
-        assert!(matches!(
-            value.inner,
-            internal::owned::OwnedInternal::SharedFill(_),
         ));
     }
 

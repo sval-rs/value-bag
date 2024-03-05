@@ -8,7 +8,6 @@ use crate::{fill::Fill, Error, ValueBag};
 pub(crate) mod cast;
 #[cfg(feature = "error")]
 pub(crate) mod error;
-pub(crate) mod fill;
 pub(crate) mod fmt;
 #[cfg(feature = "seq")]
 pub(crate) mod seq;
@@ -56,6 +55,8 @@ pub(crate) enum Internal<'v> {
     Sval2(&'v dyn sval::v2::DowncastValue),
     #[cfg(feature = "serde1")]
     Serde1(&'v dyn serde::v1::DowncastSerialize),
+    #[cfg(feature = "seq")]
+    Seq(&'v dyn seq::DowncastSeq),
 
     // Anonymous values
     AnonDebug(&'v dyn fmt::Debug),
@@ -66,10 +67,10 @@ pub(crate) enum Internal<'v> {
     AnonSval2(&'v dyn sval::v2::Value),
     #[cfg(feature = "serde1")]
     AnonSerde1(&'v dyn serde::v1::Serialize),
+    #[cfg(feature = "seq")]
+    AnonSeq(&'v dyn seq::Seq),
 
     // Shared values
-    #[cfg(feature = "owned")]
-    SharedFill(Arc<dyn Fill + Send + Sync>),
     #[cfg(feature = "owned")]
     SharedDebug(Arc<dyn fmt::DowncastDebug + Send + Sync>),
     #[cfg(feature = "owned")]
@@ -80,11 +81,11 @@ pub(crate) enum Internal<'v> {
     SharedSerde1(Arc<dyn serde::v1::DowncastSerialize + Send + Sync>),
     #[cfg(all(feature = "sval2", feature = "owned"))]
     SharedSval2(Arc<dyn sval::v2::DowncastValue + Send + Sync>),
+    #[cfg(all(feature = "seq", feature = "owned"))]
+    SharedSeq(Arc<dyn seq::DowncastSeq + Send + Sync>),
 
     // NOTE: These variants exist because we can't clone an `Arc` in `const` fns
     // (plus we may not want to anyways)
-    #[cfg(feature = "owned")]
-    SharedRefFill(&'v Arc<dyn Fill + Send + Sync>),
     #[cfg(feature = "owned")]
     SharedRefDebug(&'v Arc<dyn fmt::DowncastDebug + Send + Sync>),
     #[cfg(feature = "owned")]
@@ -95,6 +96,8 @@ pub(crate) enum Internal<'v> {
     SharedRefSerde1(&'v Arc<dyn serde::v1::DowncastSerialize + Send + Sync>),
     #[cfg(all(feature = "sval2", feature = "owned"))]
     SharedRefSval2(&'v Arc<dyn sval::v2::DowncastValue + Send + Sync>),
+    #[cfg(all(feature = "seq", feature = "owned"))]
+    SharedRefSeq(&'v Arc<dyn seq::DowncastSeq + Send + Sync>),
 
     // Poisoned value
     #[cfg_attr(not(feature = "owned"), allow(dead_code))]
@@ -104,15 +107,6 @@ pub(crate) enum Internal<'v> {
 /// The internal serialization contract.
 pub(crate) trait InternalVisitor<'v> {
     fn fill(&mut self, v: &dyn Fill) -> Result<(), Error>;
-
-    fn borrowed_fill(&mut self, v: &'v dyn Fill) -> Result<(), Error> {
-        self.fill(v)
-    }
-
-    #[cfg(feature = "owned")]
-    fn shared_fill(&mut self, v: &Arc<dyn Fill + Send + Sync>) -> Result<(), Error> {
-        self.fill(&**v)
-    }
 
     fn debug(&mut self, v: &dyn fmt::Debug) -> Result<(), Error>;
     fn borrowed_debug(&mut self, v: &'v dyn fmt::Debug) -> Result<(), Error> {
@@ -200,11 +194,16 @@ pub(crate) trait InternalVisitor<'v> {
     }
 
     #[cfg(feature = "seq")]
-    fn seq<'a>(&mut self, seq: &dyn seq::ForEachValue<'a>) -> Result<(), Error>;
+    fn seq(&mut self, v: &dyn seq::Seq) -> Result<(), Error>;
 
     #[cfg(feature = "seq")]
-    fn borrowed_seq(&mut self, seq: &dyn seq::ForEachValue<'v>) -> Result<(), Error> {
-        self.seq(seq)
+    fn borrowed_seq(&mut self, v: &'v dyn seq::Seq) -> Result<(), Error> {
+        self.seq(v)
+    }
+
+    #[cfg(all(feature = "seq", feature = "owned"))]
+    fn shared_seq(&mut self, v: &Arc<dyn seq::DowncastSeq + Send + Sync>) -> Result<(), Error> {
+        self.seq(v.as_super())
     }
 
     fn poisoned(&mut self, msg: &'static str) -> Result<(), Error>;
@@ -213,18 +212,6 @@ pub(crate) trait InternalVisitor<'v> {
 impl<'a, 'v, V: InternalVisitor<'v> + ?Sized> InternalVisitor<'v> for &'a mut V {
     fn fill(&mut self, v: &dyn Fill) -> Result<(), Error> {
         (**self).fill(v)
-    }
-
-    fn borrowed_fill(&mut self, v: &'v dyn Fill) -> Result<(), Error> {
-        (**self).borrowed_fill(v)
-    }
-
-    #[cfg(feature = "owned")]
-    fn shared_fill(&mut self, v: &Arc<dyn Fill + Send + Sync>) -> Result<(), Error>
-    where
-        Self: Sized,
-    {
-        (**self).shared_fill(v)
     }
 
     fn debug(&mut self, v: &dyn fmt::Debug) -> Result<(), Error> {
@@ -361,13 +348,18 @@ impl<'a, 'v, V: InternalVisitor<'v> + ?Sized> InternalVisitor<'v> for &'a mut V 
     }
 
     #[cfg(feature = "seq")]
-    fn seq<'b>(&mut self, seq: &dyn seq::ForEachValue<'b>) -> Result<(), Error> {
+    fn seq(&mut self, seq: &dyn seq::Seq) -> Result<(), Error> {
         (**self).seq(seq)
     }
 
     #[cfg(feature = "seq")]
-    fn borrowed_seq(&mut self, seq: &dyn seq::ForEachValue<'v>) -> Result<(), Error> {
+    fn borrowed_seq(&mut self, seq: &'v dyn seq::Seq) -> Result<(), Error> {
         (**self).borrowed_seq(seq)
+    }
+
+    #[cfg(all(feature = "seq", feature = "owned"))]
+    fn shared_seq(&mut self, seq: &Arc<dyn seq::DowncastSeq + Send + Sync>) -> Result<(), Error> {
+        (**self).shared_seq(seq)
     }
 
     fn poisoned(&mut self, msg: &'static str) -> Result<(), Error> {
@@ -420,8 +412,11 @@ impl<'v> Internal<'v> {
             #[cfg(feature = "serde1")]
             Internal::Serde1(value) => Internal::Serde1(*value),
 
-            #[cfg(feature = "owned")]
-            Internal::SharedFill(ref value) => Internal::SharedRefFill(value),
+            #[cfg(feature = "seq")]
+            Internal::Seq(value) => Internal::Seq(*value),
+            #[cfg(feature = "seq")]
+            Internal::AnonSeq(value) => Internal::AnonSeq(*value),
+
             #[cfg(feature = "owned")]
             Internal::SharedDebug(ref value) => Internal::SharedRefDebug(value),
             #[cfg(feature = "owned")]
@@ -432,9 +427,9 @@ impl<'v> Internal<'v> {
             Internal::SharedSerde1(ref value) => Internal::SharedRefSerde1(value),
             #[cfg(all(feature = "sval2", feature = "owned"))]
             Internal::SharedSval2(ref value) => Internal::SharedRefSval2(value),
+            #[cfg(all(feature = "seq", feature = "owned"))]
+            Internal::SharedSeq(ref value) => Internal::SharedRefSeq(value),
 
-            #[cfg(feature = "owned")]
-            Internal::SharedRefFill(value) => Internal::SharedRefFill(*value),
             #[cfg(feature = "owned")]
             Internal::SharedRefDebug(value) => Internal::SharedRefDebug(*value),
             #[cfg(feature = "owned")]
@@ -445,6 +440,8 @@ impl<'v> Internal<'v> {
             Internal::SharedRefSerde1(value) => Internal::SharedRefSerde1(*value),
             #[cfg(all(feature = "sval2", feature = "owned"))]
             Internal::SharedRefSval2(value) => Internal::SharedRefSval2(*value),
+            #[cfg(all(feature = "seq", feature = "owned"))]
+            Internal::SharedRefSeq(value) => Internal::SharedRefSeq(*value),
 
             Internal::Poisoned(msg) => Internal::Poisoned(msg),
         }
@@ -472,7 +469,7 @@ impl<'v> Internal<'v> {
             Internal::Str(value) => visitor.borrowed_str(value),
             Internal::None => visitor.none(),
 
-            Internal::Fill(value) => visitor.borrowed_fill(*value),
+            Internal::Fill(value) => visitor.fill(*value),
 
             Internal::AnonDebug(value) => visitor.borrowed_debug(*value),
             Internal::Debug(value) => visitor.borrowed_debug(value.as_super()),
@@ -495,8 +492,11 @@ impl<'v> Internal<'v> {
             #[cfg(feature = "serde1")]
             Internal::Serde1(value) => visitor.borrowed_serde1(value.as_super()),
 
-            #[cfg(feature = "owned")]
-            Internal::SharedFill(ref value) => visitor.shared_fill(value),
+            #[cfg(feature = "seq")]
+            Internal::AnonSeq(value) => visitor.borrowed_seq(*value),
+            #[cfg(feature = "seq")]
+            Internal::Seq(value) => visitor.borrowed_seq(value.as_super()),
+
             #[cfg(feature = "owned")]
             Internal::SharedDebug(ref value) => visitor.shared_debug(value),
             #[cfg(feature = "owned")]
@@ -507,9 +507,9 @@ impl<'v> Internal<'v> {
             Internal::SharedSerde1(ref value) => visitor.shared_serde1(value),
             #[cfg(all(feature = "sval2", feature = "owned"))]
             Internal::SharedSval2(ref value) => visitor.shared_sval2(value),
+            #[cfg(all(feature = "seq", feature = "owned"))]
+            Internal::SharedSeq(value) => visitor.shared_seq(value),
 
-            #[cfg(feature = "owned")]
-            Internal::SharedRefFill(value) => visitor.shared_fill(value),
             #[cfg(feature = "owned")]
             Internal::SharedRefDebug(value) => visitor.shared_debug(value),
             #[cfg(feature = "owned")]
@@ -520,6 +520,8 @@ impl<'v> Internal<'v> {
             Internal::SharedRefSerde1(value) => visitor.shared_serde1(value),
             #[cfg(all(feature = "sval2", feature = "owned"))]
             Internal::SharedRefSval2(value) => visitor.shared_sval2(value),
+            #[cfg(all(feature = "seq", feature = "owned"))]
+            Internal::SharedRefSeq(value) => visitor.shared_seq(value),
 
             Internal::Poisoned(msg) => visitor.poisoned(*msg),
         }

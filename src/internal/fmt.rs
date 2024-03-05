@@ -235,10 +235,7 @@ impl<'v> Debug for ValueBag<'v> {
             }
 
             #[cfg(feature = "seq")]
-            fn seq<'c>(
-                &mut self,
-                seq: &dyn crate::internal::seq::ForEachValue<'c>,
-            ) -> Result<(), Error> {
+            fn seq(&mut self, seq: &dyn crate::internal::seq::Seq) -> Result<(), Error> {
                 let mut list = self.0.debug_list();
 
                 seq.for_each(&mut |inner| {
@@ -359,10 +356,7 @@ impl<'v> Display for ValueBag<'v> {
             }
 
             #[cfg(feature = "seq")]
-            fn seq<'c>(
-                &mut self,
-                seq: &dyn crate::internal::seq::ForEachValue<'c>,
-            ) -> Result<(), Error> {
+            fn seq(&mut self, seq: &dyn crate::internal::seq::Seq) -> Result<(), Error> {
                 let mut list = self.0.debug_list();
 
                 seq.for_each(&mut |inner| {
