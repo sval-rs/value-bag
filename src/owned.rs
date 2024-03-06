@@ -101,6 +101,39 @@ impl ValueBag<'static> {
             inner: Internal::SharedSerde1(Arc::new(value)),
         })
     }
+
+    /// Get a value from an owned, shared, sequence.
+    ///
+    /// The value will be stored in an `Arc` for cheap cloning.
+    #[cfg(feature = "seq")]
+    pub fn capture_shared_seq_slice<I, T>(value: I) -> Self
+    where
+        I: AsRef<[T]> + Send + Sync + 'static,
+        T: Send + Sync + 'static,
+        for<'v> &'v T: Into<ValueBag<'v>>,
+    {
+        use crate::std::{marker::PhantomData, ops::ControlFlow};
+
+        struct OwnedSeqSlice<I: ?Sized, T>(PhantomData<[T]>, I);
+
+        impl<I, T> internal::seq::Seq for OwnedSeqSlice<I, T>
+        where
+            I: AsRef<[T]> + ?Sized,
+            for<'v> &'v T: Into<ValueBag<'v>>,
+        {
+            fn for_each<'v>(&'v self, f: &mut dyn FnMut(Internal<'v>) -> ControlFlow<()>) {
+                for v in self.1.as_ref().iter() {
+                    if let ControlFlow::Break(()) = f(v.into().inner) {
+                        return;
+                    }
+                }
+            }
+        }
+
+        Self::try_capture_owned(&value).unwrap_or(ValueBag {
+            inner: Internal::SharedSeq(Arc::new(OwnedSeqSlice(PhantomData, value))),
+        })
+    }
 }
 
 impl OwnedValueBag {

@@ -55,8 +55,6 @@ pub(crate) enum Internal<'v> {
     Sval2(&'v dyn sval::v2::DowncastValue),
     #[cfg(feature = "serde1")]
     Serde1(&'v dyn serde::v1::DowncastSerialize),
-    #[cfg(feature = "seq")]
-    Seq(&'v dyn seq::DowncastSeq),
 
     // Anonymous values
     AnonDebug(&'v dyn fmt::Debug),
@@ -413,8 +411,6 @@ impl<'v> Internal<'v> {
             Internal::Serde1(value) => Internal::Serde1(*value),
 
             #[cfg(feature = "seq")]
-            Internal::Seq(value) => Internal::Seq(*value),
-            #[cfg(feature = "seq")]
             Internal::AnonSeq(value) => Internal::AnonSeq(*value),
 
             #[cfg(feature = "owned")]
@@ -494,8 +490,6 @@ impl<'v> Internal<'v> {
 
             #[cfg(feature = "seq")]
             Internal::AnonSeq(value) => visitor.borrowed_seq(*value),
-            #[cfg(feature = "seq")]
-            Internal::Seq(value) => visitor.borrowed_seq(value.as_super()),
 
             #[cfg(feature = "owned")]
             Internal::SharedDebug(ref value) => visitor.shared_debug(value),

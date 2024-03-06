@@ -145,8 +145,6 @@ impl<'v> ValueBag<'v> {
             Internal::Sval2(value) => value.as_any().downcast_ref(),
             #[cfg(feature = "serde1")]
             Internal::Serde1(value) => value.as_any().downcast_ref(),
-            #[cfg(feature = "seq")]
-            Internal::Seq(value) => value.as_any().downcast_ref(),
 
             #[cfg(feature = "owned")]
             Internal::SharedDebug(ref value) => value.as_any().downcast_ref(),

@@ -1,26 +1,19 @@
 use crate::{
+    fill::Slot,
     internal::{Internal, InternalVisitor},
-    std::{any::Any, fmt, marker::PhantomData, ops::ControlFlow},
+    std::{any::Any, fmt, marker::PhantomData, mem, ops::ControlFlow},
     Error, ValueBag,
 };
 
 impl<'v> ValueBag<'v> {
-    // NOTE: Not public
-    pub(crate) fn capture_seq<T>(value: &'v T) -> Self
+    /// Get a value from a sequence of values without capturing support.
+    pub fn from_seq_slice<I, T>(value: &'v I) -> Self
     where
-        T: Seq + 'static,
+        I: AsRef<[T]>,
+        &'v T: Into<ValueBag<'v>> + 'v,
     {
         ValueBag {
-            inner: Internal::Seq(value),
-        }
-    }
-
-    pub(crate) const fn from_seq<T>(value: &'v T) -> Self
-    where
-        T: Seq,
-    {
-        ValueBag {
-            inner: Internal::AnonSeq(value),
+            inner: Internal::AnonSeq(SeqSlice::new_ref(value)),
         }
     }
 
@@ -155,6 +148,57 @@ impl<'v> ValueBag<'v> {
     }
 }
 
+impl<'s, 'f> Slot<'s, 'f> {
+    /// Fill the slot with a sequence of values.
+    ///
+    /// The given value doesn't need to satisfy any particular lifetime constraints.
+    pub fn fill_seq_slice<I, T>(self, value: &'f I) -> Result<(), Error>
+    where
+        I: AsRef<[T]>,
+        &'f T: Into<ValueBag<'f>> + 'f,
+    {
+        self.fill(|visitor| visitor.seq(SeqSlice::new_ref(value)))
+    }
+}
+
+/*
+This is a bit of an ugly way of working around the gulf between
+lifetimes expressed externally as bounds, and lifetimes implied
+on methods.
+*/
+
+#[repr(transparent)]
+struct SeqSlice<'a, I: ?Sized, T>(PhantomData<&'a [T]>, I);
+
+impl<'a, I: AsRef<[T]> + ?Sized + 'a, T> SeqSlice<'a, I, T> {
+    fn new_ref(v: &'a I) -> &'a SeqSlice<'a, I, T> {
+        // SAFETY: `SeqSlice<'a, I, T>` and `I` have the same ABI
+        unsafe { &*(v as *const I as *const SeqSlice<'a, I, T>) }
+    }
+
+    fn as_ref<'b>(&'b self) -> &'a [T] {
+        // SAFETY: `new_ref` requires there's a borrow of `&'a I`
+        // on the borrow stack, so we can safely borrow it for `'a` here
+        let inner = unsafe { mem::transmute::<&'b I, &'a I>(&self.1) };
+
+        inner.as_ref()
+    }
+}
+
+impl<'a, I, T> Seq for SeqSlice<'a, I, T>
+where
+    I: AsRef<[T]> + ?Sized + 'a,
+    &'a T: Into<ValueBag<'a>>,
+{
+    fn for_each<'v>(&'v self, f: &mut dyn FnMut(Internal<'v>) -> ControlFlow<()>) {
+        for v in self.as_ref().iter() {
+            if let ControlFlow::Break(()) = f(v.into().inner) {
+                return;
+            }
+        }
+    }
+}
+
 pub(crate) trait Seq {
     fn for_each<'v>(&'v self, f: &mut dyn FnMut(Internal<'v>) -> ControlFlow<()>);
 }
@@ -162,68 +206,6 @@ pub(crate) trait Seq {
 impl<'a, S: Seq + ?Sized> Seq for &'a S {
     fn for_each<'v>(&'v self, f: &mut dyn FnMut(Internal<'v>) -> ControlFlow<()>) {
         (**self).for_each(f)
-    }
-}
-
-impl<T, const N: usize> Seq for [T; N]
-where
-    for<'v> &'v T: Into<ValueBag<'v>>,
-{
-    fn for_each<'v>(&'v self, f: &mut dyn FnMut(Internal<'v>) -> ControlFlow<()>) {
-        for v in self.iter() {
-            if let ControlFlow::Break(()) = f(v.into().inner) {
-                return;
-            }
-        }
-    }
-}
-
-impl<T> Seq for [T]
-where
-    for<'v> &'v T: Into<ValueBag<'v>>,
-{
-    fn for_each<'v>(&'v self, f: &mut dyn FnMut(Internal<'v>) -> ControlFlow<()>) {
-        for v in self.iter() {
-            if let ControlFlow::Break(()) = f(v.into().inner) {
-                return;
-            }
-        }
-    }
-}
-
-#[repr(transparent)]
-struct Ref<T: ?Sized>(T);
-
-impl<T: ?Sized> Ref<T> {
-    fn new<'a>(v: &'a T) -> &'a Ref<T> {
-        // SAFETY: `T` and `Ref<T>` have the same ABI
-        unsafe { &*(v as *const T as *const Ref<T>) }
-    }
-}
-
-impl<'a, T: ?Sized, const N: usize> Seq for Ref<[&'a T; N]>
-where
-    &'a T: Into<ValueBag<'a>>,
-{
-    fn for_each<'v>(&'v self, f: &mut dyn FnMut(Internal<'v>) -> ControlFlow<()>) {
-        for v in self.0.iter() {
-            if let ControlFlow::Break(()) = f((*v).into().inner) {
-                return;
-            }
-        }
-    }
-}
-
-impl<'a, 'b, T: ?Sized> Seq for Ref<&'a [&'b T]>
-where
-    &'a T: Into<ValueBag<'a>>,
-{
-    fn for_each<'v>(&'v self, f: &mut dyn FnMut(Internal<'v>) -> ControlFlow<()>) {
-        for v in self.0.iter() {
-            if let ControlFlow::Break(()) = f((*v).into().inner) {
-                return;
-            }
-        }
     }
 }
 
@@ -253,7 +235,7 @@ macro_rules! convert_primitive(
         $(
             impl<'v, const N: usize> From<&'v [$t; N]> for ValueBag<'v> {
                 fn from(v: &'v [$t; N]) -> Self {
-                    ValueBag::capture_seq(v)
+                    ValueBag::from_seq_slice(v)
                 }
             }
 
@@ -265,7 +247,7 @@ macro_rules! convert_primitive(
 
             impl<'a, 'v> From<&'v &'a [$t]> for ValueBag<'v> {
                 fn from(v: &'v &'a [$t]) -> Self {
-                    ValueBag::from_seq(v)
+                    ValueBag::from_seq_slice(v)
                 }
             }
 
@@ -284,7 +266,7 @@ convert_primitive![
 
 impl<'v, 'a, const N: usize> From<&'v [&'a str; N]> for ValueBag<'v> {
     fn from(v: &'v [&'a str; N]) -> Self {
-        ValueBag::from_seq(Ref::new(v))
+        ValueBag::from_seq_slice(v)
     }
 }
 
@@ -296,7 +278,7 @@ impl<'v, 'a, const N: usize> From<Option<&'v [&'a str; N]>> for ValueBag<'v> {
 
 impl<'v, 'a, 'b> From<&'v &'a [&'b str]> for ValueBag<'v> {
     fn from(v: &'v &'a [&'b str]) -> Self {
-        ValueBag::from_seq(Ref::new(v))
+        ValueBag::from_seq_slice(v)
     }
 }
 
