@@ -145,7 +145,7 @@ impl<'v> ValueBag<'v> {
             }
 
             #[cfg(feature = "seq")]
-            fn seq(&mut self, v: &dyn internal::seq::Seq) -> Result<(), Error> {
+            fn seq(&mut self, _: &dyn internal::seq::Seq) -> Result<(), Error> {
                 self.0 = Some(TestToken::Seq);
                 Ok(())
             }

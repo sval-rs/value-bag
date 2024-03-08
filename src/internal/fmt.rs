@@ -236,14 +236,9 @@ impl<'v> Debug for ValueBag<'v> {
 
             #[cfg(feature = "seq")]
             fn seq(&mut self, seq: &dyn crate::internal::seq::Seq) -> Result<(), Error> {
-                let mut list = self.0.debug_list();
-
-                seq.for_each(&mut |inner| {
-                    list.entry(&ValueBag { inner });
-                    crate::internal::seq::for_each_continue()
-                });
-
-                list.finish()?;
+                let mut visitor = seq::FmtSeq(self.0.debug_list());
+                seq.visit(&mut visitor);
+                visitor.0.finish()?;
 
                 Ok(())
             }
@@ -357,14 +352,9 @@ impl<'v> Display for ValueBag<'v> {
 
             #[cfg(feature = "seq")]
             fn seq(&mut self, seq: &dyn crate::internal::seq::Seq) -> Result<(), Error> {
-                let mut list = self.0.debug_list();
-
-                seq.for_each(&mut |inner| {
-                    list.entry(&ValueBag { inner });
-                    crate::internal::seq::for_each_continue()
-                });
-
-                list.finish()?;
+                let mut visitor = seq::FmtSeq(self.0.debug_list());
+                seq.visit(&mut visitor);
+                visitor.0.finish()?;
 
                 Ok(())
             }
@@ -380,6 +370,21 @@ impl<'v> Display for ValueBag<'v> {
             .map_err(|_| fmt::Error)?;
 
         Ok(())
+    }
+}
+
+#[cfg(feature = "seq")]
+mod seq {
+    use super::*;
+    use core::ops::ControlFlow;
+
+    pub(super) struct FmtSeq<'a, 'b>(pub(super) fmt::DebugList<'b, 'a>);
+
+    impl<'a, 'b, 'c> crate::internal::seq::Visitor<'c> for FmtSeq<'a, 'b> {
+        fn element(&mut self, inner: ValueBag) -> ControlFlow<()> {
+            self.0.entry(&inner);
+            ControlFlow::Continue(())
+        }
     }
 }
 

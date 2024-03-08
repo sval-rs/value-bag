@@ -190,9 +190,17 @@ where
     I: AsRef<[T]> + ?Sized + 'a,
     &'a T: Into<ValueBag<'a>>,
 {
-    fn for_each<'v>(&'v self, f: &mut dyn FnMut(Internal<'v>) -> ControlFlow<()>) {
+    fn visit<'v>(&self, visitor: &mut dyn Visitor<'v>) {
         for v in self.as_ref().iter() {
-            if let ControlFlow::Break(()) = f(v.into().inner) {
+            if let ControlFlow::Break(()) = visitor.element(v.into()) {
+                return;
+            }
+        }
+    }
+
+    fn borrowed_visit<'v>(&'v self, visitor: &mut dyn Visitor<'v>) {
+        for v in self.as_ref().iter() {
+            if let ControlFlow::Break(()) = visitor.borrowed_element(v.into()) {
                 return;
             }
         }
@@ -200,12 +208,38 @@ where
 }
 
 pub(crate) trait Seq {
-    fn for_each<'v>(&'v self, f: &mut dyn FnMut(Internal<'v>) -> ControlFlow<()>);
+    fn visit<'v>(&self, visitor: &mut dyn Visitor<'v>);
+
+    fn borrowed_visit<'v>(&'v self, visitor: &mut dyn Visitor<'v>) {
+        self.visit(visitor)
+    }
 }
 
 impl<'a, S: Seq + ?Sized> Seq for &'a S {
-    fn for_each<'v>(&'v self, f: &mut dyn FnMut(Internal<'v>) -> ControlFlow<()>) {
-        (**self).for_each(f)
+    fn visit<'v>(&self, visitor: &mut dyn Visitor<'v>) {
+        (**self).visit(visitor)
+    }
+
+    fn borrowed_visit<'v>(&'v self, visitor: &mut dyn Visitor<'v>) {
+        (**self).borrowed_visit(visitor)
+    }
+}
+
+pub(crate) trait Visitor<'v> {
+    fn element(&mut self, v: ValueBag) -> ControlFlow<()>;
+
+    fn borrowed_element(&mut self, v: ValueBag<'v>) -> ControlFlow<()> {
+        self.element(v)
+    }
+}
+
+impl<'a, 'v, T: Visitor<'v> + ?Sized> Visitor<'v> for &'a mut T {
+    fn element(&mut self, v: ValueBag) -> ControlFlow<()> {
+        (**self).element(v)
+    }
+
+    fn borrowed_element(&mut self, v: ValueBag<'v>) -> ControlFlow<()> {
+        (**self).borrowed_element(v)
     }
 }
 
@@ -225,8 +259,8 @@ impl<T: Seq + 'static> DowncastSeq for T {
 }
 
 impl<'a> Seq for dyn DowncastSeq + Send + Sync + 'a {
-    fn for_each<'v>(&'v self, f: &mut dyn FnMut(Internal<'v>) -> ControlFlow<()>) {
-        self.as_super().for_each(f)
+    fn visit<'v>(&self, visitor: &mut dyn Visitor<'v>) {
+        self.as_super().visit(visitor)
     }
 }
 
@@ -304,17 +338,31 @@ impl<S, T> ExtendPrimitive<S, T> {
 impl<'a, S: Extend<Option<T>>, T: for<'b> TryFrom<ValueBag<'b>>> ExtendValue<'a>
     for ExtendPrimitive<S, T>
 {
-    fn extend<'b>(&mut self, inner: Internal<'b>) {
+    fn extend(&mut self, inner: Internal) {
         self.0.extend(Some(ValueBag { inner }.try_into().ok()))
     }
 }
 
 #[allow(dead_code)]
 pub(crate) trait ExtendValue<'v> {
-    fn extend<'a>(&mut self, v: Internal<'a>);
+    fn extend(&mut self, v: Internal);
 
     fn extend_borrowed(&mut self, v: Internal<'v>) {
         self.extend(v);
+    }
+}
+
+struct ExtendVisitor<S>(S);
+
+impl<'v, S: ExtendValue<'v>> Visitor<'v> for ExtendVisitor<S> {
+    fn element(&mut self, v: ValueBag) -> ControlFlow<()> {
+        self.0.extend(v.inner);
+        ControlFlow::Continue(())
+    }
+
+    fn borrowed_element(&mut self, v: ValueBag<'v>) -> ControlFlow<()> {
+        self.0.extend_borrowed(v.inner);
+        ControlFlow::Continue(())
     }
 }
 
@@ -326,7 +374,7 @@ impl<'v> Internal<'v> {
         impl<'v, S: Default + ExtendValue<'v>> InternalVisitor<'v> for SeqVisitor<S> {
             #[inline]
             fn fill(&mut self, v: &dyn crate::fill::Fill) -> Result<(), Error> {
-                v.fill(crate::fill::Slot::new(self))
+                v.fill(Slot::new(self))
             }
 
             #[inline]
@@ -421,27 +469,17 @@ impl<'v> Internal<'v> {
             }
 
             fn seq(&mut self, seq: &dyn Seq) -> Result<(), Error> {
-                let mut s = S::default();
-
-                seq.for_each(&mut |v| {
-                    s.extend(v);
-                    for_each_continue()
-                });
-
-                self.0 = Some(s);
+                let mut s = ExtendVisitor(S::default());
+                seq.visit(&mut s);
+                self.0 = Some(s.0);
 
                 Ok(())
             }
 
             fn borrowed_seq(&mut self, seq: &'v dyn Seq) -> Result<(), Error> {
-                let mut s = S::default();
-
-                seq.for_each(&mut |v| {
-                    s.extend_borrowed(v);
-                    for_each_continue()
-                });
-
-                self.0 = Some(s);
+                let mut s = ExtendVisitor(S::default());
+                seq.borrowed_visit(&mut s);
+                self.0 = Some(s.0);
 
                 Ok(())
             }
@@ -508,9 +546,9 @@ pub(crate) mod owned {
     pub(crate) struct OwnedSeq(Box<[OwnedValueBag]>);
 
     impl Seq for OwnedSeq {
-        fn for_each<'v>(&'v self, f: &mut dyn FnMut(Internal<'v>) -> ControlFlow<()>) {
+        fn visit<'v>(&self, visitor: &mut dyn Visitor<'v>) {
             for item in self.0.iter() {
-                if let ControlFlow::Break(()) = f(item.by_ref().inner) {
+                if let ControlFlow::Break(()) = visitor.element(item.by_ref()) {
                     return;
                 }
             }
@@ -543,7 +581,7 @@ mod tests {
 
         assert_eq!(
             Some(vec![Some("a"), Some("b"), Some("c")]),
-            v.to_borrowed_str_<Vec<Option<&str>>>()
+            v.to_borrowed_str_seq::<Vec<Option<&str>>>()
         );
     }
 }
