@@ -171,21 +171,13 @@ impl<'sval> value_bag_sval2::lib_ref::ValueRef<'sval> for ValueBag<'sval> {
             fn seq(&mut self, v: &dyn crate::internal::seq::Seq) -> Result<(), Error> {
                 self.0.seq_begin(None).map_err(Error::from_sval2)?;
 
-                let mut r = ControlFlow::Continue(());
-                v.for_each(&mut |inner| {
-                    r = match (|| {
-                        self.0.seq_value_begin()?;
-                        value_bag_sval2::lib::stream_computed(&mut self.0, &ValueBag { inner })?;
-                        self.0.seq_value_end()
-                    })() {
-                        Ok(()) => ControlFlow::Continue(()),
-                        Err(_) => ControlFlow::Break(()),
-                    };
-
-                    r
-                });
-                if let ControlFlow::Break(()) = r {
-                    return Err(Error::from_sval2(value_bag_sval2::lib::Error::new()));
+                let mut s = seq::StreamVisitor {
+                    stream: &mut *self.0,
+                    err: None,
+                };
+                v.visit(&mut s);
+                if let Some(e) = s.err {
+                    return Err(Error::from_sval2(e));
                 }
 
                 self.0.seq_end().map_err(Error::from_sval2)
@@ -195,24 +187,13 @@ impl<'sval> value_bag_sval2::lib_ref::ValueRef<'sval> for ValueBag<'sval> {
             fn borrowed_seq(&mut self, v: &'v dyn crate::internal::seq::Seq) -> Result<(), Error> {
                 self.0.seq_begin(None).map_err(Error::from_sval2)?;
 
-                let mut r = ControlFlow::Continue(());
-                v.for_each(&mut |inner| {
-                    r = match (|| {
-                        self.0.seq_value_begin()?;
-                        value_bag_sval2::lib_ref::ValueRef::stream_ref(
-                            &ValueBag { inner },
-                            &mut self.0,
-                        )?;
-                        self.0.seq_value_end()
-                    })() {
-                        Ok(()) => ControlFlow::Continue(()),
-                        Err(_) => ControlFlow::Break(()),
-                    };
-
-                    r
-                });
-                if let ControlFlow::Break(()) = r {
-                    return Err(Error::from_sval2(value_bag_sval2::lib::Error::new()));
+                let mut s = seq::StreamVisitor {
+                    stream: &mut *self.0,
+                    err: None,
+                };
+                v.borrowed_visit(&mut s);
+                if let Some(e) = s.err {
+                    return Err(Error::from_sval2(e));
                 }
 
                 self.0.seq_end().map_err(Error::from_sval2)
@@ -365,7 +346,54 @@ impl Error {
 pub(crate) mod seq {
     use super::*;
 
-    use crate::internal::seq::ExtendValue;
+    use crate::internal::seq::{ExtendValue, Visitor};
+
+    pub(super) struct StreamVisitor<'a, S: ?Sized> {
+        pub(super) stream: &'a mut S,
+        pub(super) err: Option<value_bag_sval2::lib::Error>,
+    }
+
+    impl<'a, 'sval, S: value_bag_sval2::lib::Stream<'sval> + ?Sized> Visitor<'sval>
+        for StreamVisitor<'a, S>
+    {
+        fn element(&mut self, v: ValueBag) -> ControlFlow<()> {
+            if let Err(e) = self.stream.seq_value_begin() {
+                self.err = Some(e);
+                return ControlFlow::Break(());
+            }
+
+            if let Err(e) = value_bag_sval2::lib::stream_computed(&mut *self.stream, v) {
+                self.err = Some(e);
+                return ControlFlow::Break(());
+            }
+
+            if let Err(e) = self.stream.seq_value_end() {
+                self.err = Some(e);
+                return ControlFlow::Break(());
+            }
+
+            ControlFlow::Continue(())
+        }
+
+        fn borrowed_element(&mut self, v: ValueBag<'sval>) -> ControlFlow<()> {
+            if let Err(e) = self.stream.seq_value_begin() {
+                self.err = Some(e);
+                return ControlFlow::Break(());
+            }
+
+            if let Err(e) = value_bag_sval2::lib_ref::stream_ref(&mut *self.stream, v) {
+                self.err = Some(e);
+                return ControlFlow::Break(());
+            }
+
+            if let Err(e) = self.stream.seq_value_end() {
+                self.err = Some(e);
+                return ControlFlow::Break(());
+            }
+
+            ControlFlow::Continue(())
+        }
+    }
 
     #[inline]
     pub(crate) fn extend<'a, 'b, S: Default + ExtendValue<'a>>(v: &'b dyn Value) -> Option<S> {

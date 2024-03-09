@@ -1,3 +1,4 @@
+use crate::internal::seq::Visitor;
 use crate::{
     internal::{self, Internal},
     std::sync::Arc,
@@ -121,9 +122,9 @@ impl ValueBag<'static> {
             I: AsRef<[T]> + ?Sized,
             for<'v> &'v T: Into<ValueBag<'v>>,
         {
-            fn for_each<'v>(&'v self, f: &mut dyn FnMut(Internal<'v>) -> ControlFlow<()>) {
+            fn visit<'v>(&self, visitor: &mut dyn Visitor<'v>) {
                 for v in self.1.as_ref().iter() {
-                    if let ControlFlow::Break(()) = f(v.into().inner) {
+                    if let ControlFlow::Break(()) = visitor.element(v.into()) {
                         return;
                     }
                 }

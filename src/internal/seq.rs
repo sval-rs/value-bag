@@ -322,10 +322,6 @@ impl<'v, 'a, 'b> From<Option<&'v &'a [&'b str]>> for ValueBag<'v> {
     }
 }
 
-pub(crate) fn for_each_continue() -> ControlFlow<()> {
-    ControlFlow::Continue(())
-}
-
 #[derive(Default)]
 pub(crate) struct ExtendPrimitive<S, T>(S, PhantomData<T>);
 
@@ -556,14 +552,18 @@ pub(crate) mod owned {
     }
 
     pub(crate) fn buffer(v: &dyn Seq) -> Result<OwnedSeq, Error> {
-        let mut buf = Vec::new();
+        struct BufferVisitor(Vec<OwnedValueBag>);
 
-        v.for_each(&mut |inner| {
-            buf.push(ValueBag { inner }.to_owned());
-            ControlFlow::Continue(())
-        });
+        impl<'v> Visitor<'v> for BufferVisitor {
+            fn element(&mut self, v: ValueBag) -> ControlFlow<()> {
+                self.0.push(v.to_owned());
+                ControlFlow::Continue(())
+            }
+        }
 
-        Ok(OwnedSeq(buf.into_boxed_slice()))
+        let mut buf = BufferVisitor(Vec::new());
+        v.visit(&mut buf);
+        Ok(OwnedSeq(buf.0.into_boxed_slice()))
     }
 }
 

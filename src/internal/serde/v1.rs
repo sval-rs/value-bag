@@ -237,23 +237,33 @@ fn serialize_seq<S: value_bag_serde1::lib::Serializer>(
 ) -> Result<S::Ok, S::Error> {
     use value_bag_serde1::lib::ser::SerializeSeq;
 
-    let mut s = s.serialize_seq(None)?;
+    struct SerializeVisitor<S: SerializeSeq> {
+        serializer: S,
+        err: Option<S::Error>,
+    }
 
-    let mut r = None;
-    seq.for_each(
-        &mut |inner| match s.serialize_element(&ValueBag { inner }) {
-            Ok(()) => ControlFlow::Continue(()),
-            Err(e) => {
-                r = Some(e);
-                ControlFlow::Break(())
+    impl<'v, S: SerializeSeq> crate::internal::seq::Visitor<'v> for SerializeVisitor<S> {
+        fn element(&mut self, v: ValueBag) -> ControlFlow<()> {
+            match self.serializer.serialize_element(&v) {
+                Ok(()) => ControlFlow::Continue(()),
+                Err(e) => {
+                    self.err = Some(e);
+                    ControlFlow::Break(())
+                }
             }
-        },
-    );
-    if let Some(e) = r {
+        }
+    }
+
+    let mut s = SerializeVisitor {
+        serializer: s.serialize_seq(None)?,
+        err: None,
+    };
+    seq.visit(&mut s);
+    if let Some(e) = s.err {
         return Err(e);
     }
 
-    s.end()
+    s.serializer.end()
 }
 
 pub(crate) fn internal_visit<'v>(
