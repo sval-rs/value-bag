@@ -612,6 +612,9 @@ pub(crate) mod owned {
 
 #[cfg(test)]
 mod tests {
+    #[cfg(target_arch = "wasm32")]
+    use wasm_bindgen_test::*;
+
     use std::vec::Vec;
 
     use super::*;
