@@ -6,7 +6,7 @@
 use crate::{
     fill::Slot,
     internal::{Internal, InternalVisitor},
-    std::{any::Any, fmt, ops::ControlFlow},
+    std::{any::Any, fmt},
     Error, ValueBag,
 };
 
@@ -105,7 +105,7 @@ impl<'v> value_bag_serde1::lib::Serialize for ValueBag<'v> {
             S: value_bag_serde1::lib::Serializer,
         {
             fn fill(&mut self, v: &dyn crate::fill::Fill) -> Result<(), Error> {
-                v.fill(crate::fill::Slot::new(self))
+                v.fill(Slot::new(self))
             }
 
             fn debug(&mut self, v: &dyn fmt::Debug) -> Result<(), Error> {
@@ -235,6 +235,8 @@ fn serialize_seq<S: value_bag_serde1::lib::Serializer>(
     s: S,
     seq: &dyn crate::internal::seq::Seq,
 ) -> Result<S::Ok, S::Error> {
+    use crate::std::ops::ControlFlow;
+
     use value_bag_serde1::lib::ser::SerializeSeq;
 
     struct SerializeVisitor<S: SerializeSeq> {
@@ -754,6 +756,15 @@ mod tests {
 
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn serde1_fill() {
+        assert_eq!(
+            ValueBag::from_fill(&|slot: Slot| slot.fill_serde1(42u64)).to_test_token(),
+            TestToken::Serde { version: 1 },
+        );
+    }
+
+    #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn serde1_capture_cast() {
         assert_eq!(
             42u64,
@@ -900,6 +911,23 @@ mod tests {
         use super::*;
 
         use crate::std::vec::Vec;
+
+        #[test]
+        #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+        fn serde1_stream_str_seq() {
+            use value_bag_serde1::test::{assert_ser_tokens, Token};
+
+            assert_ser_tokens(
+                &ValueBag::from_seq_slice(&["a", "b", "c"]),
+                &[
+                    Token::Seq { len: None },
+                    Token::Str("a"),
+                    Token::Str("b"),
+                    Token::Str("c"),
+                    Token::SeqEnd,
+                ],
+            );
+        }
 
         #[test]
         #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]

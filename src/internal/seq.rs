@@ -5,6 +5,9 @@ use crate::{
     Error, ValueBag,
 };
 
+#[cfg(feature = "alloc")]
+use crate::std::{string::String, vec::Vec};
+
 impl<'v> ValueBag<'v> {
     /// Get a value from a sequence of values without capturing support.
     pub fn from_seq_slice<I, T>(value: &'v I) -> Self
@@ -120,6 +123,18 @@ impl<'v> ValueBag<'v> {
     pub fn to_bool_seq<S: Default + Extend<Option<bool>>>(&self) -> Option<S> {
         self.inner
             .extend::<ExtendPrimitive<S, bool>>()
+            .map(|seq| seq.into_inner())
+    }
+
+    /// Try get a collection `S` of `char`s from this value.
+    ///
+    /// If this value is a sequence then the collection `S` will be extended
+    /// with the attempted conversion of each of its elements.
+    ///
+    /// If this value is not a sequence then this method will return `None`.
+    pub fn to_char_seq<S: Default + Extend<Option<char>>>(&self) -> Option<S> {
+        self.inner
+            .extend::<ExtendPrimitive<S, char>>()
             .map(|seq| seq.into_inner())
     }
 
@@ -290,6 +305,20 @@ macro_rules! convert_primitive(
                     ValueBag::from_option(v)
                 }
             }
+
+            #[cfg(feature = "alloc")]
+            impl<'v> From<&'v Vec<$t>> for ValueBag<'v> {
+                fn from(v: &'v Vec<$t>) -> Self {
+                    ValueBag::from_seq_slice(v)
+                }
+            }
+
+            #[cfg(feature = "alloc")]
+            impl<'v> From<Option<&'v Vec<$t>>> for ValueBag<'v> {
+                fn from(v: Option<&'v Vec<$t>>) -> Self {
+                    ValueBag::from_option(v)
+                }
+            }
         )*
     }
 );
@@ -318,6 +347,20 @@ impl<'v, 'a, 'b> From<&'v &'a [&'b str]> for ValueBag<'v> {
 
 impl<'v, 'a, 'b> From<Option<&'v &'a [&'b str]>> for ValueBag<'v> {
     fn from(v: Option<&'v &'a [&'b str]>) -> Self {
+        ValueBag::from_option(v)
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl<'v> From<&'v Vec<String>> for ValueBag<'v> {
+    fn from(v: &'v Vec<String>) -> Self {
+        ValueBag::from_seq_slice(v)
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl<'v> From<Option<&'v Vec<String>>> for ValueBag<'v> {
+    fn from(v: Option<&'v Vec<String>>) -> Self {
         ValueBag::from_option(v)
     }
 }
@@ -574,14 +617,162 @@ mod tests {
     use super::*;
 
     #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn to_u64_seq() {
+        assert_eq!(
+            Some(vec![Some(1u64), Some(2u64), Some(3u64)]),
+            ValueBag::from(&[1u8, 2u8, 3u8]).to_u64_seq::<Vec<Option<u64>>>()
+        );
+
+        assert_eq!(
+            Some(vec![Some(1u64), Some(2u64), Some(3u64)]),
+            ValueBag::from(&[1u16, 2u16, 3u16]).to_u64_seq::<Vec<Option<u64>>>()
+        );
+
+        assert_eq!(
+            Some(vec![Some(1u64), Some(2u64), Some(3u64)]),
+            ValueBag::from(&[1u32, 2u32, 3u32]).to_u64_seq::<Vec<Option<u64>>>()
+        );
+
+        assert_eq!(
+            Some(vec![Some(1u64), Some(2u64), Some(3u64)]),
+            ValueBag::from(&[1u64, 2u64, 3u64]).to_u64_seq::<Vec<Option<u64>>>()
+        );
+    }
+
+    #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn to_i64_seq() {
+        assert_eq!(
+            Some(vec![Some(1i64), Some(2i64), Some(3i64)]),
+            ValueBag::from(&[1i8, 2i8, 3i8]).to_i64_seq::<Vec<Option<i64>>>()
+        );
+
+        assert_eq!(
+            Some(vec![Some(1i64), Some(2i64), Some(3i64)]),
+            ValueBag::from(&[1i16, 2i16, 3i16]).to_i64_seq::<Vec<Option<i64>>>()
+        );
+
+        assert_eq!(
+            Some(vec![Some(1i64), Some(2i64), Some(3i64)]),
+            ValueBag::from(&[1i32, 2i32, 3i32]).to_i64_seq::<Vec<Option<i64>>>()
+        );
+
+        assert_eq!(
+            Some(vec![Some(1i64), Some(2i64), Some(3i64)]),
+            ValueBag::from(&[1i64, 2i64, 3i64]).to_i64_seq::<Vec<Option<i64>>>()
+        );
+    }
+
+    #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn to_f64_seq() {
+        assert_eq!(
+            Some(vec![Some(1.0f64), Some(2.0f64), Some(3.0f64)]),
+            ValueBag::from(&[1.0f64, 2.0f64, 3.0f64]).to_f64_seq::<Vec<Option<f64>>>()
+        );
+    }
+
+    #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn as_f64_seq() {
+        assert_eq!(
+            Vec::<f64>::new(),
+            ValueBag::from(1.0f64).as_f64_seq::<Vec<f64>>()
+        );
+
+        assert_eq!(
+            vec![1.0f64, 2.0f64, 3.0f64],
+            ValueBag::from(&[1, 2, 3]).as_f64_seq::<Vec<f64>>()
+        );
+    }
+
+    #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn to_u128_seq() {
+        assert_eq!(
+            Some(vec![Some(1u128), Some(2u128), Some(3u128)]),
+            ValueBag::from(&[1u128, 2u128, 3u128]).to_u128_seq::<Vec<Option<u128>>>()
+        );
+    }
+
+    #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn to_i128_seq() {
+        assert_eq!(
+            Some(vec![Some(1i128), Some(2i128), Some(3i128)]),
+            ValueBag::from(&[1i128, 2i128, 3i128]).to_i128_seq::<Vec<Option<i128>>>()
+        );
+    }
+
+    #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn to_bool_seq() {
+        assert_eq!(
+            Some(vec![Some(true), Some(false)]),
+            ValueBag::from(&[true, false]).to_bool_seq::<Vec<Option<bool>>>()
+        );
+    }
+
+    #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn to_char_seq() {
+        assert_eq!(
+            Some(vec![Some('a'), Some('b'), Some('c')]),
+            ValueBag::from(&['a', 'b', 'c']).to_char_seq::<Vec<Option<char>>>()
+        );
+    }
+
+    #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn to_borrowed_str_seq() {
         let v = ["a", "b", "c"];
-
         let v = ValueBag::from(&v);
 
         assert_eq!(
             Some(vec![Some("a"), Some("b"), Some("c")]),
             v.to_borrowed_str_seq::<Vec<Option<&str>>>()
         );
+
+        let v = ValueBag::from_fill(&|slot: Slot| slot.fill_seq_slice(&["a", "b", "c"]));
+
+        assert_eq!(
+            Some(vec![None, None, None]),
+            v.to_borrowed_str_seq::<Vec<Option<&str>>>()
+        );
+    }
+
+    #[cfg(feature = "alloc")]
+    mod alloc_support {
+        use super::*;
+
+        use crate::std::borrow::Cow;
+
+        #[test]
+        #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+        fn to_str_seq() {
+            let v = ["a", "b", "c"];
+            let v = ValueBag::from(&v);
+
+            assert_eq!(
+                Some(vec![
+                    Some(Cow::Borrowed("a")),
+                    Some(Cow::Borrowed("b")),
+                    Some(Cow::Borrowed("c"))
+                ]),
+                v.to_str_seq::<Vec<Option<Cow<str>>>>()
+            );
+
+            let v = ValueBag::from_fill(&|slot: Slot| slot.fill_seq_slice(&["a", "b", "c"]));
+
+            assert_eq!(
+                Some(vec![
+                    Some(Cow::Owned("a".into())),
+                    Some(Cow::Owned("b".into())),
+                    Some(Cow::Owned("c".into()))
+                ]),
+                v.to_str_seq::<Vec<Option<Cow<str>>>>()
+            );
+        }
     }
 }

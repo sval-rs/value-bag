@@ -1,4 +1,3 @@
-use crate::internal::seq::Visitor;
 use crate::{
     internal::{self, Internal},
     std::sync::Arc,
@@ -113,7 +112,10 @@ impl ValueBag<'static> {
         T: Send + Sync + 'static,
         for<'v> &'v T: Into<ValueBag<'v>>,
     {
-        use crate::std::{marker::PhantomData, ops::ControlFlow};
+        use crate::{
+            internal::seq::Visitor,
+            std::{marker::PhantomData, ops::ControlFlow},
+        };
 
         struct OwnedSeqSlice<I: ?Sized, T>(PhantomData<[T]>, I);
 
@@ -360,5 +362,37 @@ mod tests {
         let value = value.by_ref();
 
         assert!(matches!(value.inner, internal::Internal::SharedRefSval2(_)));
+    }
+
+    #[test]
+    #[cfg(feature = "seq")]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn seq_to_owned() {
+        let value = ValueBag::from_seq_slice(&[1, 2, 3]).to_owned();
+
+        assert!(matches!(
+            value.inner,
+            internal::owned::OwnedInternal::Seq(_)
+        ));
+
+        let value = value.by_ref();
+
+        assert!(matches!(value.inner, internal::Internal::AnonSeq(_)));
+    }
+
+    #[test]
+    #[cfg(feature = "seq")]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn owned_seq_to_owned() {
+        let value = ValueBag::capture_shared_seq_slice(vec![1, 2, 3]).to_owned();
+
+        assert!(matches!(
+            value.inner,
+            internal::owned::OwnedInternal::SharedSeq(_)
+        ));
+
+        let value = value.by_ref();
+
+        assert!(matches!(value.inner, internal::Internal::SharedRefSeq(_)));
     }
 }

@@ -459,6 +459,19 @@ mod tests {
 
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn fmt_fill() {
+        assert_eq!(
+            ValueBag::from_fill(&|slot: Slot| slot.fill_debug(1u16)).to_test_token(),
+            TestToken::Str("1".into())
+        );
+        assert_eq!(
+            ValueBag::from_fill(&|slot: Slot| slot.fill_display(1u16)).to_test_token(),
+            TestToken::Str("1".into())
+        );
+    }
+
+    #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn fmt_capture_args() {
         assert_eq!(
             ValueBag::from_debug(&format_args!("a {}", "value")).to_string(),
@@ -539,5 +552,28 @@ mod tests {
             format!("{:04}", 42u64),
             format!("{:04}", 42u64.into_value_bag().by_ref()),
         );
+    }
+
+    #[cfg(feature = "seq")]
+    mod seq_support {
+        use super::*;
+
+        #[test]
+        #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+        fn fmt_debug_seq() {
+            assert_eq!(
+                "[01, 02, 03]",
+                format!("{:>02?}", ValueBag::from_seq_slice(&[1, 2, 3]))
+            );
+        }
+
+        #[test]
+        #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+        fn fmt_display_seq() {
+            assert_eq!(
+                "[1, 2, 3]",
+                format!("{}", ValueBag::from_seq_slice(&[1, 2, 3]))
+            );
+        }
     }
 }

@@ -402,13 +402,28 @@ pub use self::error::Error;
 /// features = ["seq"]
 /// ```
 ///
-/// A sequence captured with either `sval` or `serde` can have its elements extracted:
+/// Slices and arrays can be captured as sequences:
 ///
 /// ```
 /// # #[cfg(not(all(feature = "serde1", feature = "seq")))] fn main() {}
 /// # #[cfg(all(feature = "serde1", feature = "seq"))]
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// # use value_bag_serde1::json as serde_json;
+/// use value_bag::ValueBag;
+///
+/// let value = ValueBag::from_seq_slice(&[1, 2, 3]);
+///
+/// assert_eq!("[1,2,3]", serde_json::to_string(&value)?);
+/// # Ok(())
+/// # }
+/// ```
+///
+/// A sequence captured with either `sval` or `serde` can have its elements extracted:
+///
+/// ```
+/// # #[cfg(not(all(feature = "serde1", feature = "seq")))] fn main() {}
+/// # #[cfg(all(feature = "serde1", feature = "seq"))]
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// use value_bag::ValueBag;
 ///
 /// let value = ValueBag::from_serde1(&[1.0, 2.0, 3.0]);

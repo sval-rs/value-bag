@@ -165,23 +165,6 @@ mod tests {
 
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-    fn fill_debug() {
-        struct TestFill;
-
-        impl Fill for TestFill {
-            fn fill(&self, slot: Slot) -> Result<(), Error> {
-                slot.fill_any(42u64)
-            }
-        }
-
-        assert_eq!(
-            format!("{:04?}", 42u64),
-            format!("{:04?}", ValueBag::from_fill(&TestFill)),
-        )
-    }
-
-    #[test]
-    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn fill_fn_cast() {
         assert_eq!(
             42u64,

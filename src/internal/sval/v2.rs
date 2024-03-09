@@ -6,7 +6,7 @@
 use crate::{
     fill::Slot,
     internal::{Internal, InternalVisitor},
-    std::{any::Any, fmt, ops::ControlFlow},
+    std::{any::Any, fmt},
     Error, ValueBag,
 };
 
@@ -346,7 +346,10 @@ impl Error {
 pub(crate) mod seq {
     use super::*;
 
-    use crate::internal::seq::{ExtendValue, Visitor};
+    use crate::{
+        internal::seq::{ExtendValue, Visitor},
+        std::ops::ControlFlow,
+    };
 
     pub(super) struct StreamVisitor<'a, S: ?Sized> {
         pub(super) stream: &'a mut S,
@@ -608,6 +611,15 @@ mod tests {
 
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn sval2_fill() {
+        assert_eq!(
+            ValueBag::from_fill(&|slot: Slot| slot.fill_sval2(42u64)).to_test_token(),
+            TestToken::Sval { version: 2 },
+        );
+    }
+
+    #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn sval2_capture_cast() {
         assert_eq!(
             42u64,
@@ -782,9 +794,69 @@ mod tests {
 
         #[test]
         #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+        fn sval2_stream_borrowed_str_seq() {
+            let value = ValueBag::from_seq_slice(&["a", "b", "c"]);
+
+            value_bag_sval2::test::assert_tokens(&value, {
+                use value_bag_sval2::test::Token::*;
+
+                &[
+                    SeqBegin(None),
+                    SeqValueBegin,
+                    TextBegin(Some(1)),
+                    TextFragment("a"),
+                    TextEnd,
+                    SeqValueEnd,
+                    SeqValueBegin,
+                    TextBegin(Some(1)),
+                    TextFragment("b"),
+                    TextEnd,
+                    SeqValueEnd,
+                    SeqValueBegin,
+                    TextBegin(Some(1)),
+                    TextFragment("c"),
+                    TextEnd,
+                    SeqValueEnd,
+                    SeqEnd,
+                ]
+            });
+        }
+
+        #[test]
+        #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+        fn sval2_stream_str_seq() {
+            let value = ValueBag::from_fill(&|slot: Slot| slot.fill_seq_slice(&["a", "b", "c"]));
+
+            value_bag_sval2::test::assert_tokens(&value, {
+                use value_bag_sval2::test::Token::*;
+
+                &[
+                    SeqBegin(None),
+                    SeqValueBegin,
+                    TextBegin(Some(1)),
+                    TextFragmentComputed("a".into()),
+                    TextEnd,
+                    SeqValueEnd,
+                    SeqValueBegin,
+                    TextBegin(Some(1)),
+                    TextFragmentComputed("b".into()),
+                    TextEnd,
+                    SeqValueEnd,
+                    SeqValueBegin,
+                    TextBegin(Some(1)),
+                    TextFragmentComputed("c".into()),
+                    TextEnd,
+                    SeqValueEnd,
+                    SeqEnd,
+                ]
+            });
+        }
+
+        #[test]
+        #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
         #[cfg(feature = "alloc")]
         fn sval2_borrowed_str_to_seq() {
-            use std::borrow::Cow;
+            use crate::std::borrow::Cow;
 
             assert_eq!(
                 vec![
