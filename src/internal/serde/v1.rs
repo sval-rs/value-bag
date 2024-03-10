@@ -105,7 +105,7 @@ impl<'v> value_bag_serde1::lib::Serialize for ValueBag<'v> {
             S: value_bag_serde1::lib::Serializer,
         {
             fn fill(&mut self, v: &dyn crate::fill::Fill) -> Result<(), Error> {
-                v.fill(crate::fill::Slot::new(self))
+                v.fill(Slot::new(self))
             }
 
             fn debug(&mut self, v: &dyn fmt::Debug) -> Result<(), Error> {
@@ -191,6 +191,12 @@ impl<'v> value_bag_serde1::lib::Serialize for ValueBag<'v> {
                 self.result()
             }
 
+            #[cfg(feature = "seq")]
+            fn seq(&mut self, v: &dyn crate::internal::seq::Seq) -> Result<(), Error> {
+                self.result = Some(serialize_seq(self.serializer()?, v));
+                self.result()
+            }
+
             fn poisoned(&mut self, msg: &'static str) -> Result<(), Error> {
                 self.result = Some(Err(S::Error::custom(msg)));
                 self.result()
@@ -222,6 +228,44 @@ pub(in crate::internal) fn sval2<'sval, S: value_bag_sval2::lib::Stream<'sval> +
     v: &dyn Serialize,
 ) -> Result<(), Error> {
     value_bag_sval2::serde1::stream(s, v).map_err(Error::from_sval2)
+}
+
+#[cfg(feature = "seq")]
+fn serialize_seq<S: value_bag_serde1::lib::Serializer>(
+    s: S,
+    seq: &dyn crate::internal::seq::Seq,
+) -> Result<S::Ok, S::Error> {
+    use crate::std::ops::ControlFlow;
+
+    use value_bag_serde1::lib::ser::SerializeSeq;
+
+    struct SerializeVisitor<S: SerializeSeq> {
+        serializer: S,
+        err: Option<S::Error>,
+    }
+
+    impl<'v, S: SerializeSeq> crate::internal::seq::Visitor<'v> for SerializeVisitor<S> {
+        fn element(&mut self, v: ValueBag) -> ControlFlow<()> {
+            match self.serializer.serialize_element(&v) {
+                Ok(()) => ControlFlow::Continue(()),
+                Err(e) => {
+                    self.err = Some(e);
+                    ControlFlow::Break(())
+                }
+            }
+        }
+    }
+
+    let mut s = SerializeVisitor {
+        serializer: s.serialize_seq(None)?,
+        err: None,
+    };
+    seq.visit(&mut s);
+    if let Some(e) = s.err {
+        return Err(e);
+    }
+
+    s.serializer.end()
 }
 
 pub(crate) fn internal_visit<'v>(
@@ -446,7 +490,7 @@ impl value_bag_serde1::lib::ser::StdError for Unsupported {}
 pub(crate) mod seq {
     use super::*;
 
-    use crate::seq::ExtendValue;
+    use crate::internal::seq::ExtendValue;
 
     #[inline]
     pub(crate) fn extend<'a, S: Default + ExtendValue<'a>>(v: &dyn Serialize) -> Option<S> {
@@ -712,6 +756,15 @@ mod tests {
 
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn serde1_fill() {
+        assert_eq!(
+            ValueBag::from_fill(&|slot: Slot| slot.fill_serde1(42u64)).to_test_token(),
+            TestToken::Serde { version: 1 },
+        );
+    }
+
+    #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn serde1_capture_cast() {
         assert_eq!(
             42u64,
@@ -858,6 +911,23 @@ mod tests {
         use super::*;
 
         use crate::std::vec::Vec;
+
+        #[test]
+        #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+        fn serde1_stream_str_seq() {
+            use value_bag_serde1::test::{assert_ser_tokens, Token};
+
+            assert_ser_tokens(
+                &ValueBag::from_seq_slice(&["a", "b", "c"]),
+                &[
+                    Token::Seq { len: None },
+                    Token::Str("a"),
+                    Token::Str("b"),
+                    Token::Str("c"),
+                    Token::SeqEnd,
+                ],
+            );
+        }
 
         #[test]
         #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]

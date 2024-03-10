@@ -1,5 +1,4 @@
 use crate::{
-    fill::Fill,
     internal::{self, Internal, InternalVisitor},
     std::{boxed::Box, sync::Arc},
     Error,
@@ -25,9 +24,10 @@ pub(crate) enum OwnedInternal {
     Serde1(internal::serde::v1::owned::OwnedSerialize),
     #[cfg(feature = "sval2")]
     Sval2(internal::sval::v2::owned::OwnedValue),
+    #[cfg(feature = "seq")]
+    Seq(internal::seq::owned::OwnedSeq),
 
     // Shared values
-    SharedFill(Arc<dyn Fill + Send + Sync>),
     SharedDebug(Arc<dyn internal::fmt::DowncastDebug + Send + Sync>),
     SharedDisplay(Arc<dyn internal::fmt::DowncastDisplay + Send + Sync>),
     #[cfg(feature = "error")]
@@ -36,6 +36,8 @@ pub(crate) enum OwnedInternal {
     SharedSerde1(Arc<dyn internal::serde::v1::DowncastSerialize + Send + Sync>),
     #[cfg(feature = "sval2")]
     SharedSval2(Arc<dyn internal::sval::v2::DowncastValue + Send + Sync>),
+    #[cfg(feature = "seq")]
+    SharedSeq(Arc<dyn internal::seq::DowncastSeq + Send + Sync>),
 
     // Poisoned value
     Poisoned(&'static str),
@@ -67,8 +69,9 @@ impl OwnedInternal {
             OwnedInternal::Serde1(v) => Internal::AnonSerde1(v),
             #[cfg(feature = "sval2")]
             OwnedInternal::Sval2(v) => Internal::AnonSval2(v),
+            #[cfg(feature = "seq")]
+            OwnedInternal::Seq(v) => Internal::AnonSeq(v),
 
-            OwnedInternal::SharedFill(ref value) => Internal::SharedRefFill(value),
             OwnedInternal::SharedDebug(ref value) => Internal::SharedRefDebug(value),
             OwnedInternal::SharedDisplay(ref value) => Internal::SharedRefDisplay(value),
             #[cfg(feature = "error")]
@@ -77,6 +80,8 @@ impl OwnedInternal {
             OwnedInternal::SharedSerde1(ref value) => Internal::SharedRefSerde1(value),
             #[cfg(feature = "sval2")]
             OwnedInternal::SharedSval2(ref value) => Internal::SharedRefSval2(value),
+            #[cfg(feature = "seq")]
+            OwnedInternal::SharedSeq(ref value) => Internal::SharedRefSeq(value),
 
             OwnedInternal::Poisoned(msg) => Internal::Poisoned(msg),
         }
@@ -90,14 +95,6 @@ impl<'v> Internal<'v> {
         impl<'v> InternalVisitor<'v> for OwnedVisitor {
             fn fill(&mut self, v: &dyn crate::fill::Fill) -> Result<(), Error> {
                 v.fill(crate::fill::Slot::new(self))
-            }
-
-            fn shared_fill(
-                &mut self,
-                v: &Arc<dyn crate::fill::Fill + Send + Sync>,
-            ) -> Result<(), Error> {
-                self.0 = OwnedInternal::SharedFill(v.clone());
-                Ok(())
             }
 
             fn debug(&mut self, v: &dyn internal::fmt::Debug) -> Result<(), Error> {
@@ -217,6 +214,23 @@ impl<'v> Internal<'v> {
                 v: &Arc<dyn internal::serde::v1::DowncastSerialize + Send + Sync>,
             ) -> Result<(), Error> {
                 self.0 = OwnedInternal::SharedSerde1(v.clone());
+                Ok(())
+            }
+
+            #[cfg(feature = "seq")]
+            fn seq(&mut self, v: &dyn internal::seq::Seq) -> Result<(), Error> {
+                self.0 = internal::seq::owned::buffer(v)
+                    .map(OwnedInternal::Seq)
+                    .unwrap_or(OwnedInternal::Poisoned("failed to buffer the value"));
+                Ok(())
+            }
+
+            #[cfg(feature = "seq")]
+            fn shared_seq(
+                &mut self,
+                v: &Arc<dyn internal::seq::DowncastSeq + Send + Sync>,
+            ) -> Result<(), Error> {
+                self.0 = OwnedInternal::SharedSeq(v.clone());
                 Ok(())
             }
 

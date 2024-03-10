@@ -323,6 +323,11 @@ impl<'v> ValueBag<'v> {
                 internal::serde::v1::internal_visit(v, self)
             }
 
+            #[cfg(feature = "seq")]
+            fn seq(&mut self, v: &dyn internal::seq::Seq) -> Result<(), Error> {
+                self.0.visit_any(ValueBag::from_dyn_seq(v))
+            }
+
             fn poisoned(&mut self, msg: &'static str) -> Result<(), Error> {
                 Err(Error::msg(msg))
             }

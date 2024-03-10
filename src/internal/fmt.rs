@@ -234,6 +234,15 @@ impl<'v> Debug for ValueBag<'v> {
                 crate::internal::serde::v1::fmt(self.0, v)
             }
 
+            #[cfg(feature = "seq")]
+            fn seq(&mut self, seq: &dyn crate::internal::seq::Seq) -> Result<(), Error> {
+                let mut visitor = seq::FmtSeq(self.0.debug_list());
+                seq.visit(&mut visitor);
+                visitor.0.finish()?;
+
+                Ok(())
+            }
+
             fn poisoned(&mut self, msg: &'static str) -> Result<(), Error> {
                 write!(self.0, "<{msg}>")?;
 
@@ -341,6 +350,15 @@ impl<'v> Display for ValueBag<'v> {
                 crate::internal::serde::v1::fmt(self.0, v)
             }
 
+            #[cfg(feature = "seq")]
+            fn seq(&mut self, seq: &dyn crate::internal::seq::Seq) -> Result<(), Error> {
+                let mut visitor = seq::FmtSeq(self.0.debug_list());
+                seq.visit(&mut visitor);
+                visitor.0.finish()?;
+
+                Ok(())
+            }
+
             fn poisoned(&mut self, msg: &'static str) -> Result<(), Error> {
                 write!(self.0, "<{msg}>")?;
 
@@ -352,6 +370,21 @@ impl<'v> Display for ValueBag<'v> {
             .map_err(|_| fmt::Error)?;
 
         Ok(())
+    }
+}
+
+#[cfg(feature = "seq")]
+mod seq {
+    use super::*;
+    use core::ops::ControlFlow;
+
+    pub(super) struct FmtSeq<'a, 'b>(pub(super) fmt::DebugList<'b, 'a>);
+
+    impl<'a, 'b, 'c> crate::internal::seq::Visitor<'c> for FmtSeq<'a, 'b> {
+        fn element(&mut self, inner: ValueBag) -> ControlFlow<()> {
+            self.0.entry(&inner);
+            ControlFlow::Continue(())
+        }
     }
 }
 
@@ -421,6 +454,19 @@ mod tests {
         assert_eq!(
             ValueBag::capture_debug(&Some(1u16)).to_test_token(),
             TestToken::U64(1)
+        );
+    }
+
+    #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn fmt_fill() {
+        assert_eq!(
+            ValueBag::from_fill(&|slot: Slot| slot.fill_debug(1u16)).to_test_token(),
+            TestToken::Str("1".into())
+        );
+        assert_eq!(
+            ValueBag::from_fill(&|slot: Slot| slot.fill_display(1u16)).to_test_token(),
+            TestToken::Str("1".into())
         );
     }
 
@@ -506,5 +552,28 @@ mod tests {
             format!("{:04}", 42u64),
             format!("{:04}", 42u64.into_value_bag().by_ref()),
         );
+    }
+
+    #[cfg(feature = "seq")]
+    mod seq_support {
+        use super::*;
+
+        #[test]
+        #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+        fn fmt_debug_seq() {
+            assert_eq!(
+                "[01, 02, 03]",
+                format!("{:>02?}", ValueBag::from_seq_slice(&[1, 2, 3]))
+            );
+        }
+
+        #[test]
+        #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+        fn fmt_display_seq() {
+            assert_eq!(
+                "[1, 2, 3]",
+                format!("{}", ValueBag::from_seq_slice(&[1, 2, 3]))
+            );
+        }
     }
 }

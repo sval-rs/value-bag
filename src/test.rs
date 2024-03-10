@@ -51,6 +51,9 @@ pub enum TestToken {
         version: u32,
     },
 
+    #[cfg(feature = "seq")]
+    Seq,
+
     Poisoned(String),
 }
 
@@ -138,6 +141,12 @@ impl<'v> ValueBag<'v> {
             #[cfg(feature = "serde1")]
             fn serde1(&mut self, _: &dyn internal::serde::v1::Serialize) -> Result<(), Error> {
                 self.0 = Some(TestToken::Serde { version: 1 });
+                Ok(())
+            }
+
+            #[cfg(feature = "seq")]
+            fn seq(&mut self, _: &dyn internal::seq::Seq) -> Result<(), Error> {
+                self.0 = Some(TestToken::Seq);
                 Ok(())
             }
 

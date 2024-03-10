@@ -40,8 +40,20 @@
 
 use crate::std::fmt;
 
-use super::internal::InternalVisitor;
+use super::internal::{Internal, InternalVisitor};
 use super::{Error, ValueBag};
+
+impl<'v> ValueBag<'v> {
+    /// Get a value from a fillable slot.
+    pub const fn from_fill<T>(value: &'v T) -> Self
+    where
+        T: Fill,
+    {
+        ValueBag {
+            inner: Internal::Fill(value),
+        }
+    }
+}
 
 /// A type that requires extra work to convert into a [`ValueBag`](../struct.ValueBag.html).
 ///
@@ -149,23 +161,6 @@ mod tests {
                 .to_borrowed_str()
                 .expect("invalid value")
         );
-    }
-
-    #[test]
-    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-    fn fill_debug() {
-        struct TestFill;
-
-        impl Fill for TestFill {
-            fn fill(&self, slot: Slot) -> Result<(), Error> {
-                slot.fill_any(42u64)
-            }
-        }
-
-        assert_eq!(
-            format!("{:04?}", 42u64),
-            format!("{:04?}", ValueBag::from_fill(&TestFill)),
-        )
     }
 
     #[test]

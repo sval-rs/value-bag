@@ -167,6 +167,38 @@ impl<'sval> value_bag_sval2::lib_ref::ValueRef<'sval> for ValueBag<'sval> {
                 crate::internal::serde::v1::sval2(self.0, v)
             }
 
+            #[cfg(feature = "seq")]
+            fn seq(&mut self, v: &dyn crate::internal::seq::Seq) -> Result<(), Error> {
+                self.0.seq_begin(None).map_err(Error::from_sval2)?;
+
+                let mut s = seq::StreamVisitor {
+                    stream: &mut *self.0,
+                    err: None,
+                };
+                v.visit(&mut s);
+                if let Some(e) = s.err {
+                    return Err(Error::from_sval2(e));
+                }
+
+                self.0.seq_end().map_err(Error::from_sval2)
+            }
+
+            #[cfg(feature = "seq")]
+            fn borrowed_seq(&mut self, v: &'v dyn crate::internal::seq::Seq) -> Result<(), Error> {
+                self.0.seq_begin(None).map_err(Error::from_sval2)?;
+
+                let mut s = seq::StreamVisitor {
+                    stream: &mut *self.0,
+                    err: None,
+                };
+                v.borrowed_visit(&mut s);
+                if let Some(e) = s.err {
+                    return Err(Error::from_sval2(e));
+                }
+
+                self.0.seq_end().map_err(Error::from_sval2)
+            }
+
             fn poisoned(&mut self, msg: &'static str) -> Result<(), Error> {
                 Err(Error::msg(msg))
             }
@@ -314,7 +346,57 @@ impl Error {
 pub(crate) mod seq {
     use super::*;
 
-    use crate::seq::ExtendValue;
+    use crate::{
+        internal::seq::{ExtendValue, Visitor},
+        std::ops::ControlFlow,
+    };
+
+    pub(super) struct StreamVisitor<'a, S: ?Sized> {
+        pub(super) stream: &'a mut S,
+        pub(super) err: Option<value_bag_sval2::lib::Error>,
+    }
+
+    impl<'a, 'sval, S: value_bag_sval2::lib::Stream<'sval> + ?Sized> Visitor<'sval>
+        for StreamVisitor<'a, S>
+    {
+        fn element(&mut self, v: ValueBag) -> ControlFlow<()> {
+            if let Err(e) = self.stream.seq_value_begin() {
+                self.err = Some(e);
+                return ControlFlow::Break(());
+            }
+
+            if let Err(e) = value_bag_sval2::lib::stream_computed(&mut *self.stream, v) {
+                self.err = Some(e);
+                return ControlFlow::Break(());
+            }
+
+            if let Err(e) = self.stream.seq_value_end() {
+                self.err = Some(e);
+                return ControlFlow::Break(());
+            }
+
+            ControlFlow::Continue(())
+        }
+
+        fn borrowed_element(&mut self, v: ValueBag<'sval>) -> ControlFlow<()> {
+            if let Err(e) = self.stream.seq_value_begin() {
+                self.err = Some(e);
+                return ControlFlow::Break(());
+            }
+
+            if let Err(e) = value_bag_sval2::lib_ref::stream_ref(&mut *self.stream, v) {
+                self.err = Some(e);
+                return ControlFlow::Break(());
+            }
+
+            if let Err(e) = self.stream.seq_value_end() {
+                self.err = Some(e);
+                return ControlFlow::Break(());
+            }
+
+            ControlFlow::Continue(())
+        }
+    }
 
     #[inline]
     pub(crate) fn extend<'a, 'b, S: Default + ExtendValue<'a>>(v: &'b dyn Value) -> Option<S> {
@@ -529,6 +611,15 @@ mod tests {
 
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn sval2_fill() {
+        assert_eq!(
+            ValueBag::from_fill(&|slot: Slot| slot.fill_sval2(42u64)).to_test_token(),
+            TestToken::Sval { version: 2 },
+        );
+    }
+
+    #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn sval2_capture_cast() {
         assert_eq!(
             42u64,
@@ -703,9 +794,69 @@ mod tests {
 
         #[test]
         #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+        fn sval2_stream_borrowed_str_seq() {
+            let value = ValueBag::from_seq_slice(&["a", "b", "c"]);
+
+            value_bag_sval2::test::assert_tokens(&value, {
+                use value_bag_sval2::test::Token::*;
+
+                &[
+                    SeqBegin(None),
+                    SeqValueBegin,
+                    TextBegin(Some(1)),
+                    TextFragment("a"),
+                    TextEnd,
+                    SeqValueEnd,
+                    SeqValueBegin,
+                    TextBegin(Some(1)),
+                    TextFragment("b"),
+                    TextEnd,
+                    SeqValueEnd,
+                    SeqValueBegin,
+                    TextBegin(Some(1)),
+                    TextFragment("c"),
+                    TextEnd,
+                    SeqValueEnd,
+                    SeqEnd,
+                ]
+            });
+        }
+
+        #[test]
+        #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+        fn sval2_stream_str_seq() {
+            let value = ValueBag::from_fill(&|slot: Slot| slot.fill_seq_slice(&["a", "b", "c"]));
+
+            value_bag_sval2::test::assert_tokens(&value, {
+                use value_bag_sval2::test::Token::*;
+
+                &[
+                    SeqBegin(None),
+                    SeqValueBegin,
+                    TextBegin(Some(1)),
+                    TextFragmentComputed("a".into()),
+                    TextEnd,
+                    SeqValueEnd,
+                    SeqValueBegin,
+                    TextBegin(Some(1)),
+                    TextFragmentComputed("b".into()),
+                    TextEnd,
+                    SeqValueEnd,
+                    SeqValueBegin,
+                    TextBegin(Some(1)),
+                    TextFragmentComputed("c".into()),
+                    TextEnd,
+                    SeqValueEnd,
+                    SeqEnd,
+                ]
+            });
+        }
+
+        #[test]
+        #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
         #[cfg(feature = "alloc")]
         fn sval2_borrowed_str_to_seq() {
-            use std::borrow::Cow;
+            use crate::std::borrow::Cow;
 
             assert_eq!(
                 vec![

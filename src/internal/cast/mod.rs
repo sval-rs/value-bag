@@ -156,6 +156,8 @@ impl<'v> ValueBag<'v> {
             Internal::SharedSerde1(ref value) => value.as_any().downcast_ref(),
             #[cfg(all(feature = "sval2", feature = "owned"))]
             Internal::SharedSval2(ref value) => value.as_any().downcast_ref(),
+            #[cfg(all(feature = "seq", feature = "owned"))]
+            Internal::SharedSeq(ref value) => value.as_any().downcast_ref(),
 
             #[cfg(feature = "owned")]
             Internal::SharedRefDebug(value) => value.as_any().downcast_ref(),
@@ -167,6 +169,8 @@ impl<'v> ValueBag<'v> {
             Internal::SharedRefSerde1(value) => value.as_any().downcast_ref(),
             #[cfg(all(feature = "sval2", feature = "owned"))]
             Internal::SharedRefSval2(value) => value.as_any().downcast_ref(),
+            #[cfg(all(feature = "seq", feature = "owned"))]
+            Internal::SharedRefSeq(value) => value.as_any().downcast_ref(),
 
             _ => None,
         }
@@ -283,6 +287,12 @@ impl<'v> Internal<'v> {
             #[inline]
             fn serde1(&mut self, v: &dyn super::serde::v1::Serialize) -> Result<(), Error> {
                 super::serde::v1::internal_visit(v, self)
+            }
+
+            #[cfg(feature = "seq")]
+            fn seq(&mut self, _: &dyn super::seq::Seq) -> Result<(), Error> {
+                self.0 = Cast::None;
+                Ok(())
             }
 
             fn poisoned(&mut self, _: &'static str) -> Result<(), Error> {

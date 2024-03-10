@@ -1,5 +1,4 @@
 use crate::{
-    fill::Fill,
     internal::{self, Internal},
     std::sync::Arc,
     ValueBag,
@@ -58,18 +57,6 @@ impl ValueBag<'static> {
         })
     }
 
-    /// Get a value from an owned, shared, fillable slot.
-    ///
-    /// The value will be stored in an `Arc` for cheap cloning.
-    pub fn capture_shared_fill<T>(value: T) -> Self
-    where
-        T: Fill + Send + Sync + 'static,
-    {
-        ValueBag {
-            inner: Internal::SharedFill(Arc::new(value)),
-        }
-    }
-
     /// Get a value from an owned, shared error.
     ///
     /// The value will be stored in an `Arc` for cheap cloning.
@@ -112,6 +99,42 @@ impl ValueBag<'static> {
     {
         Self::try_capture_owned(&value).unwrap_or(ValueBag {
             inner: Internal::SharedSerde1(Arc::new(value)),
+        })
+    }
+
+    /// Get a value from an owned, shared, sequence.
+    ///
+    /// The value will be stored in an `Arc` for cheap cloning.
+    #[cfg(feature = "seq")]
+    pub fn capture_shared_seq_slice<I, T>(value: I) -> Self
+    where
+        I: AsRef<[T]> + Send + Sync + 'static,
+        T: Send + Sync + 'static,
+        for<'v> &'v T: Into<ValueBag<'v>>,
+    {
+        use crate::{
+            internal::seq::Visitor,
+            std::{marker::PhantomData, ops::ControlFlow},
+        };
+
+        struct OwnedSeqSlice<I: ?Sized, T>(PhantomData<[T]>, I);
+
+        impl<I, T> internal::seq::Seq for OwnedSeqSlice<I, T>
+        where
+            I: AsRef<[T]> + ?Sized,
+            for<'v> &'v T: Into<ValueBag<'v>>,
+        {
+            fn visit<'v>(&self, visitor: &mut dyn Visitor<'v>) {
+                for v in self.1.as_ref().iter() {
+                    if let ControlFlow::Break(()) = visitor.element(v.into()) {
+                        return;
+                    }
+                }
+            }
+        }
+
+        Self::try_capture_owned(&value).unwrap_or(ValueBag {
+            inner: Internal::SharedSeq(Arc::new(OwnedSeqSlice(PhantomData, value))),
         })
     }
 }
@@ -174,18 +197,6 @@ mod tests {
         assert!(matches!(
             value.inner,
             internal::owned::OwnedInternal::BigUnsigned(42)
-        ));
-    }
-
-    #[test]
-    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-    fn owned_fill_to_owned() {
-        let value =
-            ValueBag::capture_shared_fill(|slot: fill::Slot| slot.fill_any(42u64)).to_owned();
-
-        assert!(matches!(
-            value.inner,
-            internal::owned::OwnedInternal::SharedFill(_),
         ));
     }
 
@@ -351,5 +362,37 @@ mod tests {
         let value = value.by_ref();
 
         assert!(matches!(value.inner, internal::Internal::SharedRefSval2(_)));
+    }
+
+    #[test]
+    #[cfg(feature = "seq")]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn seq_to_owned() {
+        let value = ValueBag::from_seq_slice(&[1, 2, 3]).to_owned();
+
+        assert!(matches!(
+            value.inner,
+            internal::owned::OwnedInternal::Seq(_)
+        ));
+
+        let value = value.by_ref();
+
+        assert!(matches!(value.inner, internal::Internal::AnonSeq(_)));
+    }
+
+    #[test]
+    #[cfg(feature = "seq")]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn owned_seq_to_owned() {
+        let value = ValueBag::capture_shared_seq_slice(vec![1, 2, 3]).to_owned();
+
+        assert!(matches!(
+            value.inner,
+            internal::owned::OwnedInternal::SharedSeq(_)
+        ));
+
+        let value = value.by_ref();
+
+        assert!(matches!(value.inner, internal::Internal::SharedRefSeq(_)));
     }
 }
