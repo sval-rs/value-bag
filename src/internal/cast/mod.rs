@@ -275,18 +275,30 @@ impl<'v> Internal<'v> {
             #[cfg(feature = "sval2")]
             #[inline]
             fn sval2(&mut self, v: &dyn super::sval::v2::Value) -> Result<(), Error> {
-                super::sval::v2::internal_visit(v, self)
+                if super::sval::v2::internal_visit(v, self) {
+                    Ok(())
+                } else {
+                    Err(Error::msg("invalid cast"))
+                }
             }
 
             #[cfg(feature = "sval2")]
             fn borrowed_sval2(&mut self, v: &'v dyn super::sval::v2::Value) -> Result<(), Error> {
-                super::sval::v2::borrowed_internal_visit(v, self)
+                if super::sval::v2::borrowed_internal_visit(v, self) {
+                    Ok(())
+                } else {
+                    Err(Error::msg("invalid cast"))
+                }
             }
 
             #[cfg(feature = "serde1")]
             #[inline]
             fn serde1(&mut self, v: &dyn super::serde::v1::Serialize) -> Result<(), Error> {
-                super::serde::v1::internal_visit(v, self)
+                if super::serde::v1::internal_visit(v, self) {
+                    Ok(())
+                } else {
+                    Err(Error::msg("invalid cast"))
+                }
             }
 
             #[cfg(feature = "seq")]

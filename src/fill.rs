@@ -134,18 +134,6 @@ mod tests {
 
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-    fn fill_value_owned() {
-        struct TestFill;
-
-        impl Fill for TestFill {
-            fn fill(&self, slot: Slot) -> Result<(), Error> {
-                slot.fill_any("a string")
-            }
-        }
-    }
-
-    #[test]
-    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn fill_cast() {
         struct TestFill;
 

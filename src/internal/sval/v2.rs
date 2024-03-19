@@ -226,32 +226,25 @@ where
     value_bag_sval2::serde1::serialize(s, v)
 }
 
-pub(crate) fn internal_visit<'v>(
-    v: &dyn Value,
-    visitor: &mut dyn InternalVisitor<'v>,
-) -> Result<(), Error> {
+pub(crate) fn internal_visit<'v>(v: &dyn Value, visitor: &mut dyn InternalVisitor<'v>) -> bool {
     let mut visitor = VisitorStream {
         visitor,
         text_buf: Default::default(),
     };
 
-    value_bag_sval2::lib::stream_computed(&mut visitor, v).map_err(Error::from_sval2)?;
-
-    Ok(())
+    value_bag_sval2::lib::stream_computed(&mut visitor, v).is_ok()
 }
 
 pub(crate) fn borrowed_internal_visit<'v>(
     v: &'v dyn Value,
     visitor: &mut dyn InternalVisitor<'v>,
-) -> Result<(), Error> {
+) -> bool {
     let mut visitor = VisitorStream {
         visitor,
         text_buf: Default::default(),
     };
 
-    value_bag_sval2::lib::stream(&mut visitor, v).map_err(Error::from_sval2)?;
-
-    Ok(())
+    value_bag_sval2::lib::stream(&mut visitor, v).is_ok()
 }
 
 struct VisitorStream<'a, 'v> {
