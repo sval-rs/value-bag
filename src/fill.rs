@@ -123,9 +123,9 @@ mod tests {
 
         impl Fill for TestFill {
             fn fill(&self, slot: Slot) -> Result<(), Error> {
-                let dbg: &dyn fmt::Debug = &1;
+                let dbg = &1 as &dyn fmt::Debug;
 
-                slot.fill_debug(&dbg)
+                slot.fill_debug(dbg)
             }
         }
 

@@ -188,7 +188,7 @@ where
 {
     #[inline]
     fn from(v: &'v &'u str) -> Self {
-        ValueBag::from_str(*v)
+        ValueBag::from_str(v)
     }
 }
 

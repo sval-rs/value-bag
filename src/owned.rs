@@ -124,7 +124,7 @@ impl ValueBag<'static> {
             I: AsRef<[T]> + ?Sized,
             for<'v> &'v T: Into<ValueBag<'v>>,
         {
-            fn visit<'v>(&self, visitor: &mut dyn Visitor<'v>) {
+            fn visit(&self, visitor: &mut dyn Visitor<'_>) {
                 for v in self.1.as_ref().iter() {
                     if let ControlFlow::Break(()) = visitor.element(v.into()) {
                         return;
@@ -148,7 +148,7 @@ impl OwnedValueBag {
     /// - `fmt::Debug` won't use formatting flags.
     /// - `serde::Serialize` will use the text-based representation.
     /// - The original type may change, so downcasting can stop producing results.
-    pub const fn by_ref<'v>(&'v self) -> ValueBag<'v> {
+    pub const fn by_ref(&self) -> ValueBag {
         ValueBag {
             inner: self.inner.by_ref(),
         }

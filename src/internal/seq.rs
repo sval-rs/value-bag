@@ -103,7 +103,7 @@ impl<'v> ValueBag<'v> {
         struct ExtendF64<S>(S);
 
         impl<'a, S: Extend<f64>> ExtendValue<'a> for ExtendF64<S> {
-            fn extend<'b>(&mut self, inner: Internal<'b>) {
+            fn extend(&mut self, inner: Internal<'_>) {
                 self.0.extend(Some(ValueBag { inner }.as_f64()))
             }
         }
@@ -205,7 +205,7 @@ where
     I: AsRef<[T]> + ?Sized + 'a,
     &'a T: Into<ValueBag<'a>>,
 {
-    fn visit<'v>(&self, visitor: &mut dyn Visitor<'v>) {
+    fn visit(&self, visitor: &mut dyn Visitor<'_>) {
         for v in self.as_ref().iter() {
             if let ControlFlow::Break(()) = visitor.element(v.into()) {
                 return;
@@ -223,7 +223,7 @@ where
 }
 
 pub(crate) trait Seq {
-    fn visit<'v>(&self, visitor: &mut dyn Visitor<'v>);
+    fn visit(&self, visitor: &mut dyn Visitor<'_>);
 
     fn borrowed_visit<'v>(&'v self, visitor: &mut dyn Visitor<'v>) {
         self.visit(visitor)
@@ -231,7 +231,7 @@ pub(crate) trait Seq {
 }
 
 impl<'a, S: Seq + ?Sized> Seq for &'a S {
-    fn visit<'v>(&self, visitor: &mut dyn Visitor<'v>) {
+    fn visit(&self, visitor: &mut dyn Visitor<'_>) {
         (**self).visit(visitor)
     }
 
@@ -259,6 +259,8 @@ impl<'a, 'v, T: Visitor<'v> + ?Sized> Visitor<'v> for &'a mut T {
 }
 
 pub(crate) trait DowncastSeq {
+    // Currently only used when `owned` is also available
+    #[allow(dead_code)]
     fn as_any(&self) -> &dyn Any;
     fn as_super(&self) -> &dyn Seq;
 }
@@ -274,7 +276,7 @@ impl<T: Seq + 'static> DowncastSeq for T {
 }
 
 impl<'a> Seq for dyn DowncastSeq + Send + Sync + 'a {
-    fn visit<'v>(&self, visitor: &mut dyn Visitor<'v>) {
+    fn visit(&self, visitor: &mut dyn Visitor<'_>) {
         self.as_super().visit(visitor)
     }
 }
@@ -554,7 +556,7 @@ mod alloc_support {
             struct ExtendStr<'a, S>(S, PhantomData<Cow<'a, str>>);
 
             impl<'a, S: Extend<Option<Cow<'a, str>>>> ExtendValue<'a> for ExtendStr<'a, S> {
-                fn extend<'b>(&mut self, inner: Internal<'b>) {
+                fn extend(&mut self, inner: Internal<'_>) {
                     self.0.extend(Some(
                         ValueBag { inner }
                             .to_str()
@@ -576,16 +578,13 @@ mod alloc_support {
 pub(crate) mod owned {
     use super::*;
 
-    use crate::{
-        owned::OwnedValueBag,
-        std::{boxed::Box, vec::Vec},
-    };
+    use crate::{owned::OwnedValueBag, std::boxed::Box};
 
     #[derive(Clone)]
     pub(crate) struct OwnedSeq(Box<[OwnedValueBag]>);
 
     impl Seq for OwnedSeq {
-        fn visit<'v>(&self, visitor: &mut dyn Visitor<'v>) {
+        fn visit(&self, visitor: &mut dyn Visitor<'_>) {
             for item in self.0.iter() {
                 if let ControlFlow::Break(()) = visitor.element(item.by_ref()) {
                     return;

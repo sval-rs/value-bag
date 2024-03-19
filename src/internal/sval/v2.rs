@@ -226,7 +226,7 @@ where
     value_bag_sval2::serde1::serialize(s, v)
 }
 
-pub(crate) fn internal_visit<'v>(v: &dyn Value, visitor: &mut dyn InternalVisitor<'v>) -> bool {
+pub(crate) fn internal_visit(v: &dyn Value, visitor: &mut dyn InternalVisitor<'_>) -> bool {
     let mut visitor = VisitorStream {
         visitor,
         text_buf: Default::default(),
@@ -433,7 +433,7 @@ pub(crate) mod seq {
         }
 
         if let Some(seq) = seq {
-            seq.extend_borrowed(ValueBag::from(v.into()).inner);
+            seq.extend_borrowed(v.into().inner);
 
             Ok(())
         } else {
@@ -451,7 +451,7 @@ pub(crate) mod seq {
         }
 
         if let Some(seq) = seq {
-            seq.extend(ValueBag::from(v.into()).inner);
+            seq.extend(v.into().inner);
 
             Ok(())
         } else {

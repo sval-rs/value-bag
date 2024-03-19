@@ -26,10 +26,7 @@ impl Error {
     pub(crate) fn try_boxed(msg: &'static str, e: impl fmt::Display) -> Self {
         #[cfg(feature = "std")]
         {
-            use crate::std::string::ToString;
-
-            let _ = msg;
-            Error::boxed(e.to_string())
+            Error::boxed(format!("{msg}: {e}"))
         }
         #[cfg(not(feature = "std"))]
         {
@@ -42,11 +39,11 @@ impl Error {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use self::Inner::*;
-        match &self.inner {
+        match self.inner {
             #[cfg(feature = "std")]
-            &Boxed(ref err) => err.fmt(f),
-            &Msg(ref msg) => msg.fmt(f),
-            &Fmt => fmt::Error.fmt(f),
+            Boxed(ref err) => err.fmt(f),
+            Msg(ref msg) => msg.fmt(f),
+            Fmt => fmt::Error.fmt(f),
         }
     }
 }

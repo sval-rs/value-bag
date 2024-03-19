@@ -327,7 +327,7 @@ impl<'v> Internal<'v> {
             Internal::Float(value) => Cast::Float(*value),
             Internal::Bool(value) => Cast::Bool(*value),
             Internal::Char(value) => Cast::Char(*value),
-            Internal::Str(value) => Cast::Str(*value),
+            Internal::Str(value) => Cast::Str(value),
             Internal::None => Cast::None,
             other => {
                 // If the erased value isn't a primitive then we visit it
@@ -534,8 +534,6 @@ mod tests {
 
     use super::*;
 
-    use crate::std::string::ToString;
-
     use crate::test::IntoValueBag;
 
     #[test]
@@ -549,7 +547,7 @@ mod tests {
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn primitive_capture_str() {
-        let s: &str = &"short lived".to_string();
+        let s: &str = "short lived";
         assert_eq!(
             "short lived",
             ValueBag::try_capture(s)
@@ -618,48 +616,51 @@ mod tests {
 
         assert_eq!(
             -1i64,
-            -1i8.into_value_bag()
-                .by_ref()
-                .to_i64()
-                .expect("invalid value")
-        );
-        assert_eq!(
-            -1i64,
-            -1i8.into_value_bag()
-                .by_ref()
-                .to_i64()
-                .expect("invalid value")
-        );
-        assert_eq!(
-            -1i64,
-            -1i8.into_value_bag()
-                .by_ref()
-                .to_i64()
-                .expect("invalid value")
-        );
-        assert_eq!(
-            -1i64,
-            -1i64
+            -(1i8
                 .into_value_bag()
                 .by_ref()
                 .to_i64()
-                .expect("invalid value")
+                .expect("invalid value"))
         );
         assert_eq!(
             -1i64,
-            -1isize
+            -(1i8
                 .into_value_bag()
                 .by_ref()
                 .to_i64()
-                .expect("invalid value")
+                .expect("invalid value"))
+        );
+        assert_eq!(
+            -1i64,
+            -(1i8
+                .into_value_bag()
+                .by_ref()
+                .to_i64()
+                .expect("invalid value"))
+        );
+        assert_eq!(
+            -1i64,
+            -(1i64
+                .into_value_bag()
+                .by_ref()
+                .to_i64()
+                .expect("invalid value"))
+        );
+        assert_eq!(
+            -1i64,
+            -(1isize
+                .into_value_bag()
+                .by_ref()
+                .to_i64()
+                .expect("invalid value"))
         );
         assert_eq!(
             -1i128,
-            -1i128
+            -(1i128
                 .into_value_bag()
                 .by_ref()
                 .to_i128()
-                .expect("invalid value")
+                .expect("invalid value"))
         );
 
         assert!(1f64.into_value_bag().by_ref().to_f64().is_some());
@@ -688,20 +689,18 @@ mod tests {
                 .to_char()
                 .expect("invalid value")
         );
-        assert_eq!(
-            true,
-            true.into_value_bag()
-                .by_ref()
-                .to_bool()
-                .expect("invalid value")
-        );
+        assert!(true
+            .into_value_bag()
+            .by_ref()
+            .to_bool()
+            .expect("invalid value"));
     }
 
     #[test]
     fn as_cast() {
         assert_eq!(1.0, 1f64.into_value_bag().as_f64());
         assert_eq!(1.0, 1u64.into_value_bag().as_f64());
-        assert_eq!(-1.0, -1i64.into_value_bag().as_f64());
+        assert_eq!(-1.0, -(1i64.into_value_bag().as_f64()));
         assert!(true.into_value_bag().as_f64().is_nan());
     }
 }

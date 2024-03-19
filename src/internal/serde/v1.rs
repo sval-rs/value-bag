@@ -220,7 +220,7 @@ impl<'v> value_bag_serde1::lib::Serialize for ValueBag<'v> {
         };
 
         self.internal_visit(&mut visitor)
-            .map_err(|e| S::Error::custom(e))?;
+            .map_err(S::Error::custom)?;
 
         visitor.into_result()
     }
@@ -279,7 +279,7 @@ fn serialize_seq<S: value_bag_serde1::lib::Serializer>(
     s.serializer.end()
 }
 
-pub(crate) fn internal_visit<'v>(v: &dyn Serialize, visitor: &mut dyn InternalVisitor<'v>) -> bool {
+pub(crate) fn internal_visit(v: &dyn Serialize, visitor: &mut dyn InternalVisitor<'_>) -> bool {
     struct VisitorSerializer<'a, 'v>(&'a mut dyn InternalVisitor<'v>);
 
     impl<'a, 'v> value_bag_serde1::lib::Serializer for VisitorSerializer<'a, 'v> {
@@ -587,10 +587,10 @@ pub(crate) mod seq {
                 Err(Unsupported)
             }
 
-            fn serialize_some<T: ?Sized>(self, value: &T) -> Result<Self::Ok, Self::Error>
-            where
-                T: value_bag_serde1::lib::Serialize,
-            {
+            fn serialize_some<T: value_bag_serde1::lib::Serialize + ?Sized>(
+                self,
+                value: &T,
+            ) -> Result<Self::Ok, Self::Error> {
                 value.serialize(self)
             }
 
@@ -611,27 +611,21 @@ pub(crate) mod seq {
                 Err(Unsupported)
             }
 
-            fn serialize_newtype_struct<T: ?Sized>(
+            fn serialize_newtype_struct<T: value_bag_serde1::lib::Serialize + ?Sized>(
                 self,
                 _: &'static str,
                 _: &T,
-            ) -> Result<Self::Ok, Self::Error>
-            where
-                T: value_bag_serde1::lib::Serialize,
-            {
+            ) -> Result<Self::Ok, Self::Error> {
                 Err(Unsupported)
             }
 
-            fn serialize_newtype_variant<T: ?Sized>(
+            fn serialize_newtype_variant<T: value_bag_serde1::lib::Serialize + ?Sized>(
                 self,
                 _: &'static str,
                 _: u32,
                 _: &'static str,
                 _: &T,
-            ) -> Result<Self::Ok, Self::Error>
-            where
-                T: value_bag_serde1::lib::Serialize,
-            {
+            ) -> Result<Self::Ok, Self::Error> {
                 Err(Unsupported)
             }
 
@@ -689,10 +683,10 @@ pub(crate) mod seq {
 
             type Error = Unsupported;
 
-            fn serialize_element<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
-            where
-                T: value_bag_serde1::lib::Serialize,
-            {
+            fn serialize_element<T: value_bag_serde1::lib::Serialize + ?Sized>(
+                &mut self,
+                value: &T,
+            ) -> Result<(), Self::Error> {
                 self.0.extend(Internal::AnonSerde1(&value));
                 Ok(())
             }
@@ -707,10 +701,10 @@ pub(crate) mod seq {
 
             type Error = Unsupported;
 
-            fn serialize_element<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
-            where
-                T: value_bag_serde1::lib::Serialize,
-            {
+            fn serialize_element<T: value_bag_serde1::lib::Serialize + ?Sized>(
+                &mut self,
+                value: &T,
+            ) -> Result<(), Self::Error> {
                 value_bag_serde1::lib::ser::SerializeSeq::serialize_element(self, value)
             }
 
