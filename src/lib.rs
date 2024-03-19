@@ -9,6 +9,11 @@
 
 #![doc(html_root_url = "https://docs.rs/value-bag/1.8.1")]
 #![no_std]
+#![allow(
+    clippy::unnecessary_fallible_conversions,
+    clippy::explicit_auto_deref,
+    clippy::wrong_self_convention
+)]
 
 /*
 # Crate design
@@ -621,7 +626,7 @@ impl<'v> ValueBag<'v> {
 
     /// Get a `ValueBag` from a reference to a `ValueBag`.
     #[inline]
-    pub const fn by_ref<'u>(&'u self) -> ValueBag<'u> {
+    pub const fn by_ref(&self) -> ValueBag<'_> {
         ValueBag {
             inner: self.inner.by_ref(),
         }

@@ -375,7 +375,7 @@ impl<'v> ValueBag<'v> {
 
 impl<'v> Internal<'v> {
     #[inline]
-    pub(crate) const fn by_ref<'u>(&'u self) -> Internal<'u> {
+    pub(crate) const fn by_ref(&self) -> Internal<'_> {
         match self {
             Internal::Signed(value) => Internal::Signed(*value),
             Internal::Unsigned(value) => Internal::Unsigned(*value),
@@ -384,7 +384,7 @@ impl<'v> Internal<'v> {
             Internal::Float(value) => Internal::Float(*value),
             Internal::Bool(value) => Internal::Bool(*value),
             Internal::Char(value) => Internal::Char(*value),
-            Internal::Str(value) => Internal::Str(*value),
+            Internal::Str(value) => Internal::Str(value),
             Internal::None => Internal::None,
 
             Internal::Fill(value) => Internal::Fill(*value),
@@ -456,9 +456,9 @@ impl<'v> Internal<'v> {
             #[cfg(feature = "inline-i128")]
             Internal::BigUnsigned(value) => visitor.u128(value),
             #[cfg(not(feature = "inline-i128"))]
-            Internal::BigSigned(value) => visitor.borrowed_i128(*value),
+            Internal::BigSigned(value) => visitor.borrowed_i128(value),
             #[cfg(not(feature = "inline-i128"))]
-            Internal::BigUnsigned(value) => visitor.borrowed_u128(*value),
+            Internal::BigUnsigned(value) => visitor.borrowed_u128(value),
             Internal::Float(value) => visitor.f64(*value),
             Internal::Bool(value) => visitor.bool(*value),
             Internal::Char(value) => visitor.char(*value),
@@ -517,7 +517,7 @@ impl<'v> Internal<'v> {
             #[cfg(all(feature = "seq", feature = "owned"))]
             Internal::SharedRefSeq(value) => visitor.shared_seq(value),
 
-            Internal::Poisoned(msg) => visitor.poisoned(*msg),
+            Internal::Poisoned(msg) => visitor.poisoned(msg),
         }
     }
 }
