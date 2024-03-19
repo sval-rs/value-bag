@@ -307,7 +307,11 @@ impl<'v> ValueBag<'v> {
 
             #[cfg(feature = "sval2")]
             fn sval2(&mut self, v: &dyn internal::sval::v2::Value) -> Result<(), Error> {
-                internal::sval::v2::internal_visit(v, self)
+                if internal::sval::v2::internal_visit(v, self) {
+                    Ok(())
+                } else {
+                    self.0.visit_any(ValueBag::from_dyn_sval2(v))
+                }
             }
 
             #[cfg(feature = "sval2")]
@@ -315,12 +319,20 @@ impl<'v> ValueBag<'v> {
                 &mut self,
                 v: &'v dyn internal::sval::v2::Value,
             ) -> Result<(), Error> {
-                internal::sval::v2::borrowed_internal_visit(v, self)
+                if internal::sval::v2::borrowed_internal_visit(v, self) {
+                    Ok(())
+                } else {
+                    self.0.visit_any(ValueBag::from_dyn_sval2(v))
+                }
             }
 
             #[cfg(feature = "serde1")]
             fn serde1(&mut self, v: &dyn internal::serde::v1::Serialize) -> Result<(), Error> {
-                internal::serde::v1::internal_visit(v, self)
+                if internal::serde::v1::internal_visit(v, self) {
+                    Ok(())
+                } else {
+                    self.0.visit_any(ValueBag::from_dyn_serde1(v))
+                }
             }
 
             #[cfg(feature = "seq")]
@@ -394,5 +406,103 @@ mod tests {
         ValueBag::empty().visit(&mut visitor).unwrap();
 
         assert!(visitor.0);
+    }
+
+    #[test]
+    #[cfg(feature = "serde1")]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn visit_serde1() {
+        use crate::std::string::{String, ToString};
+
+        struct Data;
+
+        impl value_bag_serde1::lib::Serialize for Data {
+            fn serialize<S: value_bag_serde1::lib::Serializer>(
+                &self,
+                serializer: S,
+            ) -> Result<S::Ok, S::Error> {
+                use value_bag_serde1::lib::ser::SerializeStruct;
+
+                let mut s = serializer.serialize_struct("Data", 3)?;
+                s.serialize_field("a", &1)?;
+                s.serialize_field("b", &2)?;
+                s.serialize_field("c", &3)?;
+                s.end()
+            }
+        }
+
+        struct Visitor(String);
+
+        impl<'v> Visit<'v> for Visitor {
+            fn visit_any(&mut self, v: ValueBag) -> Result<(), Error> {
+                self.0 = v.to_string();
+
+                Ok(())
+            }
+        }
+
+        let mut visitor = Visitor("".into());
+        ValueBag::from_serde1(&Data).visit(&mut visitor).unwrap();
+
+        assert_eq!("Data { a: 1, b: 2, c: 3 }", visitor.0);
+    }
+
+    #[test]
+    #[cfg(feature = "sval2")]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn visit_sval2() {
+        use crate::std::string::{String, ToString};
+
+        struct Data;
+
+        impl value_bag_sval2::lib::Value for Data {
+            fn stream<'sval, S: value_bag_sval2::lib::Stream<'sval> + ?Sized>(
+                &'sval self,
+                stream: &mut S,
+            ) -> value_bag_sval2::lib::Result {
+                stream.map_begin(Some(3))?;
+
+                stream.map_key_begin()?;
+                stream.value("a")?;
+                stream.map_key_end()?;
+
+                stream.map_value_begin()?;
+                stream.value(&1)?;
+                stream.map_value_end()?;
+
+                stream.map_key_begin()?;
+                stream.value("b")?;
+                stream.map_key_end()?;
+
+                stream.map_value_begin()?;
+                stream.value(&2)?;
+                stream.map_value_end()?;
+
+                stream.map_key_begin()?;
+                stream.value("c")?;
+                stream.map_key_end()?;
+
+                stream.map_value_begin()?;
+                stream.value(&3)?;
+                stream.map_value_end()?;
+
+                stream.map_end()
+            }
+        }
+
+        struct Visitor(String);
+
+        impl<'v> Visit<'v> for Visitor {
+            fn visit_any(&mut self, v: ValueBag) -> Result<(), Error> {
+                self.0 = v.to_string();
+
+                Ok(())
+            }
+        }
+
+        let mut visitor = Visitor("".into());
+        ValueBag::from_sval2(&Data).visit(&mut visitor).unwrap();
+
+        assert_eq!("{ \"a\": 1, \"b\": 2, \"c\": 3 }", visitor.0);
     }
 }

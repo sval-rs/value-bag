@@ -37,6 +37,11 @@ impl<'v> ValueBag<'v> {
     }
 
     // NOTE: no `from_dyn_serde1` until `erased-serde` stabilizes
+    pub(crate) const fn from_dyn_serde1(value: &'v dyn Serialize) -> Self {
+        ValueBag {
+            inner: Internal::AnonSerde1(value),
+        }
+    }
 }
 
 pub(crate) trait DowncastSerialize {
@@ -86,17 +91,23 @@ impl<'v> value_bag_serde1::lib::Serialize for ValueBag<'v> {
             fn result(&self) -> Result<(), Error> {
                 match self.result {
                     Some(Ok(_)) => Ok(()),
-                    Some(Err(_)) | None => Err(Error::serde()),
+                    Some(Err(ref e)) => Err(Error::serde(e)),
+                    None => Err(Error::msg("`serde` serialization didn't produce a result")),
                 }
             }
 
             fn serializer(&mut self) -> Result<S, Error> {
-                self.inner.take().ok_or_else(|| Error::serde())
+                self.inner
+                    .take()
+                    .ok_or_else(|| Error::msg("`serde` serializer is in an invalid state"))
             }
 
             fn into_result(self) -> Result<S::Ok, S::Error> {
-                self.result
-                    .unwrap_or_else(|| Err(S::Error::custom("`serde` serialization failed")))
+                self.result.unwrap_or_else(|| {
+                    Err(S::Error::custom(
+                        "`serde` serialization didn't produce a result",
+                    ))
+                })
             }
         }
 
@@ -268,10 +279,7 @@ fn serialize_seq<S: value_bag_serde1::lib::Serializer>(
     s.serializer.end()
 }
 
-pub(crate) fn internal_visit<'v>(
-    v: &dyn Serialize,
-    visitor: &mut dyn InternalVisitor<'v>,
-) -> Result<(), Error> {
+pub(crate) fn internal_visit<'v>(v: &dyn Serialize, visitor: &mut dyn InternalVisitor<'v>) -> bool {
     struct VisitorSerializer<'a, 'v>(&'a mut dyn InternalVisitor<'v>);
 
     impl<'a, 'v> value_bag_serde1::lib::Serializer for VisitorSerializer<'a, 'v> {
@@ -457,12 +465,12 @@ pub(crate) fn internal_visit<'v>(
         }
     }
 
-    value_bag_serde1::erased::serialize(v, VisitorSerializer(visitor)).map_err(|_| Error::serde())
+    value_bag_serde1::erased::serialize(v, VisitorSerializer(visitor)).is_ok()
 }
 
 impl Error {
-    fn serde() -> Self {
-        Error::msg("`serde` serialization failed")
+    fn serde(e: impl fmt::Display) -> Self {
+        Error::try_boxed("`serde` serialization failed", e)
     }
 }
 

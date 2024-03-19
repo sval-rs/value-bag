@@ -21,6 +21,22 @@ impl Error {
             inner: Inner::Msg(msg),
         }
     }
+
+    #[cfg(feature = "serde1")]
+    pub(crate) fn try_boxed(msg: &'static str, e: impl fmt::Display) -> Self {
+        #[cfg(feature = "std")]
+        {
+            use crate::std::string::ToString;
+
+            let _ = msg;
+            Error::boxed(e.to_string())
+        }
+        #[cfg(not(feature = "std"))]
+        {
+            let _ = e;
+            Error::msg(msg)
+        }
+    }
 }
 
 impl fmt::Display for Error {
