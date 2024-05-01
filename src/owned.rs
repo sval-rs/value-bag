@@ -24,6 +24,12 @@ impl<'v> ValueBag<'v> {
             inner: self.inner.to_owned(),
         }
     }
+
+    /// Buffer this value into an [`OwnedValueBag`], internally storing it
+    /// in an `Arc` for cheap cloning.
+    pub fn to_shared(&self) -> OwnedValueBag {
+        self.to_owned().into_shared()
+    }
 }
 
 impl ValueBag<'static> {
@@ -153,6 +159,15 @@ impl OwnedValueBag {
             inner: self.inner.by_ref(),
         }
     }
+
+    /// Make this value cheap to clone and share by internally storing it in an `Arc`.
+    ///
+    /// If the value is already shared then this method will simply clone it.
+    pub fn into_shared(self) -> Self {
+        OwnedValueBag {
+            inner: self.inner.into_shared(),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -202,6 +217,17 @@ mod tests {
 
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn fill_to_shared() {
+        let value = ValueBag::from_fill(&|slot: fill::Slot| slot.fill_any(42u64)).to_shared();
+
+        assert!(matches!(
+            value.inner,
+            internal::owned::OwnedInternal::BigUnsigned(42)
+        ));
+    }
+
+    #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn fmt_to_owned() {
         let debug = ValueBag::from_debug(&"a value").to_owned();
         let display = ValueBag::from_display(&"a value").to_owned();
@@ -223,6 +249,22 @@ mod tests {
 
         assert!(matches!(debug.inner, internal::Internal::AnonDebug(_)));
         assert!(matches!(display.inner, internal::Internal::AnonDisplay(_)));
+    }
+
+    #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn fmt_to_shared() {
+        let debug = ValueBag::from_debug(&"a value").to_shared();
+        let display = ValueBag::from_display(&"a value").to_shared();
+
+        assert!(matches!(
+            debug.inner,
+            internal::owned::OwnedInternal::SharedDebug(_)
+        ));
+        assert!(matches!(
+            display.inner,
+            internal::owned::OwnedInternal::SharedDisplay(_)
+        ));
     }
 
     #[test]
@@ -278,6 +320,22 @@ mod tests {
     #[test]
     #[cfg(feature = "error")]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn error_to_shared() {
+        use crate::std::io;
+
+        let value =
+            ValueBag::from_dyn_error(&io::Error::new(io::ErrorKind::Other, "something failed!"))
+                .to_shared();
+
+        assert!(matches!(
+            value.inner,
+            internal::owned::OwnedInternal::SharedError(_)
+        ));
+    }
+
+    #[test]
+    #[cfg(feature = "error")]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn owned_error_to_owned() {
         use crate::std::io;
 
@@ -311,6 +369,18 @@ mod tests {
         let value = value.by_ref();
 
         assert!(matches!(value.inner, internal::Internal::AnonSerde1(_)));
+    }
+
+    #[test]
+    #[cfg(feature = "serde1")]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn serde1_to_shared() {
+        let value = ValueBag::from_serde1(&42u64).to_shared();
+
+        assert!(matches!(
+            value.inner,
+            internal::owned::OwnedInternal::SharedSerde1(_)
+        ));
     }
 
     #[test]
@@ -351,6 +421,18 @@ mod tests {
     #[test]
     #[cfg(feature = "sval2")]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn sval2_to_shared() {
+        let value = ValueBag::from_sval2(&42u64).to_shared();
+
+        assert!(matches!(
+            value.inner,
+            internal::owned::OwnedInternal::SharedSval2(_)
+        ));
+    }
+
+    #[test]
+    #[cfg(feature = "sval2")]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn owned_sval2_to_owned() {
         let value = ValueBag::capture_shared_sval2("a value".to_string()).to_owned();
 
@@ -378,6 +460,18 @@ mod tests {
         let value = value.by_ref();
 
         assert!(matches!(value.inner, internal::Internal::AnonSeq(_)));
+    }
+
+    #[test]
+    #[cfg(feature = "seq")]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn seq_to_shared() {
+        let value = ValueBag::from_seq_slice(&[1, 2, 3]).to_shared();
+
+        assert!(matches!(
+            value.inner,
+            internal::owned::OwnedInternal::SharedSeq(_)
+        ));
     }
 
     #[test]
