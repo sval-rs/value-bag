@@ -86,6 +86,43 @@ impl OwnedInternal {
             OwnedInternal::Poisoned(msg) => Internal::Poisoned(msg),
         }
     }
+
+    #[inline]
+    pub(crate) fn into_shared(self) -> Self {
+        match self {
+            OwnedInternal::BigSigned(v) => OwnedInternal::BigSigned(v),
+            OwnedInternal::BigUnsigned(v) => OwnedInternal::BigUnsigned(v),
+            OwnedInternal::Float(v) => OwnedInternal::Float(v),
+            OwnedInternal::Bool(v) => OwnedInternal::Bool(v),
+            OwnedInternal::Char(v) => OwnedInternal::Char(v),
+            OwnedInternal::Str(v) => OwnedInternal::Str(v),
+            OwnedInternal::None => OwnedInternal::None,
+
+            OwnedInternal::Debug(v) => OwnedInternal::SharedDebug(Arc::new(v)),
+            OwnedInternal::Display(v) => OwnedInternal::SharedDisplay(Arc::new(v)),
+            #[cfg(feature = "error")]
+            OwnedInternal::Error(v) => OwnedInternal::SharedError(Arc::new(v)),
+            #[cfg(feature = "serde1")]
+            OwnedInternal::Serde1(v) => OwnedInternal::SharedSerde1(Arc::new(v)),
+            #[cfg(feature = "sval2")]
+            OwnedInternal::Sval2(v) => OwnedInternal::SharedSval2(Arc::new(v)),
+            #[cfg(feature = "seq")]
+            OwnedInternal::Seq(v) => OwnedInternal::SharedSeq(Arc::new(v)),
+
+            OwnedInternal::SharedDebug(v) => OwnedInternal::SharedDebug(v),
+            OwnedInternal::SharedDisplay(v) => OwnedInternal::SharedDisplay(v),
+            #[cfg(feature = "error")]
+            OwnedInternal::SharedError(v) => OwnedInternal::SharedError(v),
+            #[cfg(feature = "serde1")]
+            OwnedInternal::SharedSerde1(v) => OwnedInternal::SharedSerde1(v),
+            #[cfg(feature = "sval2")]
+            OwnedInternal::SharedSval2(v) => OwnedInternal::SharedSval2(v),
+            #[cfg(feature = "seq")]
+            OwnedInternal::SharedSeq(v) => OwnedInternal::SharedSeq(v),
+
+            OwnedInternal::Poisoned(msg) => OwnedInternal::Poisoned(msg),
+        }
+    }
 }
 
 impl<'v> Internal<'v> {
