@@ -428,6 +428,54 @@ pub(crate) mod owned {
     }
 }
 
+impl<'v> From<&'v dyn Debug> for ValueBag<'v> {
+    #[inline]
+    fn from(v: &'v dyn Debug) -> Self {
+        ValueBag::from_dyn_debug(v)
+    }
+}
+
+impl<'v> From<Option<&'v dyn Debug>> for ValueBag<'v> {
+    #[inline]
+    fn from(v: Option<&'v dyn Debug>) -> Self {
+        ValueBag::from_option(v)
+    }
+}
+
+impl<'v, 'u> From<&'v &'u dyn Debug> for ValueBag<'v>
+where
+    'u: 'v,
+{
+    #[inline]
+    fn from(v: &'v &'u dyn Debug) -> Self {
+        ValueBag::from_dyn_debug(*v)
+    }
+}
+
+impl<'v> From<&'v dyn Display> for ValueBag<'v> {
+    #[inline]
+    fn from(v: &'v dyn Display) -> Self {
+        ValueBag::from_dyn_display(v)
+    }
+}
+
+impl<'v> From<Option<&'v dyn Display>> for ValueBag<'v> {
+    #[inline]
+    fn from(v: Option<&'v dyn Display>) -> Self {
+        ValueBag::from_option(v)
+    }
+}
+
+impl<'v, 'u> From<&'v &'u dyn Display> for ValueBag<'v>
+where
+    'u: 'v,
+{
+    #[inline]
+    fn from(v: &'v &'u dyn Display) -> Self {
+        ValueBag::from_dyn_display(*v)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     #[cfg(target_arch = "wasm32")]

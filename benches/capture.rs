@@ -66,17 +66,17 @@ fn u8_fill_to_u64(b: &mut test::Bencher) {
 }
 
 #[bench]
-#[cfg(feature = "sval1")]
+#[cfg(feature = "sval2")]
 fn u8_from_sval_to_u64(b: &mut test::Bencher) {
-    let v = ValueBag::from_sval1(&1u8);
+    let v = ValueBag::from_sval2(&1u8);
 
     b.iter(|| v.to_u64())
 }
 
 #[bench]
-#[cfg(feature = "sval1")]
+#[cfg(feature = "sval2")]
 fn u8_fill_sval_to_u64(b: &mut test::Bencher) {
-    let v = ValueBag::from_fill(&|slot: value_bag::fill::Slot| slot.fill_sval1(&1u8));
+    let v = ValueBag::from_fill(&|slot: value_bag::fill::Slot| slot.fill_sval2(&1u8));
 
     b.iter(|| v.to_u64())
 }
