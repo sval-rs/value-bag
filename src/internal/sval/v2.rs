@@ -585,6 +585,30 @@ pub(crate) mod owned {
     }
 }
 
+impl<'v> From<&'v dyn Value> for ValueBag<'v> {
+    #[inline]
+    fn from(v: &'v dyn Value) -> Self {
+        ValueBag::from_dyn_sval2(v)
+    }
+}
+
+impl<'v> From<Option<&'v dyn Value>> for ValueBag<'v> {
+    #[inline]
+    fn from(v: Option<&'v dyn Value>) -> Self {
+        ValueBag::from_option(v)
+    }
+}
+
+impl<'v, 'u> From<&'v &'u dyn Value> for ValueBag<'v>
+where
+    'u: 'v,
+{
+    #[inline]
+    fn from(v: &'v &'u dyn Value) -> Self {
+        ValueBag::from_dyn_sval2(*v)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     #[cfg(target_arch = "wasm32")]

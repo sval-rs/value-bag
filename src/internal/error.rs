@@ -106,6 +106,40 @@ pub(crate) mod owned {
     }
 }
 
+impl<'v> From<&'v (dyn error::Error + 'static)> for ValueBag<'v> {
+    #[inline]
+    fn from(v: &'v (dyn error::Error + 'static)) -> Self {
+        ValueBag::from_dyn_error(v)
+    }
+}
+
+impl<'v> From<Option<&'v (dyn error::Error + 'static)>> for ValueBag<'v> {
+    #[inline]
+    fn from(v: Option<&'v (dyn error::Error + 'static)>) -> Self {
+        ValueBag::from_option(v)
+    }
+}
+
+impl<'v> TryFrom<ValueBag<'v>> for &'v (dyn error::Error + 'static) {
+    type Error = crate::Error;
+
+    #[inline]
+    fn try_from(v: ValueBag<'v>) -> Result<Self, Self::Error> {
+        v.to_borrowed_error()
+            .ok_or_else(|| Self::Error::msg("conversion failed"))
+    }
+}
+
+impl<'v, 'u> From<&'v &'u (dyn error::Error + 'static)> for ValueBag<'v>
+where
+    'u: 'v,
+{
+    #[inline]
+    fn from(v: &'v &'u (dyn error::Error + 'static)) -> Self {
+        ValueBag::from_dyn_error(*v)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     #[cfg(target_arch = "wasm32")]
