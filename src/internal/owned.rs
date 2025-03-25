@@ -1,6 +1,6 @@
 use crate::{
     internal::{self, Internal, InternalVisitor},
-    std::{boxed::Box, fmt, slice, sync::Arc},
+    std::{boxed::Box, fmt, slice, str, sync::Arc},
     Error,
 };
 
