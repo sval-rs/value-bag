@@ -29,10 +29,10 @@ jobs:
         run: cargo test --all-features
 
       - name: Powerset
-        run: cargo hack test --feature-powerset --lib
+        run: cargo hack test --feature-powerset --depth 4 --lib
 
       - name: Minimal versions
-        run: cargo hack test --feature-powerset --lib -Z minimal-versions
+        run: cargo hack test --feature-powerset --depth 4 --lib -Z minimal-versions
 
   embedded:
     name: Build (embedded)
@@ -66,7 +66,7 @@ jobs:
         run: cargo install cargo-hack
 
       - name: Powerset
-        run: cargo hack check --feature-powerset -Z avoid-dev-deps
+        run: cargo hack check --feature-powerset --depth 4 -Z avoid-dev-deps
 
   benches:
     name: Build (benches)
@@ -93,6 +93,18 @@ jobs:
 
       - name: All features
         run: wasm-pack test --node -- --all-features
+
+  msrv:
+    name: Test (MSRV)
+    runs-on: ubuntu-latest
+    env:
+      MSRV_TOOLCHAIN: 1.61.0
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab
+
+      - name: Default features
+        run: cargo +$MSRV_TOOLCHAIN build --features "std owned seq sval2 serde1"
 
   miri:
     name: Test (miri)

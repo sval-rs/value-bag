@@ -20,6 +20,27 @@ fn str_to_owned(b: &mut test::Bencher) {
 }
 
 #[bench]
+fn str_to_owned_clone(b: &mut test::Bencher) {
+    let bag = ValueBag::from("a string").to_owned();
+
+    b.iter(|| bag.clone());
+}
+
+#[bench]
+fn str_to_shared(b: &mut test::Bencher) {
+    let bag = ValueBag::from("a string");
+
+    b.iter(|| bag.to_shared());
+}
+
+#[bench]
+fn str_to_shared_clone(b: &mut test::Bencher) {
+    let bag = ValueBag::from("a string").to_shared();
+
+    b.iter(|| bag.clone());
+}
+
+#[bench]
 fn display_to_owned(b: &mut test::Bencher) {
     let bag = ValueBag::from_display(&42);
 

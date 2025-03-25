@@ -27,6 +27,9 @@ members = [
 # Store 128bit numbers inline instead of as references
 # This may increase the size of `ValueBag` on some platforms
 inline-i128 = []
+# Store small strings inline instead of as references
+# This requires a more recent Rust toolchain
+inline-str = []
 
 # Use the standard library
 std = [
