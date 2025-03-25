@@ -1,6 +1,6 @@
 use crate::{
     internal::{self, Internal, InternalVisitor},
-    std::{boxed::Box, fmt, slice, str, sync::Arc},
+    std::{boxed::Box, sync::Arc},
     Error,
 };
 
@@ -12,7 +12,8 @@ pub(crate) enum OwnedInternal {
     Float(f64),
     Bool(bool),
     Char(char),
-    StrSmall(InlineStr),
+    #[cfg(feature = "inline-str")]
+    StrSmall(inline_str::InlineStr),
     Str(Box<str>),
     None,
 
@@ -60,6 +61,7 @@ impl OwnedInternal {
             OwnedInternal::Bool(v) => Internal::Bool(*v),
             OwnedInternal::Char(v) => Internal::Char(*v),
             OwnedInternal::Str(v) => Internal::Str(v),
+            #[cfg(feature = "inline-str")]
             OwnedInternal::StrSmall(v) => Internal::Str(v.get()),
             OwnedInternal::None => Internal::None,
 
@@ -98,6 +100,7 @@ impl OwnedInternal {
             OwnedInternal::Bool(v) => OwnedInternal::Bool(v),
             OwnedInternal::Char(v) => OwnedInternal::Char(v),
             OwnedInternal::Str(v) => OwnedInternal::Str(v),
+            #[cfg(feature = "inline-str")]
             OwnedInternal::StrSmall(v) => OwnedInternal::StrSmall(v),
             OwnedInternal::None => OwnedInternal::None,
 
@@ -199,11 +202,15 @@ impl<'v> Internal<'v> {
             }
 
             fn str(&mut self, v: &str) -> Result<(), Error> {
-                if v.len() <= MAX_INLINE_LEN {
-                    self.0 = OwnedInternal::StrSmall(InlineStr::copy_from(v));
-                } else {
-                    self.0 = OwnedInternal::Str(v.into());
+                #[cfg(feature = "inline-str")]
+                {
+                    if v.len() <= inline_str::MAX_INLINE_LEN {
+                        self.0 = OwnedInternal::StrSmall(inline_str::InlineStr::copy_from(v));
+                        return Ok(());
+                    }
                 }
+
+                self.0 = OwnedInternal::Str(v.into());
                 Ok(())
             }
 
@@ -292,64 +299,68 @@ impl<'v> Internal<'v> {
     }
 }
 
-const MAX_INLINE_LEN: usize = 22;
+#[cfg(feature = "inline-str")]
+mod inline_str {
+    use crate::std::{fmt, slice, str};
 
-#[derive(Clone, Copy)]
-pub(crate) struct InlineStr {
-    data: [u8; MAX_INLINE_LEN],
-    len: u8,
-}
+    pub(super) const MAX_INLINE_LEN: usize = 22;
 
-impl fmt::Debug for InlineStr {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        fmt::Debug::fmt(self.get(), f)
+    #[derive(Clone, Copy)]
+    pub(crate) struct InlineStr {
+        data: [u8; MAX_INLINE_LEN],
+        len: u8,
     }
-}
 
-impl fmt::Display for InlineStr {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        fmt::Display::fmt(self.get(), f)
-    }
-}
-
-impl InlineStr {
-    fn copy_from(str: &str) -> Self {
-        debug_assert!(str.len() <= MAX_INLINE_LEN);
-
-        let str = str.as_bytes();
-
-        let mut data = [0; MAX_INLINE_LEN];
-        data[..str.len()].copy_from_slice(str);
-
-        InlineStr {
-            data,
-            len: str.len() as u8,
+    impl fmt::Debug for InlineStr {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            fmt::Debug::fmt(self.get(), f)
         }
     }
 
-    const fn get(&self) -> &str {
-        // NOTE: We can't slice data in `const` fns yet, so we do it this way
-        // SAFETY: `data` contains valid UTF8, and `len` points within `data`
-        unsafe {
-            str::from_utf8_unchecked(slice::from_raw_parts(
-                &self.data as *const u8,
-                self.len as usize,
-            ))
+    impl fmt::Display for InlineStr {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            fmt::Display::fmt(self.get(), f)
         }
     }
-}
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+    impl InlineStr {
+        pub(super) fn copy_from(str: &str) -> Self {
+            let str = str.as_bytes();
 
-    use std::string::ToString;
+            // NOTE: This will panic if the string is too big
+            let mut data = [0; MAX_INLINE_LEN];
+            data[..str.len()].copy_from_slice(str);
 
-    #[test]
-    fn inline_str() {
-        let s = InlineStr::copy_from("abc");
+            InlineStr {
+                data,
+                len: str.len() as u8,
+            }
+        }
 
-        assert_eq!("abc", s.get());
-        assert_eq!("abc", s.to_string());
+        pub(super) const fn get(&self) -> &str {
+            // NOTE: We can't slice data in `const` fns yet, so we do it this way
+            // SAFETY: `data` contains valid UTF8, and `len` points within `data`
+            unsafe {
+                str::from_utf8_unchecked(slice::from_raw_parts(
+                    &self.data as *const u8,
+                    self.len as usize,
+                ))
+            }
+        }
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+
+        use std::string::ToString;
+
+        #[test]
+        fn inline_str() {
+            let s = InlineStr::copy_from("abc");
+
+            assert_eq!("abc", s.get());
+            assert_eq!("abc", s.to_string());
+        }
     }
 }
