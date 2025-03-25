@@ -99,13 +99,12 @@ jobs:
     runs-on: ubuntu-latest
     env:
       MSRV_TOOLCHAIN: 1.61.0
-      MSRV_FEATURES: "std owned seq sval2 serde1"
     steps:
       - name: Checkout sources
         uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab
 
       - name: Default features
-        run: cargo +$MSRV_TOOLCHAIN build --features $MSRV_FEATURES
+        run: cargo +$MSRV_TOOLCHAIN build --features "std owned seq sval2 serde1"
 
   miri:
     name: Test (miri)
