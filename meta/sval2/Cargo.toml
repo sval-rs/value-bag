@@ -49,7 +49,7 @@ version = "2.1"
 default-features = false
 
 [dependencies.sval_buffer]
-version = "2.1"
+version = "2.3"
 default-features = false
 
 [dependencies.sval_fmt]
