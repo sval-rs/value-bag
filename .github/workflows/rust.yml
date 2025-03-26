@@ -31,9 +31,6 @@ jobs:
       - name: Powerset
         run: cargo hack test --feature-powerset --depth 4 --lib
 
-      - name: Minimal versions
-        run: cargo hack test --feature-powerset --depth 4 --lib -Z minimal-versions
-
   embedded:
     name: Build (embedded)
     runs-on: ubuntu-latest
@@ -67,6 +64,22 @@ jobs:
 
       - name: Powerset
         run: cargo hack check --feature-powerset --depth 4 -Z avoid-dev-deps
+
+  minimaldeps:
+    name: Build (minimal versions)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab
+
+      - name: Install Rust toolchain
+        run: rustup default nightly
+
+      - name: Install cargo-hack
+        run: cargo install cargo-hack
+
+      - name: Powerset
+        run: cargo hack check --each-feature --lib -Z minimal-versions -Z avoid-dev-deps
 
   benches:
     name: Build (benches)
