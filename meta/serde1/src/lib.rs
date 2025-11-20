@@ -5,7 +5,7 @@ Implementation detail for `value-bag`; it should not be depended on directly.
 #![no_std]
 
 pub use erased_serde as erased;
-pub use serde as lib;
+pub use serde_core as lib;
 pub use serde_fmt as fmt;
 
 #[cfg(feature = "owned")]
