@@ -47,7 +47,7 @@ pub(crate) enum OwnedInternal {
 
 impl OwnedInternal {
     #[inline]
-    pub(crate) const fn by_ref(&self) -> Internal {
+    pub(crate) const fn by_ref(&self) -> Internal<'_> {
         match self {
             #[cfg(not(feature = "inline-i128"))]
             OwnedInternal::BigSigned(v) => Internal::BigSigned(v),
