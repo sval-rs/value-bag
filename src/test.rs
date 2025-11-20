@@ -3,9 +3,11 @@
 use crate::{
     internal,
     std::{fmt, str, string::String},
-    visit::Visit,
     Error, ValueBag,
 };
+
+#[cfg(test)]
+use crate::visit::Visit;
 
 #[cfg(test)]
 pub(crate) trait IntoValueBag<'v> {
@@ -163,6 +165,7 @@ impl<'v> ValueBag<'v> {
     }
 }
 
+#[cfg(test)]
 pub(crate) struct TestVisit {
     pub i64: i64,
     pub u64: u64,
@@ -175,6 +178,7 @@ pub(crate) struct TestVisit {
     pub char: char,
 }
 
+#[cfg(test)]
 impl Default for TestVisit {
     fn default() -> Self {
         TestVisit {
@@ -191,6 +195,7 @@ impl Default for TestVisit {
     }
 }
 
+#[cfg(test)]
 impl<'v> Visit<'v> for TestVisit {
     fn visit_any(&mut self, v: ValueBag) -> Result<(), Error> {
         panic!("unexpected value: {}", v)

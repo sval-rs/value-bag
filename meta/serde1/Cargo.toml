@@ -8,7 +8,7 @@ description = "Implementation detail for value-bag"
 
 [features]
 std = [
-    "serde/std",
+    "serde_core/std",
     "erased-serde/std",
 ]
 
@@ -26,13 +26,13 @@ test = [
     "serde_test",
 ]
 
-[dependencies.serde]
+[dependencies.serde_core]
 version = "1"
 features = ["alloc"]
 default-features = false
 
 [dependencies.erased-serde]
-version = "0.4"
+version = "0.4.9"
 features = ["alloc"]
 default-features = false
 
