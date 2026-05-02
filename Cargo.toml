@@ -98,3 +98,22 @@ version = "0.2"
 
 [target.'cfg(target_arch = "wasm32")'.dev-dependencies.wasm-bindgen-test]
 version = "0.3"
+
+[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies.criterion]
+version = "0.8"
+
+[[bench]]
+name = "by_ref"
+harness = false
+
+[[bench]]
+name = "capture"
+harness = false
+
+[[bench]]
+name = "owned"
+harness = false
+
+[[bench]]
+name = "seq"
+harness = false
