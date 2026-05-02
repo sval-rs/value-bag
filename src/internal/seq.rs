@@ -174,6 +174,16 @@ impl<'s, 'f> Slot<'s, 'f> {
     {
         self.fill(|visitor| visitor.seq(SeqSlice::new_ref(value)))
     }
+
+    /// Fill the slot with a sequence of values that aren't known upfront.
+    ///
+    /// The given elements don't need to satisfy any particulra lifetime constraints.
+    pub fn fill_seq_for_each(
+        self,
+        for_each: impl FnMut(SeqSlot) -> ControlFlow<()>,
+    ) -> Result<(), Error> {
+        todo!()
+    }
 }
 
 /*
