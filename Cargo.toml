@@ -99,7 +99,7 @@ version = "0.2"
 [target.'cfg(target_arch = "wasm32")'.dev-dependencies.wasm-bindgen-test]
 version = "0.3"
 
-[dev-dependencies.criterion]
+[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies.criterion]
 version = "0.8"
 
 [[bench]]
