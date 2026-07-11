@@ -2,10 +2,9 @@
 mod imp {
     use value_bag::ValueBag;
 
-    use criterion::{criterion_group, criterion_main, Criterion};
     use std::hint::black_box;
 
-    pub fn criterion_benchmark(c: &mut Criterion) {
+    pub fn criterion_benchmark(c: &mut criterion::Criterion) {
         c.bench_function("from u8 to owned", |b| {
             let v = ValueBag::from(1u8);
 
@@ -113,9 +112,9 @@ mod imp {
 }
 
 #[cfg(feature = "owned")]
-criterion_group!(benches, imp::criterion_benchmark);
+criterion::criterion_group!(benches, imp::criterion_benchmark);
 #[cfg(feature = "owned")]
-criterion_main!(benches);
+criterion::criterion_main!(benches);
 
 #[cfg(not(feature = "owned"))]
 fn main() {}

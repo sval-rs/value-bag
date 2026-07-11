@@ -2,10 +2,9 @@
 mod imp {
     use value_bag::ValueBag;
 
-    use criterion::{criterion_group, criterion_main, Criterion};
     use std::hint::black_box;
 
-    pub fn criterion_benchmark(c: &mut Criterion) {
+    pub fn criterion_benchmark(c: &mut criterion::Criterion) {
         #[cfg(feature = "serde1")]
         {
             c.bench_function("from serde to f64 seq 5", |b| {
@@ -27,9 +26,9 @@ mod imp {
 }
 
 #[cfg(feature = "seq")]
-criterion_group!(benches, imp::criterion_benchmark);
+criterion::criterion_group!(benches, imp::criterion_benchmark);
 #[cfg(feature = "seq")]
-criterion_main!(benches);
+criterion::criterion_main!(benches);
 
 #[cfg(not(feature = "seq"))]
 fn main() {}
