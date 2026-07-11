@@ -431,6 +431,8 @@ pub(crate) mod owned {
         }
         #[cfg(not(feature = "inline-str"))]
         {
+            use crate::std::string::ToString as _;
+
             Err(OwnedFmt(v.to_string().into()))
         }
     }
@@ -453,9 +455,15 @@ pub(crate) mod owned {
         // Use a slightly larger buffer in case we can compress the resulting buffer down to 22 bytes
         match InlineStr::<64>::buffer(v) {
             Ok(inline) => {
-                // TODO: Detect a few common cases and compress them; 32byte hex etc
-                if inline.get().len() <= inline_str::MAX_INLINE_LEN {
-                    Ok(InlineFmt(InlineStr::copy_from(inline.get())))
+                if inline.len() <= inline_str::MAX_INLINE_LEN {
+                    // SAFETY: The condition above guarantees `inline` will fit in `MAX_INLINE_LEN` bytes
+                    let inline = unsafe {
+                        InlineStr::<{ inline_str::MAX_INLINE_LEN }>::copy_from_unchecked(
+                            inline.get(),
+                        )
+                    };
+
+                    Ok(InlineFmt(inline))
                 } else {
                     Err(OwnedFmt(Box::from(inline.get())))
                 }

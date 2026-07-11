@@ -182,7 +182,10 @@ mod tests {
         std::{mem, string::ToString},
     };
 
+    #[cfg(not(feature = "inline-str-l"))]
     const SIZE_LIMIT_U64: usize = 4;
+    #[cfg(feature = "inline-str-l")]
+    const SIZE_LIMIT_U64: usize = 6;
 
     #[test]
     fn is_send_sync() {
@@ -232,14 +235,28 @@ mod tests {
         let debug = ValueBag::from_debug(&"a value").to_owned();
         let display = ValueBag::from_display(&"a value").to_owned();
 
-        assert!(matches!(
-            debug.inner,
-            internal::owned::OwnedInternal::Debug(_)
-        ));
-        assert!(matches!(
-            display.inner,
-            internal::owned::OwnedInternal::Display(_)
-        ));
+        #[cfg(not(feature = "inline-str"))]
+        {
+            assert!(matches!(
+                debug.inner,
+                internal::owned::OwnedInternal::Debug(_)
+            ));
+            assert!(matches!(
+                display.inner,
+                internal::owned::OwnedInternal::Display(_)
+            ));
+        }
+        #[cfg(feature = "inline-str")]
+        {
+            assert!(matches!(
+                debug.inner,
+                internal::owned::OwnedInternal::SmallDebug(_)
+            ));
+            assert!(matches!(
+                display.inner,
+                internal::owned::OwnedInternal::SmallDisplay(_)
+            ));
+        }
 
         assert_eq!("\"a value\"", debug.to_string());
         assert_eq!("a value", display.to_string());

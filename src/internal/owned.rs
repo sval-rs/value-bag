@@ -13,16 +13,16 @@ pub(crate) enum OwnedInternal {
     Bool(bool),
     Char(char),
     #[cfg(feature = "inline-str")]
-    StrSmall(inline_str::InlineStr<{ inline_str::MAX_INLINE_LEN }>),
+    SmallStr(inline_str::InlineStr<{ inline_str::MAX_INLINE_LEN }>),
     Str(Box<str>),
     None,
 
     // Buffered values
     #[cfg(feature = "inline-str")]
-    DebugSmall(internal::fmt::owned::InlineFmt),
+    SmallDebug(internal::fmt::owned::InlineFmt),
     Debug(internal::fmt::owned::OwnedFmt),
     #[cfg(feature = "inline-str")]
-    DisplaySmall(internal::fmt::owned::InlineFmt),
+    SmallDisplay(internal::fmt::owned::InlineFmt),
     Display(internal::fmt::owned::OwnedFmt),
     #[cfg(feature = "error")]
     Error(internal::error::owned::OwnedError),
@@ -66,15 +66,15 @@ impl OwnedInternal {
             OwnedInternal::Char(v) => Internal::Char(*v),
             OwnedInternal::Str(v) => Internal::Str(v),
             #[cfg(feature = "inline-str")]
-            OwnedInternal::StrSmall(v) => Internal::Str(v.get()),
+            OwnedInternal::SmallStr(v) => Internal::Str(v.get()),
             OwnedInternal::None => Internal::None,
 
             OwnedInternal::Debug(v) => Internal::AnonDebug(v),
             #[cfg(feature = "inline-str")]
-            OwnedInternal::DebugSmall(v) => Internal::AnonDebug(v),
+            OwnedInternal::SmallDebug(v) => Internal::AnonDebug(v),
             OwnedInternal::Display(v) => Internal::AnonDisplay(v),
             #[cfg(feature = "inline-str")]
-            OwnedInternal::DisplaySmall(v) => Internal::AnonDisplay(v),
+            OwnedInternal::SmallDisplay(v) => Internal::AnonDisplay(v),
             #[cfg(feature = "error")]
             OwnedInternal::Error(v) => Internal::AnonError(v),
             #[cfg(feature = "serde1")]
@@ -109,15 +109,15 @@ impl OwnedInternal {
             OwnedInternal::Char(v) => OwnedInternal::Char(v),
             OwnedInternal::Str(v) => OwnedInternal::Str(v),
             #[cfg(feature = "inline-str")]
-            OwnedInternal::StrSmall(v) => OwnedInternal::StrSmall(v),
+            OwnedInternal::SmallStr(v) => OwnedInternal::SmallStr(v),
             OwnedInternal::None => OwnedInternal::None,
 
             OwnedInternal::Debug(v) => OwnedInternal::SharedDebug(Arc::new(v)),
             #[cfg(feature = "inline-str")]
-            OwnedInternal::DebugSmall(v) => OwnedInternal::DebugSmall(v),
+            OwnedInternal::SmallDebug(v) => OwnedInternal::SmallDebug(v),
             OwnedInternal::Display(v) => OwnedInternal::SharedDisplay(Arc::new(v)),
             #[cfg(feature = "inline-str")]
-            OwnedInternal::DisplaySmall(v) => OwnedInternal::DisplaySmall(v),
+            OwnedInternal::SmallDisplay(v) => OwnedInternal::SmallDisplay(v),
             #[cfg(feature = "error")]
             OwnedInternal::Error(v) => OwnedInternal::SharedError(Arc::new(v)),
             #[cfg(feature = "serde1")]
@@ -155,7 +155,7 @@ impl<'v> Internal<'v> {
             fn debug(&mut self, v: &dyn internal::fmt::Debug) -> Result<(), Error> {
                 self.0 = match internal::fmt::owned::buffer_debug(v) {
                     #[cfg(feature = "inline-str")]
-                    Ok(inline) => OwnedInternal::DebugSmall(inline),
+                    Ok(inline) => OwnedInternal::SmallDebug(inline),
                     #[cfg(not(feature = "inline-str"))]
                     Ok(_) => unreachable!(),
                     Err(spilled) => OwnedInternal::Debug(spilled),
@@ -174,7 +174,7 @@ impl<'v> Internal<'v> {
             fn display(&mut self, v: &dyn internal::fmt::Display) -> Result<(), Error> {
                 self.0 = match internal::fmt::owned::buffer_display(v) {
                     #[cfg(feature = "inline-str")]
-                    Ok(inline) => OwnedInternal::DisplaySmall(inline),
+                    Ok(inline) => OwnedInternal::SmallDisplay(inline),
                     #[cfg(not(feature = "inline-str"))]
                     Ok(_) => unreachable!(),
                     Err(spilled) => OwnedInternal::Display(spilled),
@@ -229,7 +229,7 @@ impl<'v> Internal<'v> {
                 #[cfg(feature = "inline-str")]
                 {
                     if v.len() <= inline_str::MAX_INLINE_LEN {
-                        self.0 = OwnedInternal::StrSmall(inline_str::InlineStr::copy_from(v));
+                        self.0 = OwnedInternal::SmallStr(inline_str::InlineStr::copy_from(v));
                         return Ok(());
                     }
                 }
@@ -332,7 +332,10 @@ pub(crate) mod inline_str {
         string::String,
     };
 
+    #[cfg(not(feature = "inline-str-l"))]
     pub(crate) const MAX_INLINE_LEN: usize = 22;
+    #[cfg(feature = "inline-str-l")]
+    pub(crate) const MAX_INLINE_LEN: usize = 46;
 
     #[derive(Clone, Copy)]
     pub(crate) struct InlineStr<const MAX_LEN: usize> {
@@ -355,16 +358,37 @@ pub(crate) mod inline_str {
     impl<const N: usize> InlineStr<N> {
         #[inline]
         pub(crate) fn copy_from(str: &str) -> Self {
+            assert!(
+                str.len() <= N,
+                "input of {} bytes would overflow max len of {N}",
+                str.len()
+            );
+
+            // SAFETY: The assertion above guarantees `str` will fit in a buffer of `N` bytes
+            unsafe { Self::copy_from_unchecked(str) }
+        }
+
+        #[inline]
+        // SAFETY: Callers must ensure `str.len() <= N`
+        pub(crate) unsafe fn copy_from_unchecked(str: &str) -> Self {
             let str = str.as_bytes();
 
-            // NOTE: This will panic if the string is too big
             let mut data = [0; N];
-            data[..str.len()].copy_from_slice(str);
+
+            // SAFETY: Callers responsible for ensuring `str.len() <= N`
+            unsafe {
+                crate::std::ptr::copy_nonoverlapping(str.as_ptr(), data.as_mut_ptr(), str.len());
+            }
 
             InlineStr {
                 data,
                 len: str.len() as u8,
             }
+        }
+
+        #[inline]
+        pub(crate) const fn len(&self) -> usize {
+            self.len as usize
         }
 
         #[inline]
@@ -379,6 +403,7 @@ pub(crate) mod inline_str {
             }
         }
 
+        #[inline]
         pub(crate) fn buffer(v: impl fmt::Display) -> Result<Self, Box<str>> {
             // Attempt to format a `fmt::Display` into a stack-allocated buffer
             struct Buffer<const N: usize> {
@@ -388,6 +413,7 @@ pub(crate) mod inline_str {
             }
 
             impl<const N: usize> fmt::Write for Buffer<N> {
+                #[inline]
                 fn write_str(&mut self, v: &str) -> fmt::Result {
                     if self.len + v.len() > N {
                         // Spill
@@ -399,7 +425,14 @@ pub(crate) mod inline_str {
 
                         self.spilled.push_str(v);
                     } else {
-                        self.inline[self.len..self.len + v.len()].copy_from_slice(v.as_bytes());
+                        // SAFETY: The bounds check above guarantees `v` can be copied into `self.inline`
+                        unsafe {
+                            crate::std::ptr::copy_nonoverlapping(
+                                v.as_ptr(),
+                                self.inline.as_mut_ptr().add(self.len),
+                                v.len(),
+                            );
+                        }
                     }
 
                     self.len += v.len();
@@ -414,6 +447,7 @@ pub(crate) mod inline_str {
                 len: 0,
             };
 
+            // TODO: Encode alternative if `v` panics, see `serde_fmt`
             let _ = write!(&mut buffer, "{v}");
 
             if buffer.len <= N {
