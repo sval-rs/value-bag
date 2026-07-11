@@ -371,6 +371,8 @@ pub(crate) mod inline_str {
         #[inline]
         // SAFETY: Callers must ensure `str.len() <= N`
         pub(crate) unsafe fn copy_from_unchecked(str: &str) -> Self {
+            debug_assert!(N > 0);
+
             let str = str.as_bytes();
 
             let mut data = [0; N];
@@ -405,6 +407,8 @@ pub(crate) mod inline_str {
 
         #[inline]
         pub(crate) fn buffer(v: impl fmt::Display) -> Result<Self, Box<str>> {
+            debug_assert!(N > 0);
+
             // Attempt to format a `fmt::Display` into a stack-allocated buffer
             struct Buffer<const N: usize> {
                 inline: [u8; N],
@@ -447,16 +451,20 @@ pub(crate) mod inline_str {
                 len: 0,
             };
 
-            // TODO: Encode alternative if `v` panics, see `serde_fmt`
-            let _ = write!(&mut buffer, "{v}");
-
-            if buffer.len <= N {
-                Ok(InlineStr {
-                    data: buffer.inline,
-                    len: buffer.len as u8,
-                })
-            } else {
-                Err(buffer.spilled.into_boxed_str())
+            // NOTE: Future versions of Rust may give us a more direct way to buffer a `Display`
+            // without needing to go through `Arguments`
+            match write!(&mut buffer, "{v}") {
+                Ok(()) => {
+                    if buffer.len <= N {
+                        Ok(InlineStr {
+                            data: buffer.inline,
+                            len: buffer.len as u8,
+                        })
+                    } else {
+                        Err(buffer.spilled.into_boxed_str())
+                    }
+                }
+                Err(err) => Err(format!("<{err}>").into_boxed_str()),
             }
         }
     }
@@ -473,6 +481,32 @@ pub(crate) mod inline_str {
 
             assert_eq!("abc", s.get());
             assert_eq!("abc", s.to_string());
+        }
+
+        #[test]
+        fn inline_str_buffer() {
+            let s = InlineStr::<3>::buffer("a").unwrap();
+
+            assert_eq!("a", s.get());
+
+            let s = InlineStr::<3>::buffer("abcd").unwrap_err();
+
+            assert_eq!("abcd", &*s);
+        }
+
+        #[test]
+        fn inline_str_buffer_err() {
+            struct FailingDisplay;
+
+            impl fmt::Display for FailingDisplay {
+                fn fmt(&self, _: &mut fmt::Formatter) -> fmt::Result {
+                    Err(fmt::Error)
+                }
+            }
+
+            let s = InlineStr::<22>::buffer(FailingDisplay).unwrap_err();
+
+            assert_eq!("<an error occurred when formatting an argument>", &*s);
         }
     }
 }

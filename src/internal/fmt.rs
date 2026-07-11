@@ -453,6 +453,7 @@ pub(crate) mod owned {
     #[inline]
     fn buffer_inline(v: impl fmt::Display) -> Result<InlineFmt, OwnedFmt> {
         // Use a slightly larger buffer in case we can compress the resulting buffer down to 22 bytes
+        // This can also save a few extra bounds checks and re-allocations
         match InlineStr::<64>::buffer(v) {
             Ok(inline) => {
                 if inline.len() <= inline_str::MAX_INLINE_LEN {

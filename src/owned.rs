@@ -270,18 +270,68 @@ mod tests {
 
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn fmt_to_owned_l() {
+        let debug =
+            ValueBag::from_debug(&"a value that occupies too much space to ever be stored inline")
+                .to_owned();
+        let display = ValueBag::from_display(
+            &"a value that occupies too much space to ever be stored inline",
+        )
+        .to_owned();
+
+        assert!(matches!(
+            debug.inner,
+            internal::owned::OwnedInternal::Debug(_)
+        ));
+        assert!(matches!(
+            display.inner,
+            internal::owned::OwnedInternal::Display(_)
+        ));
+
+        assert_eq!(
+            "\"a value that occupies too much space to ever be stored inline\"",
+            debug.to_string()
+        );
+        assert_eq!(
+            "a value that occupies too much space to ever be stored inline",
+            display.to_string()
+        );
+
+        let debug = debug.by_ref();
+        let display = display.by_ref();
+
+        assert!(matches!(debug.inner, internal::Internal::AnonDebug(_)));
+        assert!(matches!(display.inner, internal::Internal::AnonDisplay(_)));
+    }
+
+    #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn fmt_to_shared() {
         let debug = ValueBag::from_debug(&"a value").to_shared();
         let display = ValueBag::from_display(&"a value").to_shared();
 
-        assert!(matches!(
-            debug.inner,
-            internal::owned::OwnedInternal::SharedDebug(_)
-        ));
-        assert!(matches!(
-            display.inner,
-            internal::owned::OwnedInternal::SharedDisplay(_)
-        ));
+        #[cfg(not(feature = "inline-str"))]
+        {
+            assert!(matches!(
+                debug.inner,
+                internal::owned::OwnedInternal::SharedDebug(_)
+            ));
+            assert!(matches!(
+                display.inner,
+                internal::owned::OwnedInternal::SharedDisplay(_)
+            ));
+        }
+        #[cfg(feature = "inline-str")]
+        {
+            assert!(matches!(
+                debug.inner,
+                internal::owned::OwnedInternal::SmallDebug(_)
+            ));
+            assert!(matches!(
+                display.inner,
+                internal::owned::OwnedInternal::SmallDisplay(_)
+            ));
+        }
     }
 
     #[test]
