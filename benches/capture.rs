@@ -1,9 +1,8 @@
 use value_bag::ValueBag;
 
-use criterion::{criterion_group, criterion_main, Criterion};
 use std::hint::black_box;
 
-fn criterion_benchmark(c: &mut Criterion) {
+fn criterion_benchmark(c: &mut criterion::Criterion) {
     c.bench_function("capture u8 from", |b| {
         b.iter(|| black_box(ValueBag::from(1u8)))
     });
@@ -92,5 +91,5 @@ fn criterion_benchmark(c: &mut Criterion) {
     }
 }
 
-criterion_group!(benches, criterion_benchmark);
-criterion_main!(benches);
+criterion::criterion_group!(benches, criterion_benchmark);
+criterion::criterion_main!(benches);

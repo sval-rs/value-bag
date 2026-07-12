@@ -2,10 +2,18 @@
 mod imp {
     use value_bag::ValueBag;
 
-    use criterion::{criterion_group, criterion_main, Criterion};
-    use std::hint::black_box;
+    use std::{fmt, hint::black_box};
 
-    pub fn criterion_benchmark(c: &mut Criterion) {
+    // Clobber `ToString` specialization for `&str`
+    struct Display(&'static str);
+
+    impl fmt::Display for Display {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            f.write_str(self.0)
+        }
+    }
+
+    pub fn criterion_benchmark(c: &mut criterion::Criterion) {
         c.bench_function("from u8 to owned", |b| {
             let v = ValueBag::from(1u8);
 
@@ -36,8 +44,20 @@ mod imp {
             b.iter(|| black_box(v.clone()))
         });
 
-        c.bench_function("from display to owned", |b| {
-            let v = ValueBag::from_display(&42);
+        c.bench_function("from display to owned 2b", |b| {
+            let v = ValueBag::from_display(&Display("42"));
+
+            b.iter(|| black_box(v.to_owned()))
+        });
+
+        c.bench_function("from display to owned 32b", |b| {
+            let v = ValueBag::from_display(&Display("4bf92f3577b34da6a3ce929d0e0e4736"));
+
+            b.iter(|| black_box(v.to_owned()))
+        });
+
+        c.bench_function("from display to owned 36b", |b| {
+            let v = ValueBag::from_display(&Display("8be4df61-93ca-11d2-aa0d-00e098032b8c"));
 
             b.iter(|| black_box(v.to_owned()))
         });
@@ -113,9 +133,9 @@ mod imp {
 }
 
 #[cfg(feature = "owned")]
-criterion_group!(benches, imp::criterion_benchmark);
+criterion::criterion_group!(benches, imp::criterion_benchmark);
 #[cfg(feature = "owned")]
-criterion_main!(benches);
+criterion::criterion_main!(benches);
 
 #[cfg(not(feature = "owned"))]
 fn main() {}
