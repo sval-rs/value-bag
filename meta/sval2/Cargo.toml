@@ -36,6 +36,10 @@ test = [
     "sval_test",
 ]
 
+owned = [
+    "std",
+]
+
 [dependencies.sval]
 version = "2.1"
 default-features = false

@@ -267,6 +267,40 @@ impl<'v> Internal<'v> {
             }
 
             #[cfg(feature = "sval2")]
+            fn borrowed_sval2(
+                &mut self,
+                v: &'v dyn internal::sval::v2::Value,
+            ) -> Result<(), Error> {
+                self.sval2(v)
+            }
+
+            #[cfg(feature = "sval2")]
+            fn borrowed_downcast_sval2(
+                &mut self,
+                v: &'v dyn internal::sval::v2::DowncastValue,
+            ) -> Result<(), Error> {
+                self.0 = v
+                    .as_buffer()
+                    .buffer()
+                    .map(OwnedInternal::Sval2)
+                    .unwrap_or(OwnedInternal::Poisoned("failed to buffer the value"));
+                Ok(())
+            }
+
+            #[cfg(feature = "sval2")]
+            fn borrowed_sized_sval2(
+                &mut self,
+                v: &'v dyn internal::sval::v2::SizedValue,
+            ) -> Result<(), Error> {
+                self.0 = v
+                    .as_buffer()
+                    .buffer()
+                    .map(OwnedInternal::Sval2)
+                    .unwrap_or(OwnedInternal::Poisoned("failed to buffer the value"));
+                Ok(())
+            }
+
+            #[cfg(feature = "sval2")]
             fn shared_sval2(
                 &mut self,
                 v: &Arc<dyn internal::sval::v2::DowncastValue + Send + Sync>,
@@ -278,6 +312,34 @@ impl<'v> Internal<'v> {
             #[cfg(feature = "serde1")]
             fn serde1(&mut self, v: &dyn internal::serde::v1::Serialize) -> Result<(), Error> {
                 self.0 = internal::serde::v1::owned::buffer(v)
+                    .map(OwnedInternal::Serde1)
+                    .unwrap_or(OwnedInternal::Poisoned("failed to buffer the value"));
+                Ok(())
+            }
+
+            #[cfg(feature = "serde1")]
+            fn borrowed_downcast_serde1(
+                &mut self,
+                v: &'v dyn internal::serde::v1::DowncastSerialize,
+            ) -> Result<(), Error> {
+                self.0 = v
+                    .as_buffer()
+                    .buffer()
+                    .map(Box::new)
+                    .map(OwnedInternal::Serde1)
+                    .unwrap_or(OwnedInternal::Poisoned("failed to buffer the value"));
+                Ok(())
+            }
+
+            #[cfg(feature = "serde1")]
+            fn borrowed_sized_serde1(
+                &mut self,
+                v: &'v dyn internal::serde::v1::SizedSerialize,
+            ) -> Result<(), Error> {
+                self.0 = v
+                    .as_buffer()
+                    .buffer()
+                    .map(Box::new)
                     .map(OwnedInternal::Serde1)
                     .unwrap_or(OwnedInternal::Poisoned("failed to buffer the value"));
                 Ok(())

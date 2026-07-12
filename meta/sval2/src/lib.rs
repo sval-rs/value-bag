@@ -2,8 +2,6 @@
 Implementation detail for `value-bag`; it should not be depended on directly.
 */
 
-#![no_std]
-
 pub use sval as lib;
 pub use sval_buffer as buffer;
 pub use sval_dynamic as dynamic;
