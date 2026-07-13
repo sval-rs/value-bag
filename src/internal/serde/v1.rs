@@ -44,6 +44,9 @@ impl<'v> ValueBag<'v> {
     }
 }
 
+/**
+A value that can be downcast and buffered.
+*/
 pub(crate) trait DowncastSerialize {
     fn as_any(&self) -> &dyn Any;
     fn as_super(&self) -> &dyn Serialize;
@@ -87,7 +90,7 @@ impl<T: value_bag_serde1::lib::Serialize> SizedSerialize for T {
 }
 
 /**
-A specialization of `Value` that is object safe, but buffers generically to avoid more dynamic dispatch.
+A specialization of `Serialize` that is object safe, but buffers generically to avoid more dynamic dispatch.
 */
 #[cfg(feature = "owned")]
 pub(crate) trait BufferSerialize {
