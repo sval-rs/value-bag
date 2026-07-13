@@ -37,34 +37,34 @@ test = [
 ]
 
 [dependencies.sval]
-version = "2.1"
+version = "2.20"
 default-features = false
 
 [dependencies.sval_ref]
-version = "2.1"
+version = "2.20"
 default-features = false
 
 [dependencies.sval_dynamic]
-version = "2.1"
+version = "2.20"
 default-features = false
 
 [dependencies.sval_buffer]
-version = "2.3"
+version = "2.20"
 default-features = false
 
 [dependencies.sval_fmt]
-version = "2.1"
+version = "2.20"
 default-features = false
 
 [dependencies.sval_serde]
-version = "2.1"
+version = "2.20"
 default-features = false
 optional = true
 
 [dependencies.sval_json]
-version = "2.1"
+version = "2.20"
 optional = true
 
 [dependencies.sval_test]
-version = "2.1"
+version = "2.20"
 optional = true
