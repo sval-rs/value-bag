@@ -325,7 +325,6 @@ impl<'v> Internal<'v> {
                 self.0 = v
                     .as_buffer()
                     .buffer()
-                    .map(Box::new)
                     .map(OwnedInternal::Serde1)
                     .unwrap_or(OwnedInternal::Poisoned("failed to buffer the value"));
                 Ok(())
@@ -339,7 +338,6 @@ impl<'v> Internal<'v> {
                 self.0 = v
                     .as_buffer()
                     .buffer()
-                    .map(Box::new)
                     .map(OwnedInternal::Serde1)
                     .unwrap_or(OwnedInternal::Poisoned("failed to buffer the value"));
                 Ok(())
