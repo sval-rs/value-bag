@@ -190,7 +190,10 @@ impl<'sval> value_bag_sval2::lib_ref::ValueRef<'sval> for ValueBag<'sval> {
             }
 
             #[cfg(feature = "error")]
-            fn error(&mut self, v: &(dyn std::error::Error + 'static)) -> Result<(), Error> {
+            fn error(
+                &mut self,
+                v: &(dyn crate::internal::error::Error + 'static),
+            ) -> Result<(), Error> {
                 self.display(&v)
             }
 

@@ -215,7 +215,10 @@ impl<'v> Debug for ValueBag<'v> {
             }
 
             #[cfg(feature = "error")]
-            fn error(&mut self, v: &(dyn std::error::Error + 'static)) -> Result<(), Error> {
+            fn error(
+                &mut self,
+                v: &(dyn crate::internal::error::Error + 'static),
+            ) -> Result<(), Error> {
                 Debug::fmt(v, self.0)?;
 
                 Ok(())
@@ -331,7 +334,10 @@ impl<'v> Display for ValueBag<'v> {
             }
 
             #[cfg(feature = "error")]
-            fn error(&mut self, v: &(dyn std::error::Error + 'static)) -> Result<(), Error> {
+            fn error(
+                &mut self,
+                v: &(dyn crate::internal::error::Error + 'static),
+            ) -> Result<(), Error> {
                 Display::fmt(v, self.0)?;
 
                 Ok(())

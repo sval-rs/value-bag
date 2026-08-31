@@ -19,7 +19,7 @@ impl<'v> ValueBag<'v> {
 
     /// Get a value from an erased value.
     #[inline]
-    pub const fn from_dyn_error(value: &'v (dyn error::Error + 'static)) -> Self {
+    pub const fn from_dyn_error(value: &'v (dyn Error + 'static)) -> Self {
         ValueBag {
             inner: Internal::AnonError(value),
         }
@@ -36,19 +36,17 @@ impl<'v> ValueBag<'v> {
     }
 }
 
-#[cfg(feature = "error")]
 pub(crate) trait DowncastError {
     fn as_any(&self) -> &dyn Any;
-    fn as_super(&self) -> &(dyn error::Error + 'static);
+    fn as_super(&self) -> &(dyn Error + 'static);
 }
 
-#[cfg(feature = "error")]
 impl<T: error::Error + 'static> DowncastError for T {
     fn as_any(&self) -> &dyn Any {
         self
     }
 
-    fn as_super(&self) -> &(dyn error::Error + 'static) {
+    fn as_super(&self) -> &(dyn Error + 'static) {
         self
     }
 }
@@ -65,7 +63,7 @@ impl<'s, 'f> Slot<'s, 'f> {
     }
 
     /// Fill the slot with an error.
-    pub fn fill_dyn_error(self, value: &(dyn error::Error + 'static)) -> Result<(), crate::Error> {
+    pub fn fill_dyn_error(self, value: &(dyn Error + 'static)) -> Result<(), crate::Error> {
         self.fill(|visitor| visitor.error(value))
     }
 }
@@ -74,7 +72,8 @@ pub use self::error::Error;
 
 #[cfg(feature = "owned")]
 pub(crate) mod owned {
-    use crate::std::{boxed::Box, error, fmt, string::ToString};
+    use super::*;
+    use crate::std::{boxed::Box, fmt, string::ToString};
 
     #[derive(Clone, Debug)]
     pub(crate) struct OwnedError {
@@ -88,8 +87,8 @@ pub(crate) mod owned {
         }
     }
 
-    impl error::Error for OwnedError {
-        fn source(&self) -> Option<&(dyn error::Error + 'static)> {
+    impl Error for OwnedError {
+        fn source(&self) -> Option<&(dyn Error + 'static)> {
             if let Some(ref source) = self.source {
                 Some(&**source)
             } else {
@@ -98,7 +97,7 @@ pub(crate) mod owned {
         }
     }
 
-    pub(crate) fn buffer(err: &(dyn error::Error + 'static)) -> OwnedError {
+    pub(crate) fn buffer(err: &(dyn Error + 'static)) -> OwnedError {
         OwnedError {
             display: err.to_string().into(),
             source: err.source().map(buffer).map(Box::new),
@@ -106,21 +105,21 @@ pub(crate) mod owned {
     }
 }
 
-impl<'v> From<&'v (dyn error::Error + 'static)> for ValueBag<'v> {
+impl<'v> From<&'v (dyn Error + 'static)> for ValueBag<'v> {
     #[inline]
-    fn from(v: &'v (dyn error::Error + 'static)) -> Self {
+    fn from(v: &'v (dyn Error + 'static)) -> Self {
         ValueBag::from_dyn_error(v)
     }
 }
 
-impl<'v> From<Option<&'v (dyn error::Error + 'static)>> for ValueBag<'v> {
+impl<'v> From<Option<&'v (dyn Error + 'static)>> for ValueBag<'v> {
     #[inline]
-    fn from(v: Option<&'v (dyn error::Error + 'static)>) -> Self {
+    fn from(v: Option<&'v (dyn Error + 'static)>) -> Self {
         ValueBag::from_option(v)
     }
 }
 
-impl<'v> TryFrom<ValueBag<'v>> for &'v (dyn error::Error + 'static) {
+impl<'v> TryFrom<ValueBag<'v>> for &'v (dyn Error + 'static) {
     type Error = crate::Error;
 
     #[inline]
@@ -130,12 +129,12 @@ impl<'v> TryFrom<ValueBag<'v>> for &'v (dyn error::Error + 'static) {
     }
 }
 
-impl<'v, 'u> From<&'v &'u (dyn error::Error + 'static)> for ValueBag<'v>
+impl<'v, 'u> From<&'v &'u (dyn Error + 'static)> for ValueBag<'v>
 where
     'u: 'v,
 {
     #[inline]
-    fn from(v: &'v &'u (dyn error::Error + 'static)) -> Self {
+    fn from(v: &'v &'u (dyn Error + 'static)) -> Self {
         ValueBag::from_dyn_error(*v)
     }
 }
