@@ -24,7 +24,7 @@ pub(crate) enum OwnedInternal {
     #[cfg(feature = "inline-str")]
     SmallDisplay(internal::fmt::owned::InlineFmt),
     Display(internal::fmt::owned::OwnedFmt),
-    #[cfg(feature = "error")]
+    #[cfg(feature = "error-core")]
     Error(internal::error::owned::OwnedError),
     #[cfg(feature = "serde1")]
     Serde1(internal::serde::v1::owned::OwnedSerialize),
@@ -36,7 +36,7 @@ pub(crate) enum OwnedInternal {
     // Shared values
     SharedDebug(Arc<dyn internal::fmt::DowncastDebug + Send + Sync>),
     SharedDisplay(Arc<dyn internal::fmt::DowncastDisplay + Send + Sync>),
-    #[cfg(feature = "error")]
+    #[cfg(feature = "error-core")]
     SharedError(Arc<dyn internal::error::DowncastError + Send + Sync>),
     #[cfg(feature = "serde1")]
     SharedSerde1(Arc<dyn internal::serde::v1::DowncastSerialize + Send + Sync>),
@@ -75,7 +75,7 @@ impl OwnedInternal {
             OwnedInternal::Display(v) => Internal::AnonDisplay(v),
             #[cfg(feature = "inline-str")]
             OwnedInternal::SmallDisplay(v) => Internal::AnonDisplay(v),
-            #[cfg(feature = "error")]
+            #[cfg(feature = "error-core")]
             OwnedInternal::Error(v) => Internal::AnonError(v),
             #[cfg(feature = "serde1")]
             OwnedInternal::Serde1(v) => Internal::AnonSerde1(v),
@@ -86,7 +86,7 @@ impl OwnedInternal {
 
             OwnedInternal::SharedDebug(ref value) => Internal::SharedRefDebug(value),
             OwnedInternal::SharedDisplay(ref value) => Internal::SharedRefDisplay(value),
-            #[cfg(feature = "error")]
+            #[cfg(feature = "error-core")]
             OwnedInternal::SharedError(ref value) => Internal::SharedRefError(value),
             #[cfg(feature = "serde1")]
             OwnedInternal::SharedSerde1(ref value) => Internal::SharedRefSerde1(value),
@@ -118,7 +118,7 @@ impl OwnedInternal {
             OwnedInternal::Display(v) => OwnedInternal::SharedDisplay(Arc::new(v)),
             #[cfg(feature = "inline-str")]
             OwnedInternal::SmallDisplay(v) => OwnedInternal::SmallDisplay(v),
-            #[cfg(feature = "error")]
+            #[cfg(feature = "error-core")]
             OwnedInternal::Error(v) => OwnedInternal::SharedError(Arc::new(v)),
             #[cfg(feature = "serde1")]
             OwnedInternal::Serde1(v) => OwnedInternal::SharedSerde1(Arc::new(v)),
@@ -129,7 +129,7 @@ impl OwnedInternal {
 
             OwnedInternal::SharedDebug(v) => OwnedInternal::SharedDebug(v),
             OwnedInternal::SharedDisplay(v) => OwnedInternal::SharedDisplay(v),
-            #[cfg(feature = "error")]
+            #[cfg(feature = "error-core")]
             OwnedInternal::SharedError(v) => OwnedInternal::SharedError(v),
             #[cfg(feature = "serde1")]
             OwnedInternal::SharedSerde1(v) => OwnedInternal::SharedSerde1(v),
@@ -243,13 +243,13 @@ impl<'v> Internal<'v> {
                 Ok(())
             }
 
-            #[cfg(feature = "error")]
+            #[cfg(feature = "error-core")]
             fn error(&mut self, v: &(dyn internal::error::Error + 'static)) -> Result<(), Error> {
                 self.0 = OwnedInternal::Error(internal::error::owned::buffer(v));
                 Ok(())
             }
 
-            #[cfg(feature = "error")]
+            #[cfg(feature = "error-core")]
             fn shared_error(
                 &mut self,
                 v: &Arc<dyn internal::error::DowncastError + Send + Sync>,

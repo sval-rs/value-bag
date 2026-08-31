@@ -136,14 +136,14 @@ pub trait Visit<'v> {
 
     /// Visit an error.
     #[inline]
-    #[cfg(feature = "error")]
+    #[cfg(feature = "error-core")]
     fn visit_error(&mut self, err: &(dyn crate::std::error::Error + 'static)) -> Result<(), Error> {
         self.visit_any(ValueBag::from_dyn_error(err))
     }
 
     /// Visit an error.
     #[inline]
-    #[cfg(feature = "error")]
+    #[cfg(feature = "error-core")]
     fn visit_borrowed_error(
         &mut self,
         err: &'v (dyn crate::std::error::Error + 'static),
@@ -212,13 +212,13 @@ where
     }
 
     #[inline]
-    #[cfg(feature = "error")]
+    #[cfg(feature = "error-core")]
     fn visit_error(&mut self, err: &(dyn crate::std::error::Error + 'static)) -> Result<(), Error> {
         (**self).visit_error(err)
     }
 
     #[inline]
-    #[cfg(feature = "error")]
+    #[cfg(feature = "error-core")]
     fn visit_borrowed_error(
         &mut self,
         err: &'v (dyn crate::std::error::Error + 'static),
@@ -292,12 +292,12 @@ impl<'v> ValueBag<'v> {
                 self.0.visit_empty()
             }
 
-            #[cfg(feature = "error")]
+            #[cfg(feature = "error-core")]
             fn error(&mut self, v: &(dyn internal::error::Error + 'static)) -> Result<(), Error> {
                 self.0.visit_error(v)
             }
 
-            #[cfg(feature = "error")]
+            #[cfg(feature = "error-core")]
             fn borrowed_error(
                 &mut self,
                 v: &'v (dyn internal::error::Error + 'static),

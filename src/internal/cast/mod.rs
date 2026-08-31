@@ -139,7 +139,7 @@ impl<'v> ValueBag<'v> {
         match self.inner {
             Internal::Debug(value) => value.as_any().downcast_ref(),
             Internal::Display(value) => value.as_any().downcast_ref(),
-            #[cfg(feature = "error")]
+            #[cfg(feature = "error-core")]
             Internal::Error(value) => value.as_any().downcast_ref(),
             #[cfg(feature = "sval2")]
             Internal::Sval2(value) => value.as_any().downcast_ref(),
@@ -150,7 +150,7 @@ impl<'v> ValueBag<'v> {
             Internal::SharedDebug(ref value) => value.as_any().downcast_ref(),
             #[cfg(feature = "owned")]
             Internal::SharedDisplay(ref value) => value.as_any().downcast_ref(),
-            #[cfg(all(feature = "error", feature = "owned"))]
+            #[cfg(all(feature = "error-core", feature = "owned"))]
             Internal::SharedError(ref value) => value.as_any().downcast_ref(),
             #[cfg(all(feature = "serde1", feature = "owned"))]
             Internal::SharedSerde1(ref value) => value.as_any().downcast_ref(),
@@ -163,7 +163,7 @@ impl<'v> ValueBag<'v> {
             Internal::SharedRefDebug(value) => value.as_any().downcast_ref(),
             #[cfg(feature = "owned")]
             Internal::SharedRefDisplay(value) => value.as_any().downcast_ref(),
-            #[cfg(all(feature = "error", feature = "owned"))]
+            #[cfg(all(feature = "error-core", feature = "owned"))]
             Internal::SharedRefError(value) => value.as_any().downcast_ref(),
             #[cfg(all(feature = "serde1", feature = "owned"))]
             Internal::SharedRefSerde1(value) => value.as_any().downcast_ref(),
@@ -266,7 +266,7 @@ impl<'v> Internal<'v> {
                 Ok(())
             }
 
-            #[cfg(feature = "error")]
+            #[cfg(feature = "error-core")]
             #[inline]
             fn error(&mut self, _: &dyn super::error::Error) -> Result<(), Error> {
                 Ok(())

@@ -40,7 +40,7 @@ pub enum TestToken {
     Str(String),
     None,
 
-    #[cfg(feature = "error")]
+    #[cfg(feature = "error-core")]
     Error,
 
     #[cfg(feature = "sval2")]
@@ -128,7 +128,7 @@ impl<'v> ValueBag<'v> {
                 Ok(())
             }
 
-            #[cfg(feature = "error")]
+            #[cfg(feature = "error-core")]
             fn error(&mut self, _: &dyn internal::error::Error) -> Result<(), Error> {
                 self.0 = Some(TestToken::Error);
                 Ok(())
@@ -246,13 +246,13 @@ impl<'v> Visit<'v> for TestVisit {
         Ok(())
     }
 
-    #[cfg(feature = "error")]
+    #[cfg(feature = "error-core")]
     fn visit_error(&mut self, err: &(dyn crate::std::error::Error + 'static)) -> Result<(), Error> {
         assert!(err.downcast_ref::<crate::std::io::Error>().is_some());
         Ok(())
     }
 
-    #[cfg(feature = "error")]
+    #[cfg(feature = "error-core")]
     fn visit_borrowed_error(
         &mut self,
         err: &'v (dyn crate::std::error::Error + 'static),

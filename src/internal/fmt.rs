@@ -214,7 +214,7 @@ impl<'v> Debug for ValueBag<'v> {
                 self.debug(&format_args!("None"))
             }
 
-            #[cfg(feature = "error")]
+            #[cfg(feature = "error-core")]
             fn error(
                 &mut self,
                 v: &(dyn crate::internal::error::Error + 'static),
@@ -333,7 +333,7 @@ impl<'v> Display for ValueBag<'v> {
                 self.debug(&format_args!("None"))
             }
 
-            #[cfg(feature = "error")]
+            #[cfg(feature = "error-core")]
             fn error(
                 &mut self,
                 v: &(dyn crate::internal::error::Error + 'static),

@@ -230,7 +230,7 @@ impl<'v> value_bag_serde1::lib::Serialize for ValueBag<'v> {
                 self.result()
             }
 
-            #[cfg(feature = "error")]
+            #[cfg(feature = "error-core")]
             fn error(
                 &mut self,
                 v: &(dyn crate::internal::error::Error + 'static),
