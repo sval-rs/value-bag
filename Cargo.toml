@@ -73,6 +73,7 @@ serde1 = [
 
 # Add support for `std::error`
 error = ["std", "error-core"]
+# Add support for `core::error`
 error-core = []
 
 # Add support for testing the contents of a value bag
