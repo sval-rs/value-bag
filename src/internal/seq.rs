@@ -473,7 +473,7 @@ impl<'v> Internal<'v> {
                 Ok(())
             }
 
-            #[cfg(feature = "error")]
+            #[cfg(feature = "error-core")]
             #[inline]
             fn error(&mut self, _: &dyn crate::internal::error::Error) -> Result<(), Error> {
                 Ok(())

@@ -189,7 +189,7 @@ impl<'sval> value_bag_sval2::lib_ref::ValueRef<'sval> for ValueBag<'sval> {
                 self.0.null().map_err(Error::from_sval2)
             }
 
-            #[cfg(feature = "error")]
+            #[cfg(feature = "error-core")]
             fn error(
                 &mut self,
                 v: &(dyn crate::internal::error::Error + 'static),

@@ -66,7 +66,7 @@ impl ValueBag<'static> {
     /// Get a value from an owned, shared error.
     ///
     /// The value will be stored in an `Arc` for cheap cloning.
-    #[cfg(feature = "error")]
+    #[cfg(feature = "error-core")]
     pub fn capture_shared_error<T>(value: T) -> Self
     where
         T: internal::error::Error + Send + Sync + 'static,
@@ -363,7 +363,7 @@ mod tests {
     }
 
     #[test]
-    #[cfg(feature = "error")]
+    #[cfg(feature = "error-core")]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn error_to_owned() {
         use crate::std::io;
@@ -385,7 +385,7 @@ mod tests {
     }
 
     #[test]
-    #[cfg(feature = "error")]
+    #[cfg(feature = "error-core")]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn error_to_shared() {
         use crate::std::io;
@@ -401,7 +401,7 @@ mod tests {
     }
 
     #[test]
-    #[cfg(feature = "error")]
+    #[cfg(feature = "error-core")]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn owned_error_to_owned() {
         use crate::std::io;

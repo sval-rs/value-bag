@@ -8,7 +8,7 @@ pub struct Error {
 
 #[derive(Debug)]
 enum Inner {
-    #[cfg(all(feature = "alloc", feature = "error"))]
+    #[cfg(all(feature = "alloc", feature = "error-core"))]
     Boxed(alloc_support::BoxedError),
     Msg(&'static str),
     Fmt,
@@ -24,11 +24,11 @@ impl Error {
 
     #[cfg(feature = "serde1")]
     pub(crate) fn try_boxed(msg: &'static str, e: impl fmt::Display) -> Self {
-        #[cfg(all(feature = "alloc", feature = "error"))]
+        #[cfg(all(feature = "alloc", feature = "error-core"))]
         {
             Error::boxed(format!("{msg}: {e}"))
         }
-        #[cfg(not(all(feature = "alloc", feature = "error")))]
+        #[cfg(not(all(feature = "alloc", feature = "error-core")))]
         {
             let _ = e;
             Error::msg(msg)
@@ -40,7 +40,7 @@ impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use self::Inner::*;
         match self.inner {
-            #[cfg(all(feature = "alloc", feature = "error"))]
+            #[cfg(all(feature = "alloc", feature = "error-core"))]
             Boxed(ref err) => err.fmt(f),
             Msg(ref msg) => msg.fmt(f),
             Fmt => fmt::Error.fmt(f),
@@ -54,7 +54,7 @@ impl From<fmt::Error> for Error {
     }
 }
 
-#[cfg(feature = "error")]
+#[cfg(feature = "error-core")]
 mod error_support {
     use super::*;
     use crate::std::error;
@@ -62,7 +62,7 @@ mod error_support {
     impl error::Error for Error {}
 }
 
-#[cfg(all(feature = "alloc", feature = "error"))]
+#[cfg(all(feature = "alloc", feature = "error-core"))]
 mod alloc_support {
     use super::*;
     use crate::std::{boxed::Box, error};
@@ -82,7 +82,7 @@ mod alloc_support {
     }
 }
 
-#[cfg(all(feature = "std", feature = "error"))]
+#[cfg(all(feature = "std", feature = "error-core"))]
 mod std_support {
     use super::*;
     use crate::std::io;

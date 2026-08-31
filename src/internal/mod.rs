@@ -6,7 +6,7 @@
 use crate::{fill::Fill, Error, ValueBag};
 
 pub(crate) mod cast;
-#[cfg(feature = "error")]
+#[cfg(feature = "error-core")]
 pub(crate) mod error;
 pub(crate) mod fmt;
 #[cfg(feature = "seq")]
@@ -49,7 +49,7 @@ pub(crate) enum Internal<'v> {
     Fill(&'v dyn Fill),
     Debug(&'v dyn fmt::DowncastDebug),
     Display(&'v dyn fmt::DowncastDisplay),
-    #[cfg(feature = "error")]
+    #[cfg(feature = "error-core")]
     Error(&'v dyn error::DowncastError),
     #[cfg(feature = "sval2")]
     Sval2(&'v dyn sval::v2::DowncastValue),
@@ -63,7 +63,7 @@ pub(crate) enum Internal<'v> {
     // Anonymous values
     AnonDebug(&'v dyn fmt::Debug),
     AnonDisplay(&'v dyn fmt::Display),
-    #[cfg(feature = "error")]
+    #[cfg(feature = "error-core")]
     AnonError(&'v (dyn error::Error + 'static)),
     #[cfg(feature = "sval2")]
     AnonSval2(&'v dyn sval::v2::Value),
@@ -77,7 +77,7 @@ pub(crate) enum Internal<'v> {
     SharedDebug(Arc<dyn fmt::DowncastDebug + Send + Sync>),
     #[cfg(feature = "owned")]
     SharedDisplay(Arc<dyn fmt::DowncastDisplay + Send + Sync>),
-    #[cfg(all(feature = "error", feature = "owned"))]
+    #[cfg(all(feature = "error-core", feature = "owned"))]
     SharedError(Arc<dyn error::DowncastError + Send + Sync>),
     #[cfg(all(feature = "serde1", feature = "owned"))]
     SharedSerde1(Arc<dyn serde::v1::DowncastSerialize + Send + Sync>),
@@ -92,7 +92,7 @@ pub(crate) enum Internal<'v> {
     SharedRefDebug(&'v Arc<dyn fmt::DowncastDebug + Send + Sync>),
     #[cfg(feature = "owned")]
     SharedRefDisplay(&'v Arc<dyn fmt::DowncastDisplay + Send + Sync>),
-    #[cfg(all(feature = "error", feature = "owned"))]
+    #[cfg(all(feature = "error-core", feature = "owned"))]
     SharedRefError(&'v Arc<dyn error::DowncastError + Send + Sync>),
     #[cfg(all(feature = "serde1", feature = "owned"))]
     SharedRefSerde1(&'v Arc<dyn serde::v1::DowncastSerialize + Send + Sync>),
@@ -153,13 +153,13 @@ pub(crate) trait InternalVisitor<'v> {
 
     fn none(&mut self) -> Result<(), Error>;
 
-    #[cfg(feature = "error")]
+    #[cfg(feature = "error-core")]
     fn error(&mut self, v: &(dyn error::Error + 'static)) -> Result<(), Error>;
-    #[cfg(feature = "error")]
+    #[cfg(feature = "error-core")]
     fn borrowed_error(&mut self, v: &'v (dyn error::Error + 'static)) -> Result<(), Error> {
         self.error(v)
     }
-    #[cfg(all(feature = "error", feature = "owned"))]
+    #[cfg(all(feature = "error-core", feature = "owned"))]
     fn shared_error(
         &mut self,
         v: &Arc<dyn error::DowncastError + Send + Sync>,
@@ -314,17 +314,17 @@ impl<'a, 'v, V: InternalVisitor<'v> + ?Sized> InternalVisitor<'v> for &'a mut V 
         (**self).none()
     }
 
-    #[cfg(feature = "error")]
+    #[cfg(feature = "error-core")]
     fn error(&mut self, v: &(dyn error::Error + 'static)) -> Result<(), Error> {
         (**self).error(v)
     }
 
-    #[cfg(feature = "error")]
+    #[cfg(feature = "error-core")]
     fn borrowed_error(&mut self, v: &'v (dyn error::Error + 'static)) -> Result<(), Error> {
         (**self).borrowed_error(v)
     }
 
-    #[cfg(all(feature = "error", feature = "owned"))]
+    #[cfg(all(feature = "error-core", feature = "owned"))]
     fn shared_error(
         &mut self,
         v: &Arc<dyn error::DowncastError + Send + Sync>,
@@ -441,9 +441,9 @@ impl<'v> Internal<'v> {
             Internal::AnonDisplay(value) => Internal::AnonDisplay(*value),
             Internal::Display(value) => Internal::Display(*value),
 
-            #[cfg(feature = "error")]
+            #[cfg(feature = "error-core")]
             Internal::AnonError(value) => Internal::AnonError(*value),
-            #[cfg(feature = "error")]
+            #[cfg(feature = "error-core")]
             Internal::Error(value) => Internal::Error(*value),
 
             #[cfg(feature = "sval2")]
@@ -467,7 +467,7 @@ impl<'v> Internal<'v> {
             Internal::SharedDebug(ref value) => Internal::SharedRefDebug(value),
             #[cfg(feature = "owned")]
             Internal::SharedDisplay(ref value) => Internal::SharedRefDisplay(value),
-            #[cfg(all(feature = "error", feature = "owned"))]
+            #[cfg(all(feature = "error-core", feature = "owned"))]
             Internal::SharedError(ref value) => Internal::SharedRefError(value),
             #[cfg(all(feature = "serde1", feature = "owned"))]
             Internal::SharedSerde1(ref value) => Internal::SharedRefSerde1(value),
@@ -480,7 +480,7 @@ impl<'v> Internal<'v> {
             Internal::SharedRefDebug(value) => Internal::SharedRefDebug(*value),
             #[cfg(feature = "owned")]
             Internal::SharedRefDisplay(value) => Internal::SharedRefDisplay(*value),
-            #[cfg(all(feature = "error", feature = "owned"))]
+            #[cfg(all(feature = "error-core", feature = "owned"))]
             Internal::SharedRefError(value) => Internal::SharedRefError(*value),
             #[cfg(all(feature = "serde1", feature = "owned"))]
             Internal::SharedRefSerde1(value) => Internal::SharedRefSerde1(*value),
@@ -523,9 +523,9 @@ impl<'v> Internal<'v> {
             Internal::AnonDisplay(value) => visitor.borrowed_display(*value),
             Internal::Display(value) => visitor.borrowed_display(value.as_super()),
 
-            #[cfg(feature = "error")]
+            #[cfg(feature = "error-core")]
             Internal::AnonError(value) => visitor.borrowed_error(*value),
-            #[cfg(feature = "error")]
+            #[cfg(feature = "error-core")]
             Internal::Error(value) => visitor.borrowed_error(value.as_super()),
 
             #[cfg(feature = "sval2")]
@@ -549,7 +549,7 @@ impl<'v> Internal<'v> {
             Internal::SharedDebug(ref value) => visitor.shared_debug(value),
             #[cfg(feature = "owned")]
             Internal::SharedDisplay(ref value) => visitor.shared_display(value),
-            #[cfg(all(feature = "error", feature = "owned"))]
+            #[cfg(all(feature = "error-core", feature = "owned"))]
             Internal::SharedError(ref value) => visitor.shared_error(value),
             #[cfg(all(feature = "serde1", feature = "owned"))]
             Internal::SharedSerde1(ref value) => visitor.shared_serde1(value),
@@ -562,7 +562,7 @@ impl<'v> Internal<'v> {
             Internal::SharedRefDebug(value) => visitor.shared_debug(value),
             #[cfg(feature = "owned")]
             Internal::SharedRefDisplay(value) => visitor.shared_display(value),
-            #[cfg(all(feature = "error", feature = "owned"))]
+            #[cfg(all(feature = "error-core", feature = "owned"))]
             Internal::SharedRefError(value) => visitor.shared_error(value),
             #[cfg(all(feature = "serde1", feature = "owned"))]
             Internal::SharedRefSerde1(value) => visitor.shared_serde1(value),
